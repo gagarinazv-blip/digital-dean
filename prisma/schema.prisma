@@ -1,0 +1,20 @@
+// Схема данных — описание таблиц вашей базы.
+// После любого изменения этого файла выполните: npm run db:migrate -- --name <описание>
+
+generator client {
+  provider = "prisma-client"
+  // Сюда Prisma сгенерирует типизированный клиент (папка не коммитится в git)
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Адрес базы (DATABASE_URL) задаётся в prisma.config.ts, а не здесь
+}
+
+// Пример модели: таблица «заметки». Замените на свои модели.
+model Note {
+  id        Int      @id @default(autoincrement())
+  title     String
+  createdAt DateTime @default(now())
+}
