@@ -1,13 +1,25 @@
 import "dotenv/config";
-import { randomBytes, scrypt as scryptCallback } from "node:crypto";
+import bcrypt from "bcryptjs";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 
-const accounts = [
+type SeedAccount = {
+  login: string;
+  password: string;
+  fullName: string;
+  faculty: string;
+  direction: string;
+  groupName: string;
+  course: number;
+};
+
+const originalAccounts: SeedAccount[] = [
   {
     login: "test.seed.01",
     password: "TestOnly-01!",
     fullName: "Аэлитта Ветрова-Даль",
+    faculty: "Факультет вымышленных исследований",
+    direction: "Межмировые коммуникации",
     groupName: "TEST-SEED-01",
     course: 1,
   },
@@ -15,6 +27,8 @@ const accounts = [
     login: "test.seed.02",
     password: "TestOnly-02!",
     fullName: "Яромир Листогоров",
+    faculty: "Факультет вымышленных исследований",
+    direction: "Межмировые коммуникации",
     groupName: "TEST-SEED-01",
     course: 1,
   },
@@ -22,6 +36,8 @@ const accounts = [
     login: "test.seed.03",
     password: "TestOnly-03!",
     fullName: "Мирелла Камышова",
+    faculty: "Факультет вымышленных исследований",
+    direction: "Межмировые коммуникации",
     groupName: "TEST-SEED-02",
     course: 2,
   },
@@ -29,6 +45,8 @@ const accounts = [
     login: "test.seed.04",
     password: "TestOnly-04!",
     fullName: "Терентий Облаков",
+    faculty: "Факультет вымышленных исследований",
+    direction: "Межмировые коммуникации",
     groupName: "TEST-SEED-02",
     course: 2,
   },
@@ -36,6 +54,8 @@ const accounts = [
     login: "test.seed.05",
     password: "TestOnly-05!",
     fullName: "Лиора Звездолётова",
+    faculty: "Факультет вымышленных исследований",
+    direction: "Межмировые коммуникации",
     groupName: "TEST-SEED-03",
     course: 3,
   },
@@ -43,12 +63,34 @@ const accounts = [
     login: "test.seed.06",
     password: "TestOnly-06!",
     fullName: "Феликс Кленоветер",
+    faculty: "Факультет вымышленных исследований",
+    direction: "Межмировые коммуникации",
     groupName: "TEST-SEED-03",
     course: 3,
   },
+];
+
+const environmentAccounts = [
+  {
+    login: "student.alpha",
+    passwordVariable: "SEED_ALPHA_PASSWORD",
+    fullName: "Альфира Луновей",
+    faculty: "Факультет лунной картографии",
+    direction: "Орбитальная топография",
+    groupName: "DEMO-ALPHA",
+    course: 2,
+  },
+  {
+    login: "student.beta",
+    passwordVariable: "SEED_BETA_PASSWORD",
+    fullName: "Бета Северозвёздный",
+    faculty: "Факультет межзвёздной истории",
+    direction: "Хроники дальних систем",
+    groupName: "DEMO-BETA",
+    course: 4,
+  },
 ] as const;
 
-const groupNames = [...new Set(accounts.map((account) => account.groupName))];
 const subjects = [
   {
     name: "[TEST SEED] История вымышленных цивилизаций",
@@ -99,19 +141,6 @@ const scheduleTimes = [
   ["17:00", "18:30"],
 ] as const;
 
-function hashPassword(password: string): Promise<string> {
-  const salt = randomBytes(16).toString("hex");
-  return new Promise((resolve, reject) => {
-    scryptCallback(password, salt, 64, (error, derivedKey) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-      resolve(`scrypt$${salt}$${derivedKey.toString("hex")}`);
-    });
-  });
-}
-
 function timeOfDay(value: string): Date {
   const [hours, minutes] = value.split(":").map(Number);
   return new Date(Date.UTC(1970, 0, 1, hours, minutes));
@@ -145,13 +174,27 @@ async function main() {
     throw new Error("DATABASE_URL must be set before running the test seed.");
   }
 
+  const accounts: SeedAccount[] = [
+    ...originalAccounts,
+    ...environmentAccounts.map(({ passwordVariable, ...account }) => {
+      const password = process.env[passwordVariable];
+      if (!password) {
+        throw new Error(
+          `${passwordVariable} must be set in .env to seed ${account.login}.`,
+        );
+      }
+      return { ...account, password };
+    }),
+  ];
+  const groupNames = [...new Set(accounts.map((account) => account.groupName))];
+
   const prisma = new PrismaClient({
     adapter: new PrismaPg({ connectionString }),
   });
 
   try {
     const passwordHashes = await Promise.all(
-      accounts.map((account) => hashPassword(account.password)),
+      accounts.map((account) => bcrypt.hash(account.password, 12)),
     );
 
     await prisma.$transaction(async (tx) => {
@@ -230,8 +273,8 @@ async function main() {
           data: {
             userId: user.id,
             fullName: account.fullName,
-            faculty: "Факультет вымышленных исследований",
-            direction: "Межмировые коммуникации",
+            faculty: account.faculty,
+            direction: account.direction,
             course: account.course,
             groupId: getGroupId(groupIds, account.groupName),
           },
@@ -346,9 +389,11 @@ async function main() {
     });
 
     console.log("Тестовые учётные записи (только для локальной разработки):");
-    for (const account of accounts) {
+    for (const account of originalAccounts) {
       console.log(`  ${account.login} / ${account.password}`);
     }
+    console.log("  student.alpha / пароль задан в SEED_ALPHA_PASSWORD");
+    console.log("  student.beta / пароль задан в SEED_BETA_PASSWORD");
   } finally {
     await prisma.$disconnect();
   }

@@ -13,13 +13,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "My App",
-  description: "Next.js + Prisma + PostgreSQL",
+  title: "Цифровой деканат",
+  description: "Личный кабинет студента",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ru"className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="ru" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>{children}</body>
     </html>
   );

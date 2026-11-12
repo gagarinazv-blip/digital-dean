@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "db:generate": "prisma generate",
@@ -16,6 +17,7 @@
   "dependencies": {
     "@prisma/adapter-pg": "7.10.1",
     "@prisma/client": "7.10.1",
+    "bcryptjs": "^3.0.3",
     "dotenv": "18.0.10",
     "next": "16.4.6",
     "pg": "8.23.1",
@@ -31,6 +33,7 @@
     "eslint-config-next": "16.4.6",
     "prisma": "7.10.1",
     "tsx": "4.23.15",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.7"
   }
 }

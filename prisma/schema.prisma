@@ -50,12 +50,33 @@ enum RequestStatus {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  login        String   @unique
+  id           Int       @id @default(autoincrement())
+  login        String    @unique
   passwordHash String
-  role         UserRole @default(STUDENT)
+  role         UserRole  @default(STUDENT)
   student      Student?
-  createdAt    DateTime @default(now())
+  sessions     Session[]
+  createdAt    DateTime  @default(now())
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model LoginAttempt {
+  keyHash         String   @id
+  windowStartedAt DateTime @default(now())
+  attempts        Int      @default(0)
+
+  @@index([windowStartedAt])
 }
 
 model Student {

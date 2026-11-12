@@ -1,0 +1,148 @@
+.page {
+  min-height: 100dvh;
+  background: #f7f8fc;
+}
+
+.header {
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px max(24px, calc((100vw - 1080px) / 2));
+  border-bottom: 1px solid #e7eaf1;
+  background: #fff;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: #17213a;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.brandMark {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: #2447a8;
+  color: #fff;
+  font-size: 19px;
+}
+
+.logout {
+  min-height: 42px;
+  padding: 9px 16px;
+  border: 1px solid #d5dae5;
+  border-radius: 9px;
+  background: #fff;
+  color: #34415b;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.logout:hover {
+  border-color: #aeb8ce;
+  background: #f8f9fc;
+}
+
+.content {
+  width: min(100% - 40px, 760px);
+  margin: 0 auto;
+  padding: 64px 0;
+}
+
+.eyebrow {
+  margin-bottom: 10px;
+  color: #526ba9;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.content h1 {
+  color: #17213a;
+  font-size: clamp(28px, 6vw, 40px);
+  line-height: 1.2;
+  letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
+}
+
+.intro {
+  margin-top: 12px;
+  color: #68728a;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 34px;
+}
+
+.details > div {
+  padding: 20px;
+  border: 1px solid #e6e9f0;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.details dt {
+  margin-bottom: 8px;
+  color: #778198;
+  font-size: 13px;
+}
+
+.details dd {
+  color: #27324a;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 560px) {
+  .header {
+    min-height: 68px;
+    padding: 10px 16px;
+  }
+
+  .brand {
+    gap: 9px;
+    font-size: 14px;
+  }
+
+  .brandMark {
+    width: 34px;
+    height: 34px;
+  }
+
+  .logout {
+    min-height: 40px;
+    padding: 8px 12px;
+  }
+
+  .content {
+    width: min(100% - 32px, 760px);
+    padding: 40px 0;
+  }
+
+  .details {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 26px;
+  }
+
+  .details > div {
+    padding: 16px;
+  }
+}

@@ -1,0 +1,155 @@
+.page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px 20px;
+  background:
+    radial-gradient(ellipse at 10% 10%, #e8efff 0, transparent 38%),
+    radial-gradient(ellipse at 90% 90%, #e8f7f4 0, transparent 34%),
+    #f7f8fc;
+}
+
+.card {
+  width: min(100%, 440px);
+  padding: 40px;
+  border: 1px solid #e6e9f0;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 20px 60px rgb(34 48 78 / 9%);
+}
+
+.brandMark {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 28px;
+  border-radius: 14px;
+  background: #2447a8;
+  color: #fff;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.eyebrow {
+  margin-bottom: 8px;
+  color: #526ba9;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.card h1 {
+  color: #17213a;
+  font-size: clamp(26px, 6vw, 32px);
+  line-height: 1.2;
+  letter-spacing: -0.035em;
+}
+
+.description {
+  margin-top: 12px;
+  color: #68728a;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.form {
+  display: grid;
+  gap: 18px;
+  margin-top: 30px;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.field label {
+  color: #27324a;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.field input {
+  width: 100%;
+  min-height: 48px;
+  padding: 11px 13px;
+  border: 1px solid #d5dae5;
+  border-radius: 10px;
+  background: #fff;
+  color: #17213a;
+  font: inherit;
+  font-size: 16px;
+  outline: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.field input:focus {
+  border-color: #3158bd;
+  box-shadow: 0 0 0 3px rgb(49 88 189 / 14%);
+}
+
+.messageSlot {
+  min-height: 20px;
+}
+
+.error {
+  color: #b42318;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.submit {
+  width: 100%;
+  min-height: 50px;
+  border: 0;
+  border-radius: 10px;
+  background: #2447a8;
+  color: #fff;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 150ms ease, transform 150ms ease;
+}
+
+.submit:hover:not(:disabled) {
+  background: #193989;
+}
+
+.submit:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.submit:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.footer {
+  margin-top: 24px;
+  color: #8991a3;
+  font-size: 13px;
+}
+
+@media (max-width: 520px) {
+  .page {
+    align-content: center;
+    padding: 20px 16px 54px;
+  }
+
+  .card {
+    padding: 30px 24px;
+    border-radius: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .field input,
+  .submit {
+    transition: none;
+  }
+}

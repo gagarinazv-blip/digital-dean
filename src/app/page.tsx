@@ -1,12 +1,16 @@
-import styles from "./page.module.css";
+import { Suspense } from "react";
+import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth";
+
+async function HomeRedirect(): Promise<null> {
+  const user = await getCurrentUser();
+  redirect(user ? "/profile" : "/login");
+}
 
 export default function Home() {
   return (
-    <main className={styles.main}>
-      <h1>Цифровой деканат</h1>
-      <p className={styles.muted}>
-        Сервис для студентов и сотрудников факультета.
-      </p>
-    </main>
+    <Suspense fallback={<main aria-busy="true" />}>
+      <HomeRedirect />
+    </Suspense>
   );
 }
