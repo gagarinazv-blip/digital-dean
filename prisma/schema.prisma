@@ -12,9 +12,148 @@ datasource db {
   // Адрес базы (DATABASE_URL) задаётся в prisma.config.ts, а не здесь
 }
 
-// Пример модели: таблица «заметки». Замените на свои модели.
-model Note {
-  id        Int      @id @default(autoincrement())
+enum UserRole {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+enum Weekday {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum ControlType {
+  EXAM
+  CREDIT
+  DIFFERENTIATED_CREDIT
+  COURSEWORK
+  OTHER
+}
+
+enum RequestType {
+  CERTIFICATE
+  APPLICATION
+  OTHER
+}
+
+enum RequestStatus {
+  PENDING
+  IN_PROGRESS
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  login        String   @unique
+  passwordHash String
+  role         UserRole @default(STUDENT)
+  student      Student?
+  createdAt    DateTime @default(now())
+}
+
+model Student {
+  id            Int            @id @default(autoincrement())
+  userId        Int            @unique
+  fullName      String
+  faculty       String
+  direction     String
+  course        Int
+  groupId       Int
+  user          User           @relation(fields: [userId], references: [id], onDelete: Restrict)
+  group         StudentGroup   @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  grades        Grade[]
+  requests      Request[]
+  notifications Notification[]
+
+  @@index([groupId])
+}
+
+model StudentGroup {
+  id            Int            @id @default(autoincrement())
+  name          String         @unique
+  students      Student[]
+  scheduleItems ScheduleItem[]
+  notifications Notification[]
+}
+
+model Subject {
+  id            Int            @id @default(autoincrement())
+  name          String
+  teacher       String
+  scheduleItems ScheduleItem[]
+  grades        Grade[]
+}
+
+model ScheduleItem {
+  id            Int           @id @default(autoincrement())
+  subjectId     Int
+  groupId       Int?
+  weekday       Weekday?
+  date          DateTime?     @db.Date
+  startTime     DateTime      @db.Time(0)
+  endTime       DateTime      @db.Time(0)
+  classroom     String
+  teacher       String
+  isRescheduled Boolean       @default(false)
+  comment       String?
+  subject       Subject       @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  group         StudentGroup? @relation(fields: [groupId], references: [id], onDelete: Restrict)
+
+  @@index([subjectId])
+  @@index([groupId])
+  @@index([date])
+  @@index([weekday])
+}
+
+model Grade {
+  id          Int         @id @default(autoincrement())
+  studentId   Int
+  subjectId   Int
+  semester    String
+  controlType ControlType
+  value       String
+  student     Student     @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  subject     Subject     @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  createdAt   DateTime    @default(now())
+
+  @@index([studentId])
+  @@index([subjectId])
+}
+
+model Request {
+  id        Int           @id @default(autoincrement())
+  studentId Int
+  type      RequestType
+  status    RequestStatus @default(PENDING)
+  comment   String?
+  student   Student       @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([studentId])
+  @@index([status])
+}
+
+model Notification {
+  id        Int           @id @default(autoincrement())
   title     String
-  createdAt DateTime @default(now())
+  text      String
+  date      DateTime      @default(now())
+  deadline  DateTime?
+  studentId Int?
+  groupId   Int?
+  student   Student?      @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  group     StudentGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+
+  @@index([studentId])
+  @@index([groupId])
+  @@index([date])
+  @@index([deadline])
 }
