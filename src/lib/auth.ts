@@ -37,7 +37,7 @@ const authenticatedUserSelect = {
 export type AuthenticatedUser = {
   id: number;
   login: string;
-  role: "STUDENT" | "TEACHER" | "ADMIN";
+  role: "STUDENT" | "STAFF";
   student: {
     id: number;
     fullName: string;
@@ -48,6 +48,16 @@ export type AuthenticatedUser = {
       id: number;
       name: string;
     };
+  } | null;
+};
+
+export type SessionPrincipal = {
+  role: AuthenticatedUser["role"];
+  studentId: number | null;
+  staffProfile: {
+    id: number;
+    department: string;
+    isSupervisor: boolean;
   } | null;
 };
 
@@ -79,6 +89,31 @@ export async function verifyPassword(
     return false;
   }
   return bcrypt.compare(password, passwordHash);
+}
+
+export async function assertSameSiteRequest(): Promise<void> {
+  let requestHeaders: Headers;
+  try {
+    requestHeaders = await headers();
+  } catch {
+    return;
+  }
+
+  const origin = requestHeaders.get("origin")?.trim();
+  const host = requestHeaders.get("host")?.trim();
+
+  if (!origin || !host) {
+    return;
+  }
+
+  try {
+    const parsedOrigin = new URL(origin);
+    if (parsedOrigin.host !== host) {
+      throw new Error("Origin does not match the current host.");
+    }
+  } catch {
+    throw new Error("Invalid request origin.");
+  }
 }
 
 function sha256(value: string): string {
@@ -181,10 +216,10 @@ async function registerLoginAttempt(keyHash: string): Promise<boolean> {
   return attempts <= LOGIN_ATTEMPT_LIMIT;
 }
 
-export async function loginUser(
+export async function authenticateUserForLogin(
   loginInput: string,
   passwordInput: string,
-): Promise<AuthenticatedUser | null> {
+): Promise<{ user: AuthenticatedUser | null; attemptKey: string }> {
   const login =
     typeof loginInput === "string" ? loginInput.trim().toLowerCase() : "";
   const password = typeof passwordInput === "string" ? passwordInput : "";
@@ -215,16 +250,34 @@ export async function loginUser(
     user?.passwordHash ?? DUMMY_PASSWORD_HASH,
   );
   if (!user || !passwordMatches) {
+    return { user: null, attemptKey };
+  }
+
+  return {
+    user: {
+      id: user.id,
+      login: user.login,
+      role: user.role,
+      student: user.student,
+    },
+    attemptKey,
+  };
+}
+
+export async function loginUser(
+  loginInput: string,
+  passwordInput: string,
+): Promise<AuthenticatedUser | null> {
+  const { user, attemptKey } = await authenticateUserForLogin(
+    loginInput,
+    passwordInput,
+  );
+  if (!user) {
     return null;
   }
 
   await persistSession(user.id, attemptKey);
-  return {
-    id: user.id,
-    login: user.login,
-    role: user.role,
-    student: user.student,
-  };
+  return user;
 }
 
 export async function getCurrentUser(): Promise<AuthenticatedUser | null> {
@@ -254,6 +307,36 @@ export async function getCurrentUser(): Promise<AuthenticatedUser | null> {
   }
 
   return session.user;
+}
+
+export async function getSessionPrincipalForToken(
+  token: string,
+): Promise<SessionPrincipal | null> {
+  const session = await getPrisma().session.findUnique({
+    where: { tokenHash: sha256(token) },
+    select: {
+      expiresAt: true,
+      user: {
+        select: {
+          role: true,
+          student: { select: { id: true } },
+          staffProfile: {
+            select: { id: true, department: true, isSupervisor: true },
+          },
+        },
+      },
+    },
+  });
+
+  if (!session || session.expiresAt.getTime() <= Date.now()) {
+    return null;
+  }
+
+  return {
+    role: session.user.role,
+    studentId: session.user.student?.id ?? null,
+    staffProfile: session.user.staffProfile,
+  };
 }
 
 export async function deleteSession(): Promise<void> {

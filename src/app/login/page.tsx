@@ -17,7 +17,7 @@ function LoginFallback() {
 async function LoginContent() {
   const user = await getCurrentUser();
   if (user) {
-    redirect("/");
+    redirect(user.role === "STAFF" ? "/staff" : "/");
   }
 
   return (

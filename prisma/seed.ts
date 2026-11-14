@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
@@ -89,6 +90,30 @@ const environmentAccounts = [
     direction: "Хроники дальних систем",
     groupName: "ЗР-203",
     course: 4,
+  },
+] as const;
+
+const staffAccounts = [
+  {
+    login: "staff.demo",
+    fullName: "Мирослава Лунная",
+    position: "специалист учебного отдела",
+    department: "Учебный отдел",
+    isSupervisor: false,
+  },
+  {
+    login: "staff.other",
+    fullName: "Тихон Северозвёздный",
+    position: "специалист по работе со студентами",
+    department: "Отдел по работе со студентами",
+    isSupervisor: false,
+  },
+  {
+    login: "staff.manager",
+    fullName: "Лада Меридиан",
+    position: "старший специалист учебного отдела",
+    department: "Учебный отдел",
+    isSupervisor: true,
   },
 ] as const;
 
@@ -241,6 +266,16 @@ async function main() {
       return { ...account, password };
     }),
   ];
+  const staffDemoPassword = process.env.SEED_STAFF_PASSWORD;
+  if (!staffDemoPassword) {
+    throw new Error(
+      "SEED_STAFF_PASSWORD must be set in .env to seed staff.demo.",
+    );
+  }
+  const managedLogins = [
+    ...accounts.map((account) => account.login),
+    ...staffAccounts.map((account) => account.login),
+  ];
   const groupNames = [...new Set(accounts.map((account) => account.groupName))];
   const managedGroupNames = [
     ...new Set([...groupNames, ...legacyTargetGroupNames]),
@@ -254,13 +289,18 @@ async function main() {
   });
 
   try {
-    const passwordHashes = await Promise.all(
-      accounts.map((account) => bcrypt.hash(account.password, 12)),
-    );
+    const [passwordHashes, staffDemoPasswordHash, staffOtherPasswordHash] =
+      await Promise.all([
+        Promise.all(
+          accounts.map((account) => bcrypt.hash(account.password, 12)),
+        ),
+        bcrypt.hash(staffDemoPassword, 12),
+        bcrypt.hash(randomBytes(32).toString("hex"), 12),
+      ]);
 
     await prisma.$transaction(async (tx) => {
       const users = await tx.user.findMany({
-        where: { login: { in: accounts.map((account) => account.login) } },
+        where: { login: { in: managedLogins } },
         select: { id: true },
       });
       const students = await tx.student.findMany({
@@ -304,7 +344,7 @@ async function main() {
         where: { userId: { in: users.map((user) => user.id) } },
       });
       await tx.user.deleteMany({
-        where: { login: { in: accounts.map((account) => account.login) } },
+        where: { login: { in: managedLogins } },
       });
       await tx.studentGroup.deleteMany({
         where: {
@@ -329,6 +369,7 @@ async function main() {
         subjectIds.push(createdSubject.id);
       }
 
+      const studentIds = new Map<string, number>();
       for (const [index, account] of accounts.entries()) {
         const user = await tx.user.create({
           data: {
@@ -347,6 +388,7 @@ async function main() {
             groupId: getGroupId(groupIds, account.groupName),
           },
         });
+        studentIds.set(account.login, student.id);
 
         for (const [subjectIndex, subjectId] of subjectIds.entries()) {
           const controlTypes = [
@@ -375,20 +417,6 @@ async function main() {
         }
 
         if (account.login === "student.alpha") {
-          const requests = [
-            { type: "CERTIFICATE", status: "PENDING" },
-            { type: "APPLICATION", status: "IN_PROGRESS" },
-          ] as const;
-          for (const [requestIndex, request] of requests.entries()) {
-            await tx.request.create({
-              data: {
-                studentId: student.id,
-                ...request,
-                comment: `Вымышленная тестовая заявка ${requestIndex + 1}.`,
-              },
-            });
-          }
-
           const notifications = [
             {
               title: "[DEMO] Сдать план практики",
@@ -415,6 +443,78 @@ async function main() {
             });
           }
         }
+      }
+
+      const staffProfileIds = new Map<string, number>();
+      for (const account of staffAccounts) {
+        const user = await tx.user.create({
+          data: {
+            login: account.login,
+            passwordHash:
+              account.login === "staff.other"
+                ? staffOtherPasswordHash
+                : staffDemoPasswordHash,
+            role: "STAFF",
+            staffProfile: {
+              create: {
+                fullName: account.fullName,
+                position: account.position,
+                department: account.department,
+                isSupervisor: account.isSupervisor,
+              },
+            },
+          },
+          include: { staffProfile: { select: { id: true } } },
+        });
+        if (!user.staffProfile) {
+          throw new Error(`Staff profile was not created for ${account.login}.`);
+        }
+        staffProfileIds.set(account.login, user.staffProfile.id);
+      }
+
+      const alphaStudentId = studentIds.get("student.alpha");
+      const betaStudentId = studentIds.get("student.beta");
+      const demoStaffProfileId = staffProfileIds.get("staff.demo");
+      const otherStaffProfileId = staffProfileIds.get("staff.other");
+      if (
+        alphaStudentId === undefined ||
+        betaStudentId === undefined ||
+        demoStaffProfileId === undefined ||
+        otherStaffProfileId === undefined
+      ) {
+        throw new Error("The staff request seed accounts were not created.");
+      }
+
+      const testRequests = [
+        {
+          studentId: alphaStudentId,
+          type: "CERTIFICATE",
+          status: "NEW",
+          assignedToId: demoStaffProfileId,
+          comment: "[TEST SEED STAFF] Заявка назначена staff.demo.",
+        },
+        {
+          studentId: betaStudentId,
+          type: "CERTIFICATE",
+          status: "IN_PROGRESS",
+          comment: "[TEST SEED STAFF] Разрешённый тип без назначения.",
+        },
+        {
+          studentId: alphaStudentId,
+          type: "CERTIFICATE",
+          status: "READY",
+          assignedToId: otherStaffProfileId,
+          comment: "[TEST SEED STAFF] Заявка назначена staff.other.",
+        },
+        {
+          studentId: betaStudentId,
+          type: "APPLICATION",
+          status: "REJECTED",
+          comment: "[TEST SEED STAFF] Тип не разрешён staff.demo.",
+        },
+      ] as const;
+      for (const request of testRequests) {
+        await tx.request.create({ data: request });
       }
 
       const monday = nextMonday();

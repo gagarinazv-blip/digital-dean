@@ -19,9 +19,10 @@ export const scheduleStatusLabels: Record<ScheduleStatus, string> = {
 };
 
 export const requestStatusLabels: Record<RequestStatus, string> = {
-  PENDING: "Ожидает",
+  NEW: "Новая",
   IN_PROGRESS: "В работе",
-  APPROVED: "Одобрена",
+  NEEDS_INFO: "Нужны данные",
+  READY: "Готова",
   REJECTED: "Отклонена",
 };
 

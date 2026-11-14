@@ -1,16 +1,17 @@
 "use client";
 
 import { useActionState } from "react";
-import { loginAction, type LoginActionState } from "./actions";
+import { loginStudentAction, type LoginActionState } from "./actions";
 import styles from "./login.module.css";
 
 const initialState: LoginActionState = {};
 
-export function LoginForm() {
-  const [state, formAction, pending] = useActionState(
-    loginAction,
-    initialState,
-  );
+type LoginFormProps = {
+  action?: typeof loginStudentAction;
+};
+
+export function LoginForm({ action = loginStudentAction }: LoginFormProps) {
+  const [state, formAction, pending] = useActionState(action, initialState);
 
   return (
     <form action={formAction} className={styles.form}>

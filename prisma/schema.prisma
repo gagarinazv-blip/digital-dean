@@ -14,8 +14,7 @@ datasource db {
 
 enum UserRole {
   STUDENT
-  TEACHER
-  ADMIN
+  STAFF
 }
 
 enum Weekday {
@@ -55,20 +54,28 @@ enum RequestType {
 }
 
 enum RequestStatus {
-  PENDING
+  NEW
   IN_PROGRESS
-  APPROVED
+  NEEDS_INFO
+  READY
   REJECTED
 }
 
+enum RequestCommentVisibility {
+  PUBLIC
+  INTERNAL
+}
+
 model User {
-  id           Int       @id @default(autoincrement())
-  login        String    @unique
-  passwordHash String
-  role         UserRole  @default(STUDENT)
-  student      Student?
-  sessions     Session[]
-  createdAt    DateTime  @default(now())
+  id              Int              @id @default(autoincrement())
+  login           String           @unique
+  passwordHash    String
+  role            UserRole         @default(STUDENT)
+  student         Student?
+  staffProfile    StaffProfile?
+  sessions        Session[]
+  requestComments RequestComment[] @relation("RequestCommentAuthor")
+  createdAt       DateTime         @default(now())
 }
 
 model Session {
@@ -106,6 +113,17 @@ model Student {
   notifications Notification[]
 
   @@index([groupId])
+}
+
+model StaffProfile {
+  id               Int       @id @default(autoincrement())
+  userId           Int       @unique
+  fullName         String
+  position         String
+  department       String
+  isSupervisor     Boolean   @default(false)
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignedRequests Request[] @relation("AssignedStaffRequests")
 }
 
 model StudentGroup {
@@ -168,17 +186,49 @@ model Grade {
 }
 
 model Request {
-  id        Int           @id @default(autoincrement())
-  studentId Int
-  type      RequestType
-  status    RequestStatus @default(PENDING)
-  comment   String?
-  student   Student       @relation(fields: [studentId], references: [id], onDelete: Restrict)
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  id           Int              @id @default(autoincrement())
+  studentId    Int
+  type         RequestType
+  status       RequestStatus    @default(NEW)
+  comment      String?
+  assignedToId Int?
+  student      Student          @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  assignedTo   StaffProfile?    @relation("AssignedStaffRequests", fields: [assignedToId], references: [id], onDelete: SetNull)
+  comments     RequestComment[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 
   @@index([studentId])
   @@index([status])
+  @@index([assignedToId])
+}
+
+model RequestComment {
+  id           Int                      @id @default(autoincrement())
+  requestId    Int
+  authorUserId Int
+  visibility   RequestCommentVisibility @default(PUBLIC)
+  content      String                   @db.Text
+  request      Request                  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  author       User                     @relation("RequestCommentAuthor", fields: [authorUserId], references: [id], onDelete: Restrict)
+  attachments  RequestAttachment[]
+  createdAt    DateTime                 @default(now())
+
+  @@index([requestId, createdAt])
+  @@index([authorUserId])
+}
+
+model RequestAttachment {
+  id        Int            @id @default(autoincrement())
+  commentId Int
+  fileName  String
+  mediaType String
+  sizeBytes Int
+  data      Bytes
+  comment   RequestComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+
+  @@index([commentId])
 }
 
 model Notification {

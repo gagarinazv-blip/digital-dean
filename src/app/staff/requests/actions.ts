@@ -1,0 +1,252 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { notFound } from "next/navigation";
+import { assertSameSiteRequest } from "@/lib/auth";
+import { getPrisma } from "@/lib/prisma";
+import type { RequestActionState } from "@/lib/request-action-state";
+import {
+  canStaffAssignRequest,
+  canStaffChangeStatus,
+  canStaffManageAssignedRequest,
+} from "@/lib/permissions";
+import {
+  getStaffRequestFilter,
+  isRequestStatus,
+  parsePositiveIntegerId,
+} from "@/lib/request-workflow";
+import { requireStaffContext } from "@/lib/staff";
+
+const MAX_MESSAGE_LENGTH = 5000;
+
+async function getActionRequest(
+  requestId: number,
+  staff: Awaited<ReturnType<typeof requireStaffContext>>["staff"],
+) {
+  const request = await getPrisma().request.findFirst({
+    where: {
+      id: requestId,
+      ...getStaffRequestFilter(staff),
+    },
+    select: { id: true, status: true, assignedToId: true, type: true },
+  });
+  if (!request) {
+    notFound();
+  }
+  return request;
+}
+
+async function ensureRequestStillAccessible(
+  requestId: number,
+  staff: Awaited<ReturnType<typeof requireStaffContext>>["staff"],
+): Promise<void> {
+  const request = await getPrisma().request.findFirst({
+    where: {
+      id: requestId,
+      ...getStaffRequestFilter(staff),
+    },
+    select: { id: true },
+  });
+  if (!request) {
+    notFound();
+  }
+}
+
+function getRequestId(formData: FormData): number {
+  const rawId = formData.get("requestId");
+  const requestId = parsePositiveIntegerId(
+    typeof rawId === "string" ? rawId : null,
+  );
+  if (requestId === null) {
+    notFound();
+  }
+  return requestId;
+}
+
+function getOptionalMessage(formData: FormData): string | null {
+  const value = formData.get("content");
+  if (typeof value !== "string") {
+    return null;
+  }
+  const content = value.trim();
+  return content.length <= MAX_MESSAGE_LENGTH ? content : null;
+}
+
+function revalidateStaffRequestPaths(requestId: number): void {
+  revalidatePath("/");
+  revalidatePath("/staff");
+  revalidatePath(`/staff/requests/${requestId}`);
+  revalidatePath("/requests");
+  revalidatePath(`/requests/${requestId}`);
+}
+
+export async function updateRequestStatusAction(
+  _previousState: RequestActionState,
+  formData: FormData,
+): Promise<RequestActionState> {
+  await assertSameSiteRequest();
+  const { userId, staff } = await requireStaffContext();
+  const requestId = getRequestId(formData);
+  const rawStatus = formData.get("status");
+  if (typeof rawStatus !== "string" || !isRequestStatus(rawStatus)) {
+    return { error: "Выберите допустимый статус." };
+  }
+
+  const content = getOptionalMessage(formData);
+  if (content === null) {
+    return { error: "Сообщение слишком длинное." };
+  }
+  if (
+    (rawStatus === "NEEDS_INFO" || rawStatus === "REJECTED") &&
+    content.length === 0
+  ) {
+    return {
+      error:
+        rawStatus === "NEEDS_INFO"
+          ? "Напишите студенту, какие данные нужно добавить."
+          : "Объясните студенту причину отклонения.",
+    };
+  }
+
+  const request = await getActionRequest(requestId, staff);
+  if (!canStaffChangeStatus(staff, request, rawStatus)) {
+    return {
+      error:
+        request.assignedToId === null
+          ? "Сначала возьмите заявку в работу."
+          : "Этот переход статуса недопустим. Обновите страницу.",
+    };
+  }
+
+  const updated = await getPrisma().$transaction(async (tx) => {
+    const result = await tx.request.updateMany({
+      where: {
+        id: request.id,
+        status: request.status,
+        assignedToId: staff.id,
+      },
+      data: { status: rawStatus, updatedAt: new Date() },
+    });
+    if (result.count !== 1) {
+      return false;
+    }
+
+    if (rawStatus === "NEEDS_INFO" || rawStatus === "REJECTED") {
+      await tx.requestComment.create({
+        data: {
+          requestId: request.id,
+          authorUserId: userId,
+          visibility: "PUBLIC",
+          content,
+        },
+      });
+    }
+    return true;
+  });
+
+  if (!updated) {
+    await ensureRequestStillAccessible(requestId, staff);
+    return {
+      error: "Заявка уже изменилась. Обновите страницу и попробуйте снова.",
+    };
+  }
+
+  revalidateStaffRequestPaths(requestId);
+  return { success: "Статус заявки обновлён." };
+}
+
+export async function addStaffCommentAction(
+  _previousState: RequestActionState,
+  formData: FormData,
+): Promise<RequestActionState> {
+  await assertSameSiteRequest();
+  const { userId, staff } = await requireStaffContext();
+  const requestId = getRequestId(formData);
+  const rawVisibility = formData.get("visibility");
+  if (rawVisibility !== "PUBLIC" && rawVisibility !== "INTERNAL") {
+    return { error: "Выберите видимость комментария." };
+  }
+
+  const content = getOptionalMessage(formData);
+  if (content === null || content.length === 0) {
+    return { error: "Добавьте комментарий длиной до 5000 символов." };
+  }
+
+  const request = await getActionRequest(requestId, staff);
+  if (!canStaffManageAssignedRequest(staff, request)) {
+    return { error: "Сначала возьмите заявку в работу." };
+  }
+
+  const saved = await getPrisma().$transaction(async (tx) => {
+    const updated = await tx.request.updateMany({
+      where: {
+        id: request.id,
+        assignedToId: staff.id,
+      },
+      data: { updatedAt: new Date() },
+    });
+    if (updated.count !== 1) {
+      return false;
+    }
+
+    await tx.requestComment.create({
+      data: {
+        requestId: request.id,
+        authorUserId: userId,
+        visibility: rawVisibility,
+        content,
+      },
+    });
+    return true;
+  });
+  if (!saved) {
+    await ensureRequestStillAccessible(requestId, staff);
+    return {
+      error: "Заявка уже изменилась. Обновите страницу и попробуйте снова.",
+    };
+  }
+
+  revalidateStaffRequestPaths(requestId);
+  return { success: "Комментарий добавлен." };
+}
+
+export async function assignRequestAction(
+  _previousState: RequestActionState,
+  formData: FormData,
+): Promise<RequestActionState> {
+  await assertSameSiteRequest();
+  const { staff } = await requireStaffContext();
+  const requestId = getRequestId(formData);
+  const request = await getActionRequest(requestId, staff);
+  const rawAssigneeId = formData.get("assignedToId");
+  const assignedToId =
+    typeof rawAssigneeId === "string"
+      ? parsePositiveIntegerId(rawAssigneeId)
+      : null;
+  if (
+    assignedToId === null ||
+    !canStaffAssignRequest(staff, request, assignedToId)
+  ) {
+    return {
+      error: "Можно взять только разрешённую свободную заявку и только себе.",
+    };
+  }
+
+  const updated = await getPrisma().request.updateMany({
+    where: {
+      id: request.id,
+      assignedToId: null,
+      ...getStaffRequestFilter(staff),
+    },
+    data: { assignedToId: staff.id, updatedAt: new Date() },
+  });
+  if (updated.count !== 1) {
+    await ensureRequestStillAccessible(requestId, staff);
+    return {
+      error: "Назначение уже изменилось. Обновите страницу и попробуйте снова.",
+    };
+  }
+
+  revalidateStaffRequestPaths(requestId);
+  return { success: "Заявка взята в работу." };
+}

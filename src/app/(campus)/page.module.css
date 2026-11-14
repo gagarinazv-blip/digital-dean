@@ -291,6 +291,11 @@
   color: #2447a8;
 }
 
+.statusNeedsInfo {
+  background: #fff4dc;
+  color: #805500;
+}
+
 .statusApproved {
   background: #e8f7ed;
   color: #236b3b;

@@ -1,14 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { notFoundMock, redirectMock, getCurrentUserMock, findStudentMock } =
-  vi.hoisted(() => ({
-    notFoundMock: vi.fn(),
-    redirectMock: vi.fn(),
-    getCurrentUserMock: vi.fn(),
-    findStudentMock: vi.fn(),
-  }));
+const {
+  forbiddenMock,
+  notFoundMock,
+  redirectMock,
+  getCurrentUserMock,
+  findStudentMock,
+} = vi.hoisted(() => ({
+  forbiddenMock: vi.fn(),
+  notFoundMock: vi.fn(),
+  redirectMock: vi.fn(),
+  getCurrentUserMock: vi.fn(),
+  findStudentMock: vi.fn(),
+}));
 
 vi.mock("next/navigation", () => ({
+  forbidden: forbiddenMock,
   notFound: notFoundMock,
   redirect: redirectMock,
 }));
@@ -46,6 +53,9 @@ beforeEach(() => {
   redirectMock.mockImplementation((path: string) => {
     throw new Error(`Redirected to ${path}`);
   });
+  forbiddenMock.mockImplementation(() => {
+    throw new Error("Forbidden");
+  });
   notFoundMock.mockImplementation(() => {
     throw new Error("Not found");
   });
@@ -78,6 +88,20 @@ describe("requireStudent", () => {
     await expect(requireStudent()).rejects.toThrow("Redirected to /login");
 
     expect(redirectMock).toHaveBeenCalledWith("/login");
+    expect(findStudentMock).not.toHaveBeenCalled();
+  });
+
+  it("forbids staff without querying student data", async () => {
+    getCurrentUserMock.mockResolvedValue({
+      id: 10,
+      login: "staff.demo",
+      role: "STAFF",
+      student: null,
+    });
+
+    await expect(requireStudent()).rejects.toThrow("Forbidden");
+
+    expect(forbiddenMock).toHaveBeenCalledOnce();
     expect(findStudentMock).not.toHaveBeenCalled();
   });
 

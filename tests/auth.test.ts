@@ -14,9 +14,11 @@ vi.mock("@/lib/prisma", () => ({
 import { cookies, headers } from "next/headers";
 import { getPrisma } from "@/lib/prisma";
 import {
+  assertSameSiteRequest,
   createSession,
   deleteSession,
   getCurrentUser,
+  getSessionPrincipalForToken,
   loginUser,
   TooManyLoginAttemptsError,
   verifyPassword,
@@ -81,7 +83,11 @@ beforeEach(() => {
   process.env.SESSION_TTL_MINUTES = "60";
   vi.mocked(cookies).mockResolvedValue(cookieStoreMock as never);
   vi.mocked(headers).mockResolvedValue(
-    new Headers({ "x-real-ip": "127.0.0.1" }) as never,
+    new Headers({
+      "x-real-ip": "127.0.0.1",
+      host: "digital-dean.test",
+      origin: "https://digital-dean.test",
+    }) as never,
   );
   vi.mocked(getPrisma).mockReturnValue(prismaMock as never);
   prismaMock.$transaction.mockImplementation(
@@ -105,6 +111,28 @@ describe("password verification", () => {
     ).resolves.toBe(true);
     await expect(verifyPassword("wrong-demo-password", hash)).resolves.toBe(
       false,
+    );
+  });
+
+  it("accepts same-site origins and rejects mismatched origins", async () => {
+    vi.mocked(headers).mockResolvedValue(
+      new Headers({
+        host: "digital-dean.test",
+        origin: "https://digital-dean.test",
+      }) as never,
+    );
+
+    await expect(assertSameSiteRequest()).resolves.toBeUndefined();
+
+    vi.mocked(headers).mockResolvedValue(
+      new Headers({
+        host: "digital-dean.test",
+        origin: "https://evil.example",
+      }) as never,
+    );
+
+    await expect(assertSameSiteRequest()).rejects.toThrow(
+      "Invalid request origin.",
     );
   });
 });
@@ -166,6 +194,59 @@ describe("session lifecycle", () => {
     expect(sessionDeleteMany).toHaveBeenCalledWith({
       where: { id: "expired-session" },
     });
+  });
+
+  it("returns the request-access principal for a valid token", async () => {
+    sessionFindUnique.mockResolvedValue({
+      expiresAt: new Date(Date.now() + 60_000),
+      user: {
+        role: "STUDENT",
+        student: { id: 3 },
+        staffProfile: null,
+      },
+    });
+
+    await expect(
+      getSessionPrincipalForToken("valid-session-token"),
+    ).resolves.toEqual({
+      role: "STUDENT",
+      studentId: 3,
+      staffProfile: null,
+    });
+    expect(sessionFindUnique).toHaveBeenCalledWith({
+      where: {
+        tokenHash: createHash("sha256")
+          .update("valid-session-token")
+          .digest("hex"),
+      },
+      select: {
+        expiresAt: true,
+        user: {
+          select: {
+            role: true,
+            student: { select: { id: true } },
+            staffProfile: {
+              select: { id: true, department: true, isSupervisor: true },
+            },
+          },
+        },
+      },
+    });
+  });
+
+  it("does not return a principal for an expired token", async () => {
+    sessionFindUnique.mockResolvedValue({
+      expiresAt: new Date(Date.now() - 1),
+      user: {
+        role: "STUDENT",
+        student: { id: 3 },
+        staffProfile: null,
+      },
+    });
+
+    await expect(
+      getSessionPrincipalForToken("expired-session-token"),
+    ).resolves.toBeNull();
   });
 
   it("returns null without reading the database when there is no cookie", async () => {

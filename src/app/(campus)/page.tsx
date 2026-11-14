@@ -15,9 +15,10 @@ import { requestStatusLabels, requestTypeLabels } from "@/lib/campus-labels";
 import styles from "./page.module.css";
 
 const requestStatusClasses: Record<RequestStatus, string> = {
-  PENDING: styles.statusPending,
+  NEW: styles.statusPending,
   IN_PROGRESS: styles.statusInProgress,
-  APPROVED: styles.statusApproved,
+  NEEDS_INFO: styles.statusNeedsInfo,
+  READY: styles.statusApproved,
   REJECTED: styles.statusRejected,
 };
 

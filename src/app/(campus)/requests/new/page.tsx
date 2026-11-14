@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { CampusPlaceholder, CampusSection } from "@/components/campus-section";
+import { CampusSection } from "@/components/campus-section";
+import { NewRequestForm } from "@/app/(campus)/requests/request-forms";
+import workflowStyles from "@/app/request-workflow.module.css";
 import styles from "../../../sections.module.css";
 
 export default function NewRequestPage() {
@@ -7,13 +9,16 @@ export default function NewRequestPage() {
     <CampusSection
       eyebrow="Обращения"
       title="Новая заявка"
-      description="Раздел появится скоро."
+      description="Опишите обращение и при необходимости приложите документы."
     >
-      <CampusPlaceholder description="Форма подачи заявки появится здесь.">
+      <div className={workflowStyles.stack}>
+        <section className={workflowStyles.panel}>
+          <NewRequestForm />
+        </section>
         <Link className={styles.link} href="/requests">
-          Вернуться к списку заявок
+          Вернуться к заявкам
         </Link>
-      </CampusPlaceholder>
+      </div>
     </CampusSection>
   );
 }
