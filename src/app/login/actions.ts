@@ -49,5 +49,5 @@ export async function loginAction(
     return { error: "Неверный логин или пароль." };
   }
 
-  redirect("/profile");
+  redirect("/");
 }

@@ -168,6 +168,7 @@ model Notification {
   text      String
   date      DateTime      @default(now())
   deadline  DateTime?
+  isRead    Boolean       @default(false)
   studentId Int?
   groupId   Int?
   student   Student?      @relation(fields: [studentId], references: [id], onDelete: SetNull)

@@ -1,0 +1,343 @@
+.page {
+  padding: 30px 0 56px;
+}
+
+.welcome {
+  padding: 28px 32px;
+  border: 1px solid #e1e7f2;
+  border-radius: 20px;
+  background:
+    radial-gradient(ellipse at 92% 10%, rgb(220 232 255 / 70%), transparent 35%),
+    #fff;
+  box-shadow: 0 12px 32px rgb(29 47 83 / 5%);
+}
+
+.welcome h1 {
+  margin-top: 6px;
+  font-size: clamp(26px, 4vw, 36px);
+  line-height: 1.18;
+  letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
+}
+
+.welcomeText {
+  margin-top: 10px;
+  color: #6b7891;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.welcomeText strong {
+  color: #34415b;
+}
+
+.eyebrow {
+  color: #61739a;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.quickActions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.actionTile {
+  min-width: 0;
+  min-height: 112px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 10px;
+  border: 1px solid #e1e7f2;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgb(29 47 83 / 4%);
+  color: #34415b;
+  text-align: center;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.actionTile:hover {
+  transform: translateY(-2px);
+  border-color: #b7c8ec;
+  box-shadow: 0 12px 26px rgb(29 47 83 / 8%);
+}
+
+.actionTile:focus-visible {
+  outline: 3px solid #8da7e8;
+  outline-offset: 2px;
+}
+
+.actionIcon {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: #edf2ff;
+  color: #2447a8;
+}
+
+.actionIcon svg {
+  width: 25px;
+  height: 25px;
+}
+
+.unreadBadge {
+  position: absolute;
+  top: -7px;
+  right: -11px;
+  min-width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  padding: 0 5px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #bd3440;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.actionLabel {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.dashboardGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.card {
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid #e4e9f2;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgb(29 47 83 / 4%);
+}
+
+.cardHeading h2 {
+  font-size: 18px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.cardHeading .eyebrow {
+  margin-bottom: 6px;
+  letter-spacing: 0.03em;
+  text-transform: none;
+}
+
+.lesson {
+  margin-top: 18px;
+}
+
+.lesson > strong,
+.request > strong {
+  display: block;
+  font-size: 17px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.lesson p,
+.request p {
+  margin-top: 7px;
+  color: #68758e;
+  font-size: 14px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.emptyState {
+  margin-top: 16px;
+  color: #68758e;
+  font-size: 14px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.textLink {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  margin-top: 6px;
+  color: #2447a8;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.textLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.textLink:focus-visible {
+  outline: 3px solid #8da7e8;
+  outline-offset: 2px;
+}
+
+.compactList,
+.changeList {
+  display: grid;
+  gap: 0;
+  margin-top: 12px;
+  list-style: none;
+}
+
+.deadlineItem {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid #edf0f5;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.deadlineItem > span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.deadlineTime {
+  flex: 0 0 auto;
+  color: #2447a8;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.deadlineTime small {
+  display: block;
+  margin-top: 3px;
+  color: #77839a;
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.changeItem {
+  display: grid;
+  justify-items: start;
+  gap: 5px;
+  padding: 12px 0;
+  border-top: 1px solid #edf0f5;
+  overflow-wrap: anywhere;
+}
+
+.changeKind {
+  color: #61739a;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.changeItem strong {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.changeItem p,
+.changeItem time {
+  color: #68758e;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.request {
+  margin-top: 16px;
+}
+
+.statusBadge {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  margin-top: 10px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.statusPending {
+  background: #fff4dc;
+  color: #805500;
+}
+
+.statusInProgress {
+  background: #eaf1ff;
+  color: #2447a8;
+}
+
+.statusApproved {
+  background: #e8f7ed;
+  color: #236b3b;
+}
+
+.statusRejected {
+  background: #fff0ef;
+  color: #a52e25;
+}
+
+@media (max-width: 680px) {
+  .page {
+    padding: 20px 0 36px;
+  }
+
+  .welcome {
+    padding: 20px;
+    border-radius: 16px;
+  }
+
+  .dashboardGrid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .quickActions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .card {
+    padding: 18px;
+  }
+
+  .deadlineItem {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 380px) {
+  .welcome {
+    padding: 16px;
+  }
+
+  .card {
+    padding: 16px;
+  }
+}

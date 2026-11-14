@@ -1,0 +1,180 @@
+.layout {
+  min-height: 100dvh;
+  padding-bottom: 0;
+  background: #f4f6fb;
+  color: #17213a;
+}
+
+.header {
+  border-bottom: 1px solid #e6eaf2;
+  background: #fff;
+}
+
+.headerInner,
+.navigation {
+  width: min(100% - 32px, 1120px);
+  margin: 0 auto;
+}
+
+.headerInner {
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.brand {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brandMark {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #2447a8;
+  color: #fff;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.brandText {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.brandText strong {
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.brandText > span {
+  color: #6b7891;
+  font-size: 12px;
+}
+
+.accountMenu {
+  position: relative;
+}
+
+.accountSummary {
+  min-height: 44px;
+  max-width: min(42vw, 260px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid #dce2ed;
+  border-radius: 10px;
+  background: #fff;
+  color: #34415b;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 650;
+  list-style: none;
+}
+
+.accountSummary::-webkit-details-marker {
+  display: none;
+}
+
+.accountName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountPopover {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(240px, calc(100vw - 32px));
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid #e1e6ef;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 12px 32px rgb(23 33 58 / 14%);
+}
+
+.accountMenuLink,
+.logout {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #34415b;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.logout {
+  width: 100%;
+  cursor: pointer;
+}
+
+.accountMenuLink:hover,
+.logout:hover {
+  background: #f2f5fb;
+}
+
+.accountSummary:focus-visible,
+.accountMenuLink:focus-visible,
+.logout:focus-visible {
+  outline: 3px solid #8da7e8;
+  outline-offset: 2px;
+}
+
+.content {
+  width: min(100% - 32px, 1120px);
+  margin: 0 auto;
+}
+
+@media (max-width: 680px) {
+  .layout {
+    padding-bottom: calc(70px + env(safe-area-inset-bottom));
+  }
+
+  .headerInner {
+    min-height: 68px;
+  }
+
+  .brand {
+    gap: 8px;
+  }
+
+  .brandMark {
+    width: 36px;
+    height: 36px;
+  }
+
+  .brandText strong {
+    font-size: 14px;
+  }
+
+  .brandText > span {
+    font-size: 11px;
+  }
+
+  .accountSummary {
+    max-width: 46vw;
+    gap: 5px;
+    padding: 7px 8px;
+    font-size: 12px;
+  }
+}

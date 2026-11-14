@@ -156,6 +156,18 @@ function nextMonday(): Date {
   return date;
 }
 
+function startOfUtcDay(date: Date): Date {
+  return new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
+  );
+}
+
+function addUtcDays(date: Date, days: number): Date {
+  const result = new Date(date);
+  result.setUTCDate(result.getUTCDate() + days);
+  return result;
+}
+
 function getGroupId(groupIds: Map<string, number>, name: string): number {
   const id = groupIds.get(name);
   if (id === undefined) {
@@ -187,6 +199,7 @@ async function main() {
     }),
   ];
   const groupNames = [...new Set(accounts.map((account) => account.groupName))];
+  const seedDay = startOfUtcDay(new Date());
 
   const prisma = new PrismaClient({
     adapter: new PrismaPg({ connectionString }),
@@ -306,35 +319,46 @@ async function main() {
           });
         }
 
-        const requestStatuses = [
-          "PENDING",
-          "IN_PROGRESS",
-          "APPROVED",
-        ] as const;
-        const requestTypes = ["CERTIFICATE", "APPLICATION", "OTHER"] as const;
-        for (const requestIndex of requestStatuses.keys()) {
-          await tx.request.create({
-            data: {
-              studentId: student.id,
-              type: requestTypes[requestIndex],
-              status: requestStatuses[requestIndex],
-              comment: `Тестовая заявка ${requestIndex + 1}; данные вымышлены.`,
-            },
-          });
-        }
+        if (account.login === "student.alpha") {
+          const requests = [
+            { type: "CERTIFICATE", status: "PENDING" },
+            { type: "APPLICATION", status: "IN_PROGRESS" },
+          ] as const;
+          for (const [requestIndex, request] of requests.entries()) {
+            await tx.request.create({
+              data: {
+                studentId: student.id,
+                ...request,
+                comment: `Вымышленная тестовая заявка ${requestIndex + 1}.`,
+              },
+            });
+          }
 
-        for (const notificationIndex of [1, 2]) {
-          await tx.notification.create({
-            data: {
-              studentId: student.id,
-              title: `[TEST SEED] Личное уведомление ${notificationIndex}`,
-              text: `Тестовая информация для ${account.fullName}.`,
-              deadline:
-                notificationIndex === 1
-                  ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-                  : null,
+          const notifications = [
+            {
+              title: "[DEMO] Сдать план практики",
+              text: "Отправьте вымышленный план практики на проверку.",
+              deadline: addUtcDays(seedDay, 1),
             },
-          });
+            {
+              title: "[DEMO] Записаться на консультацию",
+              text: "Выберите время консультации по учебному проекту.",
+              deadline: addUtcDays(seedDay, 3),
+            },
+            {
+              title: "[DEMO] Подтвердить тему проекта",
+              text: "Подтвердите вымышленную тему семестрового проекта.",
+              deadline: addUtcDays(seedDay, 5),
+            },
+          ] as const;
+          for (const notification of notifications) {
+            await tx.notification.create({
+              data: {
+                studentId: student.id,
+                ...notification,
+              },
+            });
+          }
         }
       }
 
@@ -344,6 +368,42 @@ async function main() {
         const groupIndex = groupNames.indexOf(account.groupName);
         if (groupScheduleIndexes.has(account.groupName)) continue;
         groupScheduleIndexes.set(account.groupName, groupIndex);
+
+        if (
+          account.login === "student.alpha" ||
+          account.login === "student.beta"
+        ) {
+          for (let dayIndex = 0; dayIndex < 7; dayIndex += 1) {
+            const moved =
+              account.login === "student.alpha" &&
+              (dayIndex === 1 || dayIndex === 4);
+            const subjectIndex = (dayIndex + groupIndex) % subjects.length;
+            const [start, end] = scheduleTimes[dayIndex % scheduleTimes.length];
+            const shiftedStart = moved
+              ? `${String(Number(start.slice(0, 2)) + 1).padStart(2, "0")}:${start.slice(3)}`
+              : start;
+            const shiftedEnd = moved
+              ? `${String(Number(end.slice(0, 2)) + 1).padStart(2, "0")}:${end.slice(3)}`
+              : end;
+
+            await tx.scheduleItem.create({
+              data: {
+                subjectId: subjectIds[subjectIndex],
+                groupId: getGroupId(groupIds, account.groupName),
+                date: addUtcDays(seedDay, dayIndex),
+                startTime: timeOfDay(shiftedStart),
+                endTime: timeOfDay(shiftedEnd),
+                classroom: `ДЕМО-${groupIndex + 1}0${dayIndex + 1}`,
+                teacher: subjects[subjectIndex].teacher,
+                isRescheduled: moved,
+                comment: moved
+                  ? "Вымышленная пара перенесена на один час позже."
+                  : null,
+              },
+            });
+          }
+          continue;
+        }
 
         for (const weekdayIndex of weekdays.keys()) {
           const moved = weekdayIndex === groupIndex;
