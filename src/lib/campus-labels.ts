@@ -2,7 +2,21 @@ import type {
   ControlType,
   RequestStatus,
   RequestType,
+  ScheduleKind,
+  ScheduleStatus,
 } from "@/generated/prisma/enums";
+
+export const scheduleKindLabels: Record<ScheduleKind, string> = {
+  LECTURE: "Лекция",
+  SEMINAR: "Семинар",
+  PRACTICE: "Практика",
+};
+
+export const scheduleStatusLabels: Record<ScheduleStatus, string> = {
+  PLANNED: "По плану",
+  RESCHEDULED: "Перенесено",
+  CANCELLED: "Отменено",
+};
 
 export const requestStatusLabels: Record<RequestStatus, string> = {
   PENDING: "Ожидает",

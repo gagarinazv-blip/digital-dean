@@ -144,7 +144,7 @@ async function CampusToday() {
                 {formatCampusTime(data.nextLesson.startTime)}–
                 {formatCampusTime(data.nextLesson.endTime)}
               </p>
-              <p>Аудитория {data.nextLesson.classroom}</p>
+              <p>Аудитория {data.nextLesson.room}</p>
               <p>Преподаватель: {data.nextLesson.teacher}</p>
             </div>
           ) : (

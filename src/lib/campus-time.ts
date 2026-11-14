@@ -14,6 +14,17 @@ const moscowTimeFormatter = new Intl.DateTimeFormat("en-US", {
   hourCycle: "h23",
 });
 
+const moscowDateTimeFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: "Europe/Moscow",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hourCycle: "h23",
+});
+
 const weekdaysByUtcDay: Weekday[] = [
   "SUNDAY",
   "MONDAY",
@@ -42,23 +53,22 @@ function addUtcDays(date: Date, days: number): Date {
   return result;
 }
 
-function moscowMidnightAsUtc(date: Date): Date {
+function moscowWallClockAsUtc(
+  date: Date,
+  hour: number,
+  minute: number,
+  second = 0,
+): Date {
   const wallClockAsUtc = Date.UTC(
     date.getUTCFullYear(),
     date.getUTCMonth(),
     date.getUTCDate(),
+    hour,
+    minute,
+    second,
   );
   const moscowParts = getNumericParts(
-    new Intl.DateTimeFormat("en-US", {
-      timeZone: "Europe/Moscow",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hourCycle: "h23",
-    }),
+    moscowDateTimeFormatter,
     new Date(wallClockAsUtc),
   );
   const shiftedWallClockAsUtc = Date.UTC(
@@ -70,6 +80,10 @@ function moscowMidnightAsUtc(date: Date): Date {
     moscowParts.second,
   );
   return new Date(wallClockAsUtc - (shiftedWallClockAsUtc - wallClockAsUtc));
+}
+
+function moscowMidnightAsUtc(date: Date): Date {
+  return moscowWallClockAsUtc(date, 0, 0);
 }
 
 export function getMoscowWeek(now = new Date()) {
@@ -93,6 +107,75 @@ export function getMoscowWeek(now = new Date()) {
       return weekdaysByUtcDay[addUtcDays(startDate, index).getUTCDay()];
     }),
   };
+}
+
+export function getMoscowCalendarWeek(now = new Date()) {
+  const todayParts = getNumericParts(moscowDateFormatter, now);
+  const today = new Date(
+    Date.UTC(todayParts.year, todayParts.month - 1, todayParts.day),
+  );
+  const daysSinceMonday = (today.getUTCDay() + 6) % 7;
+  const startDate = addUtcDays(today, -daysSinceMonday);
+  const endDate = addUtcDays(startDate, 7);
+
+  return {
+    startDate,
+    endDate,
+    startInstant: moscowMidnightAsUtc(startDate),
+    endInstant: moscowMidnightAsUtc(endDate),
+    todayKey: today.toISOString().slice(0, 10),
+    weekdays: Array.from({ length: 7 }, (_, index) => {
+      return weekdaysByUtcDay[addUtcDays(startDate, index).getUTCDay()];
+    }),
+  };
+}
+
+export function getMoscowDayRange(now = new Date()) {
+  const todayParts = getNumericParts(moscowDateFormatter, now);
+  const startDate = new Date(
+    Date.UTC(todayParts.year, todayParts.month - 1, todayParts.day),
+  );
+  const endDate = addUtcDays(startDate, 1);
+  const weekday = weekdaysByUtcDay[startDate.getUTCDay()];
+
+  return {
+    startDate,
+    endDate,
+    startInstant: moscowMidnightAsUtc(startDate),
+    endInstant: moscowMidnightAsUtc(endDate),
+    todayKey: startDate.toISOString().slice(0, 10),
+    weekdays: [weekday],
+  };
+}
+
+export function getMoscowWeekRange(now = new Date()) {
+  return getMoscowCalendarWeek(now);
+}
+
+export function getMoscowDateKey(date: Date): string {
+  const parts = getNumericParts(moscowDateFormatter, date);
+  return `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(
+    parts.day,
+  ).padStart(2, "0")}`;
+}
+
+export function getMoscowDateTime(date: Date, time: Date): Date {
+  return moscowWallClockAsUtc(
+    date,
+    time.getUTCHours(),
+    time.getUTCMinutes(),
+    time.getUTCSeconds(),
+  );
+}
+
+export function getMoscowDateTimeOnDate(date: Date, timeSource = new Date()) {
+  const timeParts = getNumericParts(moscowDateTimeFormatter, timeSource);
+  return moscowWallClockAsUtc(
+    date,
+    timeParts.hour,
+    timeParts.minute,
+    timeParts.second,
+  );
 }
 
 export function getCampusGreeting(now = new Date()): string {
@@ -157,6 +240,24 @@ export function formatMoscowDate(date: Date): string {
     timeZone: "Europe/Moscow",
     day: "numeric",
     month: "long",
+  }).format(date);
+}
+
+export function formatMoscowWeekdayDate(date: Date): string {
+  return new Intl.DateTimeFormat("ru-RU", {
+    timeZone: "Europe/Moscow",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(date);
+}
+
+export function formatMoscowTime(date: Date): string {
+  return new Intl.DateTimeFormat("ru-RU", {
+    timeZone: "Europe/Moscow",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
   }).format(date);
 }
 

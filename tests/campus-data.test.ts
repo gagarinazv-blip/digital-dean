@@ -104,22 +104,34 @@ describe("getCampusTodayData", () => {
         weekday: null,
         startTime: new Date("1970-01-01T10:00:00.000Z"),
         endTime: new Date("1970-01-01T11:00:00.000Z"),
-        classroom: "101",
+        startsAt: null,
+        endsAt: null,
+        originalStartsAt: null,
+        originalEndsAt: null,
+        originalRoom: null,
+        kind: "LECTURE",
+        room: "101",
         teacher: "Преподаватель 1",
-        isRescheduled: false,
-        comment: null,
+        status: "PLANNED",
+        changeNote: null,
         subject: { name: "Уже прошедшая пара" },
       },
       {
         id: 21,
         date: new Date("2026-11-15T00:00:00.000Z"),
         weekday: null,
-        startTime: new Date("1970-01-01T09:00:00.000Z"),
+        startTime: new Date("1970-01-01T14:00:00.000Z"),
         endTime: new Date("1970-01-01T10:00:00.000Z"),
-        classroom: "202",
+        startsAt: new Date("2026-11-15T10:00:00.000Z"),
+        endsAt: new Date("2026-11-15T11:00:00.000Z"),
+        originalStartsAt: new Date("2026-11-15T07:00:00.000Z"),
+        originalEndsAt: new Date("2026-11-15T08:00:00.000Z"),
+        originalRoom: "101",
+        kind: "SEMINAR",
+        room: "202",
         teacher: "Преподаватель 2",
-        isRescheduled: true,
-        comment: "Новая аудитория",
+        status: "RESCHEDULED",
+        changeNote: "Новая аудитория",
         subject: { name: "Ближайшая пара" },
       },
       {
@@ -128,10 +140,16 @@ describe("getCampusTodayData", () => {
         weekday: null,
         startTime: new Date("1970-01-01T09:00:00.000Z"),
         endTime: new Date("1970-01-01T10:00:00.000Z"),
-        classroom: "303",
+        startsAt: new Date("2026-11-16T12:00:00.000Z"),
+        endsAt: new Date("2026-11-16T13:00:00.000Z"),
+        originalStartsAt: new Date("2026-11-16T09:00:00.000Z"),
+        originalEndsAt: new Date("2026-11-16T10:00:00.000Z"),
+        originalRoom: "303",
+        kind: "LECTURE",
+        room: "303",
         teacher: "Преподаватель 3",
-        isRescheduled: true,
-        comment: null,
+        status: "RESCHEDULED",
+        changeNote: null,
         subject: { name: "Следующая изменённая пара" },
       },
     ]);
@@ -175,6 +193,68 @@ describe("getCampusTodayData", () => {
         kind: "Объявление",
         title: "Свежая новость",
       }),
+    );
+  });
+
+  it("uses the current UTC time for the next pair and includes cancellations in changes", async () => {
+    prismaMock.scheduleItem.findMany.mockResolvedValue([
+      {
+        id: 30,
+        date: new Date("2026-11-15T00:00:00.000Z"),
+        weekday: null,
+        startTime: new Date("1970-01-01T08:00:00.000Z"),
+        endTime: new Date("1970-01-01T09:30:00.000Z"),
+        startsAt: new Date("2026-11-15T08:00:00.000Z"),
+        endsAt: new Date("2026-11-15T09:30:00.000Z"),
+        originalStartsAt: null,
+        originalEndsAt: null,
+        originalRoom: null,
+        kind: "LECTURE",
+        room: "101",
+        teacher: "Преподаватель 1",
+        status: "CANCELLED",
+        changeNote: "Занятие отменено.",
+        subject: { name: "Отменённая пара" },
+      },
+      {
+        id: 31,
+        date: new Date("2026-11-15T00:00:00.000Z"),
+        weekday: null,
+        startTime: new Date("1970-01-01T14:00:00.000Z"),
+        endTime: new Date("1970-01-01T15:00:00.000Z"),
+        startsAt: new Date("2026-11-15T10:00:00.000Z"),
+        endsAt: new Date("2026-11-15T11:00:00.000Z"),
+        originalStartsAt: new Date("2026-11-15T07:00:00.000Z"),
+        originalEndsAt: new Date("2026-11-15T08:00:00.000Z"),
+        originalRoom: "202",
+        kind: "SEMINAR",
+        room: "303",
+        teacher: "Преподаватель 2",
+        status: "RESCHEDULED",
+        changeNote: "Время изменено.",
+        subject: { name: "Перенесённая пара" },
+      },
+    ]);
+
+    const data = await getCampusTodayData(
+      new Date("2026-11-14T12:00:00.000Z"),
+    );
+
+    expect(data.nextLesson?.subject.name).toBe("Перенесённая пара");
+    expect(data.nextLesson?.startTime.toISOString()).toBe(
+      "2026-11-15T10:00:00.000Z",
+    );
+    expect(data.changes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "Отмена пары",
+          title: "Отменённая пара",
+        }),
+        expect.objectContaining({
+          kind: "Перенос пары",
+          title: "Перенесённая пара",
+        }),
+      ]),
     );
   });
 });

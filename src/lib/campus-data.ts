@@ -1,113 +1,16 @@
 import "server-only";
 
-import type { Weekday } from "@/generated/prisma/enums";
 import { getPrisma } from "@/lib/prisma";
 import { requireStudent } from "@/lib/student";
+import { getMoscowDateKey, getMoscowWeek } from "@/lib/campus-time";
 import {
-  getMoscowWeek,
-  getTimeMinutes,
-} from "@/lib/campus-time";
-
-const weekdayByUtcDay: Weekday[] = [
-  "SUNDAY",
-  "MONDAY",
-  "TUESDAY",
-  "WEDNESDAY",
-  "THURSDAY",
-  "FRIDAY",
-  "SATURDAY",
-];
-
-type ScheduleRecord = {
-  id: number;
-  date: Date | null;
-  weekday: Weekday | null;
-  startTime: Date;
-  endTime: Date;
-  classroom: string;
-  teacher: string;
-  isRescheduled: boolean;
-  comment: string | null;
-  subject: { name: string };
-};
-
-function expandSchedule(
-  records: ScheduleRecord[],
-  startDate: Date,
-): Array<ScheduleRecord & { occurrenceDate: Date; occurrenceId: string }> {
-  const occurrences: Array<
-    ScheduleRecord & { occurrenceDate: Date; occurrenceId: string }
-  > = [];
-
-  for (let dayOffset = 0; dayOffset < 7; dayOffset += 1) {
-    const occurrenceDate = new Date(startDate);
-    occurrenceDate.setUTCDate(occurrenceDate.getUTCDate() + dayOffset);
-    const dateKey = occurrenceDate.toISOString().slice(0, 10);
-    const weekday = weekdayByUtcDay[occurrenceDate.getUTCDay()];
-
-    for (const record of records) {
-      const happensOnDate = record.date
-        ? record.date.toISOString().slice(0, 10) === dateKey
-        : record.weekday === weekday;
-      if (happensOnDate) {
-        occurrences.push({
-          ...record,
-          occurrenceDate,
-          occurrenceId: `${record.id}-${dateKey}`,
-        });
-      }
-    }
-  }
-
-  return occurrences.sort((first, second) => {
-    const dateDifference =
-      first.occurrenceDate.getTime() - second.occurrenceDate.getTime();
-    return (
-      dateDifference ||
-      getTimeMinutes(first.startTime) - getTimeMinutes(second.startTime)
-    );
-  });
-}
-
-export async function getStudentSchedule(
-  groupId: number,
-  now = new Date(),
-) {
-  const week = getMoscowWeek(now);
-  const records = await getPrisma().scheduleItem.findMany({
-    where: {
-      groupId,
-      OR: [
-        { date: { gte: week.startDate, lt: week.endDate } },
-        { weekday: { in: week.weekdays } },
-      ],
-    },
-    select: {
-      id: true,
-      date: true,
-      weekday: true,
-      startTime: true,
-      endTime: true,
-      classroom: true,
-      teacher: true,
-      isRescheduled: true,
-      comment: true,
-      subject: { select: { name: true } },
-    },
-  });
-
-  return {
-    week,
-    schedule: expandSchedule(records, week.startDate),
-  };
-}
+  getNextScheduleLesson,
+  getScheduleForGroup,
+} from "@/lib/schedule-data";
 
 export async function getCampusTodayData(now = new Date()) {
   const student = await requireStudent();
-  const { week, schedule } = await getStudentSchedule(
-    student.group.id,
-    now,
-  );
+  const week = getMoscowWeek(now);
   const notificationTarget = {
     OR: [
       { studentId: student.id },
@@ -120,11 +23,13 @@ export async function getCampusTodayData(now = new Date()) {
   );
   const prisma = getPrisma();
   const [
+    scheduleData,
     deadlines,
     announcements,
     requests,
     unreadNotificationCount,
   ] = await Promise.all([
+    getScheduleForGroup(student.group.id, "week", { now }),
     prisma.notification.findMany({
       where: {
         ...notificationTarget,
@@ -171,15 +76,36 @@ export async function getCampusTodayData(now = new Date()) {
     }),
   ]);
 
+  const schedule = scheduleData.lessons.map((item) => ({
+    occurrenceId: item.id,
+    occurrenceDate: new Date(
+      `${getMoscowDateKey(item.startsAt)}T00:00:00.000Z`,
+    ),
+    startTime: item.startsAt,
+    endTime: item.endsAt,
+    room: item.room,
+    teacher: item.teacher,
+    status: item.status,
+    changeNote: item.changeNote,
+    subject: { name: item.subject },
+  }));
+
   const changes = [
     ...schedule
-      .filter((item) => item.isRescheduled)
+      .filter(
+        (item) =>
+          item.status === "RESCHEDULED" || item.status === "CANCELLED",
+      )
       .map((item) => ({
         id: `schedule-${item.occurrenceId}`,
-        kind: "Перенос пары" as const,
+        kind: item.status === "CANCELLED" ? "Отмена пары" : "Перенос пары",
         title: item.subject.name,
-        text: item.comment ?? "Время занятия изменено.",
-        date: item.occurrenceDate,
+        text:
+          item.changeNote ??
+          (item.status === "CANCELLED"
+            ? "Занятие отменено."
+            : "Время занятия изменено."),
+        date: item.startTime,
       })),
     ...announcements.map((announcement) => ({
       id: `announcement-${announcement.id}`,
@@ -193,16 +119,34 @@ export async function getCampusTodayData(now = new Date()) {
     .slice(0, 3);
 
   const todaySchedule = schedule.filter(
-    (item) => item.occurrenceId.endsWith(week.todayKey),
+    (item) => getMoscowDateKey(item.startTime) === week.todayKey,
   );
-  const nextLesson = schedule.find((item) => {
-    const dateKey = item.occurrenceId.slice(-10);
-    return (
-      dateKey > week.todayKey ||
-      (dateKey === week.todayKey &&
-        getTimeMinutes(item.startTime) > week.currentTimeMinutes)
+  let nextScheduleLesson = getNextScheduleLesson(
+    scheduleData.lessons,
+    now,
+  );
+  if (!nextScheduleLesson) {
+    const nextWeekAnchor = new Date(scheduleData.endDate);
+    nextWeekAnchor.setUTCHours(12, 0, 0, 0);
+    const nextWeekData = await getScheduleForGroup(
+      student.group.id,
+      "week",
+      { now: nextWeekAnchor },
     );
-  });
+    nextScheduleLesson = getNextScheduleLesson(nextWeekData.lessons, now);
+  }
+  const nextLesson = nextScheduleLesson
+    ? {
+        occurrenceDate: new Date(
+          `${getMoscowDateKey(nextScheduleLesson.startsAt)}T00:00:00.000Z`,
+        ),
+        startTime: nextScheduleLesson.startsAt,
+        endTime: nextScheduleLesson.endsAt,
+        room: nextScheduleLesson.room,
+        teacher: nextScheduleLesson.teacher,
+        subject: { name: nextScheduleLesson.subject },
+      }
+    : null;
 
   return {
     student,

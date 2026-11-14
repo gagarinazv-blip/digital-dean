@@ -28,6 +28,18 @@ enum Weekday {
   SUNDAY
 }
 
+enum ScheduleKind {
+  LECTURE
+  SEMINAR
+  PRACTICE
+}
+
+enum ScheduleStatus {
+  PLANNED
+  RESCHEDULED
+  CANCELLED
+}
+
 enum ControlType {
   EXAM
   CREDIT
@@ -113,22 +125,29 @@ model Subject {
 }
 
 model ScheduleItem {
-  id            Int           @id @default(autoincrement())
-  subjectId     Int
-  groupId       Int?
-  weekday       Weekday?
-  date          DateTime?     @db.Date
-  startTime     DateTime      @db.Time(0)
-  endTime       DateTime      @db.Time(0)
-  classroom     String
-  teacher       String
-  isRescheduled Boolean       @default(false)
-  comment       String?
-  subject       Subject       @relation(fields: [subjectId], references: [id], onDelete: Restrict)
-  group         StudentGroup? @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  id               Int            @id @default(autoincrement())
+  subjectId        Int
+  groupId          Int
+  weekday          Weekday?
+  date             DateTime?      @db.Date
+  startTime        DateTime       @db.Time(0)
+  endTime          DateTime       @db.Time(0)
+  startsAt         DateTime?      @db.Timestamptz(3)
+  endsAt           DateTime?      @db.Timestamptz(3)
+  originalStartsAt DateTime?      @db.Timestamptz(3)
+  originalEndsAt   DateTime?      @db.Timestamptz(3)
+  originalRoom     String?
+  kind             ScheduleKind   @default(LECTURE)
+  status           ScheduleStatus @default(PLANNED)
+  room             String         @map("classroom")
+  teacher          String
+  changeNote       String?        @map("comment")
+  isRescheduled    Boolean        @default(false)
+  subject          Subject        @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  group            StudentGroup   @relation(fields: [groupId], references: [id], onDelete: Restrict)
 
   @@index([subjectId])
-  @@index([groupId])
+  @@index([groupId, startsAt])
   @@index([date])
   @@index([weekday])
 }

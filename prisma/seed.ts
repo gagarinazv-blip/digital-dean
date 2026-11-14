@@ -2,6 +2,7 @@ import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
+import { buildTargetScheduleSeed } from "./schedule-seed-data";
 
 type SeedAccount = {
   login: string;
@@ -77,7 +78,7 @@ const environmentAccounts = [
     fullName: "Альфира Луновей",
     faculty: "Факультет лунной картографии",
     direction: "Орбитальная топография",
-    groupName: "DEMO-ALPHA",
+    groupName: "МО-101",
     course: 2,
   },
   {
@@ -86,7 +87,7 @@ const environmentAccounts = [
     fullName: "Бета Северозвёздный",
     faculty: "Факультет межзвёздной истории",
     direction: "Хроники дальних систем",
-    groupName: "DEMO-BETA",
+    groupName: "ЗР-203",
     course: 4,
   },
 ] as const;
@@ -141,24 +142,66 @@ const scheduleTimes = [
   ["17:00", "18:30"],
 ] as const;
 
+const scheduleKinds = ["LECTURE", "SEMINAR", "PRACTICE"] as const;
+const legacyTargetGroupNames = ["DEMO-ALPHA", "DEMO-BETA"] as const;
+
+const moscowDateTimeFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: "Europe/Moscow",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hourCycle: "h23",
+});
+
+function getMoscowParts(date: Date): Record<string, number> {
+  return Object.fromEntries(
+    moscowDateTimeFormatter
+      .formatToParts(date)
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, Number(part.value)]),
+  );
+}
+
 function timeOfDay(value: string): Date {
   const [hours, minutes] = value.split(":").map(Number);
   return new Date(Date.UTC(1970, 0, 1, hours, minutes));
 }
 
-function nextMonday(): Date {
-  const today = new Date();
-  const date = new Date(
-    Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()),
+function dateTimeInMoscow(date: Date, time: string): Date {
+  const [hours, minutes] = time.split(":").map(Number);
+  const wallClockAsUtc = Date.UTC(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate(),
+    hours,
+    minutes,
   );
+  const localParts = getMoscowParts(new Date(wallClockAsUtc));
+  const localAsUtc = Date.UTC(
+    localParts.year,
+    localParts.month - 1,
+    localParts.day,
+    localParts.hour,
+    localParts.minute,
+    localParts.second,
+  );
+  return new Date(wallClockAsUtc - (localAsUtc - wallClockAsUtc));
+}
+
+function nextMonday(): Date {
+  const date = startOfMoscowDay(new Date());
   const daysUntilMonday = (8 - date.getUTCDay()) % 7 || 7;
   date.setUTCDate(date.getUTCDate() + daysUntilMonday);
   return date;
 }
 
-function startOfUtcDay(date: Date): Date {
+function startOfMoscowDay(date: Date): Date {
+  const parts = getMoscowParts(date);
   return new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
+    Date.UTC(parts.year, parts.month - 1, parts.day),
   );
 }
 
@@ -199,7 +242,12 @@ async function main() {
     }),
   ];
   const groupNames = [...new Set(accounts.map((account) => account.groupName))];
-  const seedDay = startOfUtcDay(new Date());
+  const managedGroupNames = [
+    ...new Set([...groupNames, ...legacyTargetGroupNames]),
+  ];
+  const seedNow = new Date();
+  const seedDay = startOfMoscowDay(seedNow);
+  const targetScheduleRows = buildTargetScheduleSeed(seedNow);
 
   const prisma = new PrismaClient({
     adapter: new PrismaPg({ connectionString }),
@@ -220,7 +268,7 @@ async function main() {
         select: { id: true },
       });
       const groups = await tx.studentGroup.findMany({
-        where: { name: { in: groupNames } },
+        where: { name: { in: managedGroupNames } },
         select: { id: true },
       });
       const seededSubjects = await tx.subject.findMany({
@@ -259,12 +307,19 @@ async function main() {
         where: { login: { in: accounts.map((account) => account.login) } },
       });
       await tx.studentGroup.deleteMany({
-        where: { name: { in: groupNames } },
+        where: {
+          name: { in: [...legacyTargetGroupNames] },
+          students: { none: {} },
+        },
       });
 
       const groupIds = new Map<string, number>();
       for (const name of groupNames) {
-        const group = await tx.studentGroup.create({ data: { name } });
+        const group = await tx.studentGroup.upsert({
+          where: { name },
+          update: {},
+          create: { name },
+        });
         groupIds.set(name, group.id);
       }
 
@@ -365,45 +420,15 @@ async function main() {
       const monday = nextMonday();
       const groupScheduleIndexes = new Map<string, number>();
       for (const account of accounts) {
-        const groupIndex = groupNames.indexOf(account.groupName);
-        if (groupScheduleIndexes.has(account.groupName)) continue;
-        groupScheduleIndexes.set(account.groupName, groupIndex);
-
         if (
           account.login === "student.alpha" ||
           account.login === "student.beta"
         ) {
-          for (let dayIndex = 0; dayIndex < 7; dayIndex += 1) {
-            const moved =
-              account.login === "student.alpha" &&
-              (dayIndex === 1 || dayIndex === 4);
-            const subjectIndex = (dayIndex + groupIndex) % subjects.length;
-            const [start, end] = scheduleTimes[dayIndex % scheduleTimes.length];
-            const shiftedStart = moved
-              ? `${String(Number(start.slice(0, 2)) + 1).padStart(2, "0")}:${start.slice(3)}`
-              : start;
-            const shiftedEnd = moved
-              ? `${String(Number(end.slice(0, 2)) + 1).padStart(2, "0")}:${end.slice(3)}`
-              : end;
-
-            await tx.scheduleItem.create({
-              data: {
-                subjectId: subjectIds[subjectIndex],
-                groupId: getGroupId(groupIds, account.groupName),
-                date: addUtcDays(seedDay, dayIndex),
-                startTime: timeOfDay(shiftedStart),
-                endTime: timeOfDay(shiftedEnd),
-                classroom: `ДЕМО-${groupIndex + 1}0${dayIndex + 1}`,
-                teacher: subjects[subjectIndex].teacher,
-                isRescheduled: moved,
-                comment: moved
-                  ? "Вымышленная пара перенесена на один час позже."
-                  : null,
-              },
-            });
-          }
           continue;
         }
+        const groupIndex = groupNames.indexOf(account.groupName);
+        if (groupScheduleIndexes.has(account.groupName)) continue;
+        groupScheduleIndexes.set(account.groupName, groupIndex);
 
         for (const weekdayIndex of weekdays.keys()) {
           const moved = weekdayIndex === groupIndex;
@@ -415,27 +440,45 @@ async function main() {
           const shiftedEnd = moved
             ? `${String(Number(end.slice(0, 2)) + 1).padStart(2, "0")}:${end.slice(3)}`
             : end;
+          const occurrenceDate = moved
+            ? new Date(
+                Date.UTC(
+                  monday.getUTCFullYear(),
+                  monday.getUTCMonth(),
+                  monday.getUTCDate() + weekdayIndex,
+                ),
+              )
+            : null;
+          const room = `ДЕМО-${groupIndex + 1}0${weekdayIndex + 1}`;
 
           await tx.scheduleItem.create({
             data: {
               subjectId: subjectIds[subjectIndex],
               groupId: getGroupId(groupIds, account.groupName),
               weekday: moved ? null : weekdays[weekdayIndex],
-              date: moved
-                ? new Date(
-                    Date.UTC(
-                      monday.getUTCFullYear(),
-                      monday.getUTCMonth(),
-                      monday.getUTCDate() + weekdayIndex,
-                    ),
-                  )
-                : null,
+              date: occurrenceDate,
               startTime: timeOfDay(shiftedStart),
               endTime: timeOfDay(shiftedEnd),
-              classroom: `ДЕМО-${groupIndex + 1}0${weekdayIndex + 1}`,
+              startsAt: occurrenceDate
+                ? dateTimeInMoscow(occurrenceDate, shiftedStart)
+                : null,
+              endsAt: occurrenceDate
+                ? dateTimeInMoscow(occurrenceDate, shiftedEnd)
+                : null,
+              originalStartsAt:
+                occurrenceDate && moved
+                  ? dateTimeInMoscow(occurrenceDate, start)
+                  : null,
+              originalEndsAt:
+                occurrenceDate && moved
+                  ? dateTimeInMoscow(occurrenceDate, end)
+                  : null,
+              kind: scheduleKinds[subjectIndex % scheduleKinds.length],
+              status: moved ? "RESCHEDULED" : "PLANNED",
+              room,
               teacher: subjects[subjectIndex].teacher,
               isRescheduled: moved,
-              comment: moved
+              changeNote: moved
                 ? "Тестовый перенос на один час позже обычного времени."
                 : null,
             },
@@ -443,17 +486,50 @@ async function main() {
         }
       }
 
+      for (const row of targetScheduleRows) {
+        const account = environmentAccounts.find(
+          ({ login }) => login === row.login,
+        );
+        if (!account) {
+          throw new Error(`Test account "${row.login}" was not configured.`);
+        }
+
+        const originalStartsAt = row.originalStartTime
+          ? dateTimeInMoscow(row.date, row.originalStartTime)
+          : null;
+        const originalEndsAt = row.originalEndTime
+          ? dateTimeInMoscow(row.date, row.originalEndTime)
+          : null;
+
+        await tx.scheduleItem.create({
+          data: {
+            subjectId: subjectIds[row.subjectIndex],
+            groupId: getGroupId(groupIds, account.groupName),
+            date: row.date,
+            weekday: null,
+            startTime: timeOfDay(row.startTime),
+            endTime: timeOfDay(row.endTime),
+            startsAt: dateTimeInMoscow(row.date, row.startTime),
+            endsAt: dateTimeInMoscow(row.date, row.endTime),
+            originalStartsAt,
+            originalEndsAt,
+            kind: row.kind,
+            status: row.status,
+            room: row.room,
+            originalRoom: row.originalRoom,
+            teacher: subjects[row.subjectIndex].teacher,
+            isRescheduled: row.status === "RESCHEDULED",
+            changeNote: row.changeNote,
+          },
+        });
+      }
+
       for (const announcement of generalAnnouncements) {
         await tx.notification.create({ data: announcement });
       }
     });
 
-    console.log("Тестовые учётные записи (только для локальной разработки):");
-    for (const account of originalAccounts) {
-      console.log(`  ${account.login} / ${account.password}`);
-    }
-    console.log("  student.alpha / пароль задан в SEED_ALPHA_PASSWORD");
-    console.log("  student.beta / пароль задан в SEED_BETA_PASSWORD");
+    console.log("Тестовые данные созданы.");
   } finally {
     await prisma.$disconnect();
   }
