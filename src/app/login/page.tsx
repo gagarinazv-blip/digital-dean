@@ -26,10 +26,10 @@ async function LoginContent() {
         <div className={styles.brandMark} aria-hidden="true">
           Д
         </div>
-        <p className={styles.eyebrow}>Личный кабинет</p>
+        <p className={styles.eyebrow}>Студенты и сотрудники</p>
         <h1 id="login-title">Вход в цифровой деканат</h1>
         <p className={styles.description}>
-          Введите логин и пароль, чтобы перейти к своему профилю.
+          Введите логин и пароль. После входа откроется ваш кабинет.
         </p>
         <LoginForm />
       </section>

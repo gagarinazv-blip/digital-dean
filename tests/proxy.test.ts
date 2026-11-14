@@ -59,12 +59,22 @@ beforeEach(() => {
 });
 
 describe("role and request access proxy", () => {
-  it("redirects staff-area visitors without a session to staff login", async () => {
+  it("redirects the old staff-login URL to the shared login", async () => {
+    const response = await proxy(makeRequest("/staff/login"));
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "https://digital-dean.test/login",
+    );
+    expect(getSessionPrincipalForTokenMock).not.toHaveBeenCalled();
+  });
+
+  it("redirects staff-area visitors without a session to the shared login", async () => {
     const response = await proxy(makeRequest("/staff"));
 
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe(
-      "https://digital-dean.test/staff/login",
+      "https://digital-dean.test/login",
     );
     expect(getSessionPrincipalForTokenMock).not.toHaveBeenCalled();
   });

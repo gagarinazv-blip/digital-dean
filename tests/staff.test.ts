@@ -65,10 +65,9 @@ describe("requireStaff", () => {
     getCurrentUserMock.mockResolvedValue(null);
 
     await expect(requireStaff()).rejects.toThrow(
-      "Redirected to /staff/login",
+      "Redirected to /login",
     );
-
-    expect(redirectMock).toHaveBeenCalledWith("/staff/login");
+    expect(redirectMock).toHaveBeenCalledWith("/login");
     expect(findStaffProfileMock).not.toHaveBeenCalled();
   });
 

@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import {
-  authenticateUserForLogin,
+  loginUser,
   TooManyLoginAttemptsError,
 } from "@/lib/auth";
 
@@ -12,8 +12,7 @@ export type LoginActionState = {
 
 const invalidCredentialsError = { error: "Неверный логин или пароль." };
 
-async function loginWithRoleAction(
-  expectedRole: "STUDENT" | "STAFF",
+export async function loginAction(
   _previousState: LoginActionState,
   formData: FormData,
 ): Promise<LoginActionState> {
@@ -26,8 +25,7 @@ async function loginWithRoleAction(
 
   let user;
   try {
-    const result = await authenticateUserForLogin(login, password);
-    user = result.user;
+    user = await loginUser(login, password);
   } catch (error) {
     if (error instanceof TooManyLoginAttemptsError) {
       return {
@@ -52,30 +50,9 @@ async function loginWithRoleAction(
     };
   }
 
-  if (!user || user.role !== expectedRole) {
+  if (!user) {
     return invalidCredentialsError;
   }
 
   redirect(user.role === "STAFF" ? "/staff" : "/");
-}
-
-export async function loginAction(
-  previousState: LoginActionState,
-  formData: FormData,
-): Promise<LoginActionState> {
-  return loginWithRoleAction("STUDENT", previousState, formData);
-}
-
-export async function loginStudentAction(
-  previousState: LoginActionState,
-  formData: FormData,
-): Promise<LoginActionState> {
-  return loginWithRoleAction("STUDENT", previousState, formData);
-}
-
-export async function loginStaffAction(
-  previousState: LoginActionState,
-  formData: FormData,
-): Promise<LoginActionState> {
-  return loginWithRoleAction("STAFF", previousState, formData);
 }

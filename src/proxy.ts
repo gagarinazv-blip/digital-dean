@@ -8,12 +8,6 @@ import {
 
 const SESSION_COOKIE = "digital-dean-session";
 
-function getLoginPath(pathname: string): string {
-  return pathname === "/staff" || pathname.startsWith("/staff/")
-    ? "/staff/login"
-    : "/login";
-}
-
 function notFoundResponse(): Response {
   return new Response(null, {
     status: 404,
@@ -22,20 +16,24 @@ function notFoundResponse(): Response {
 }
 
 export async function proxy(request: NextRequest) {
-  const loginPath = getLoginPath(request.nextUrl.pathname);
+  const { pathname } = request.nextUrl;
+  if (pathname === "/staff/login") {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   if (!token) {
-    return NextResponse.redirect(new URL(loginPath, request.url));
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   const principal = await getSessionPrincipalForToken(token);
   if (!principal) {
-    return NextResponse.redirect(new URL(loginPath, request.url));
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   const requiredRole =
-    request.nextUrl.pathname === "/staff" ||
-    request.nextUrl.pathname.startsWith("/staff/")
+    pathname === "/staff" ||
+    pathname.startsWith("/staff/")
       ? "STAFF"
       : "STUDENT";
   if (principal.role !== requiredRole) {
@@ -48,9 +46,7 @@ export async function proxy(request: NextRequest) {
     });
   }
 
-  const studentRequestPath = request.nextUrl.pathname.match(
-    /^\/requests\/([^/]+)$/,
-  );
+  const studentRequestPath = pathname.match(/^\/requests\/([^/]+)$/);
   if (studentRequestPath && studentRequestPath[1] !== "new") {
     const requestId = parsePositiveIntegerId(studentRequestPath[1]);
     if (requestId === null || principal.studentId === null) {
@@ -66,9 +62,7 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  const staffRequestPath = request.nextUrl.pathname.match(
-    /^\/staff\/requests\/([^/]+)$/,
-  );
+  const staffRequestPath = pathname.match(/^\/staff\/requests\/([^/]+)$/);
   if (staffRequestPath) {
     const requestId = parsePositiveIntegerId(staffRequestPath[1]);
     const staff = principal.staffProfile;

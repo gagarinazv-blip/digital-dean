@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { redirectMock, authenticateUserForLoginMock } = vi.hoisted(() => ({
+const { redirectMock, loginUserMock } = vi.hoisted(() => ({
   redirectMock: vi.fn(),
-  authenticateUserForLoginMock: vi.fn(),
+  loginUserMock: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -10,11 +10,11 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/lib/auth", () => ({
-  authenticateUserForLogin: authenticateUserForLoginMock,
+  loginUser: loginUserMock,
   TooManyLoginAttemptsError: class TooManyLoginAttemptsError extends Error {},
 }));
 
-import { loginAction, loginStaffAction } from "../src/app/login/actions";
+import { loginAction } from "../src/app/login/actions";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -24,25 +24,23 @@ beforeEach(() => {
 });
 
 describe("loginAction", () => {
-  it("sends authenticated staff to the staff area", async () => {
-    authenticateUserForLoginMock.mockResolvedValue({
-      user: { role: "STAFF" },
-      attemptKey: "attempt-key",
-    });
+  it("sends authenticated staff to the staff area from the shared login", async () => {
+    loginUserMock.mockResolvedValue({ role: "STAFF" });
     const formData = new FormData();
     formData.set("login", "staff.demo");
     formData.set("password", "test-only-password");
 
-    await expect(loginStaffAction({}, formData)).rejects.toThrow(
+    await expect(loginAction({}, formData)).rejects.toThrow(
       "Redirected to /staff",
+    );
+    expect(loginUserMock).toHaveBeenCalledWith(
+      "staff.demo",
+      "test-only-password",
     );
   });
 
-  it("sends authenticated students to the student home", async () => {
-    authenticateUserForLoginMock.mockResolvedValue({
-      user: { role: "STUDENT" },
-      attemptKey: "attempt-key",
-    });
+  it("sends authenticated students to the student home from the shared login", async () => {
+    loginUserMock.mockResolvedValue({ role: "STUDENT" });
     const formData = new FormData();
     formData.set("login", "student.alpha");
     formData.set("password", "test-only-password");
@@ -52,28 +50,13 @@ describe("loginAction", () => {
     );
   });
 
-  it("refuses a staff login from the student flow and vice versa", async () => {
-    authenticateUserForLoginMock.mockResolvedValue({
-      user: { role: "STAFF" },
-      attemptKey: "attempt-key",
-    });
-    const studentFormData = new FormData();
-    studentFormData.set("login", "staff.demo");
-    studentFormData.set("password", "test-only-password");
+  it("shows the common error when credentials do not authenticate", async () => {
+    loginUserMock.mockResolvedValue(null);
+    const formData = new FormData();
+    formData.set("login", "unknown.demo");
+    formData.set("password", "wrong-password");
 
-    await expect(loginAction({}, studentFormData)).resolves.toEqual({
-      error: "Неверный логин или пароль.",
-    });
-
-    authenticateUserForLoginMock.mockResolvedValue({
-      user: { role: "STUDENT" },
-      attemptKey: "attempt-key",
-    });
-    const staffFormData = new FormData();
-    staffFormData.set("login", "student.alpha");
-    staffFormData.set("password", "test-only-password");
-
-    await expect(loginStaffAction({}, staffFormData)).resolves.toEqual({
+    await expect(loginAction({}, formData)).resolves.toEqual({
       error: "Неверный логин или пароль.",
     });
   });
