@@ -3,7 +3,12 @@ import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
+import type { Prisma } from "../src/generated/prisma/client";
+import type { RequestStatus } from "../src/generated/prisma/enums";
+import { academicRecordsSeedData } from "./academic-records-seed-data";
 import { buildTargetScheduleSeed } from "./schedule-seed-data";
+import { buildDeadlineSeedData } from "./deadline-seed-data";
+import { getDemoNow } from "../src/lib/demo-date";
 
 type SeedAccount = {
   login: string;
@@ -13,6 +18,8 @@ type SeedAccount = {
   direction: string;
   groupName: string;
   course: number;
+  recordBookNumber?: string;
+  studyForm?: "FULL_TIME" | "PART_TIME" | "CORRESPONDENCE";
 };
 
 const originalAccounts: SeedAccount[] = [
@@ -72,24 +79,41 @@ const originalAccounts: SeedAccount[] = [
   },
 ];
 
+const studyFormValues = {
+  очная: "FULL_TIME",
+  "очно-заочная": "PART_TIME",
+  заочная: "CORRESPONDENCE",
+} as const;
+
+function academicAccountData(login: string) {
+  const student = academicRecordsSeedData.students.find(
+    (record) => record.login === login,
+  );
+  if (!student) {
+    throw new Error(`Academic records are missing for "${login}".`);
+  }
+
+  return {
+    fullName: student.fullName,
+    faculty: student.faculty,
+    direction: student.direction,
+    groupName: student.group,
+    course: student.course,
+    recordBookNumber: student.recordBookNumber,
+    studyForm: studyFormValues[student.studyForm],
+  };
+}
+
 const environmentAccounts = [
   {
     login: "student.alpha",
     passwordVariable: "SEED_ALPHA_PASSWORD",
-    fullName: "Альфира Луновей",
-    faculty: "Факультет лунной картографии",
-    direction: "Орбитальная топография",
-    groupName: "МО-101",
-    course: 2,
+    ...academicAccountData("student.alpha"),
   },
   {
     login: "student.beta",
     passwordVariable: "SEED_BETA_PASSWORD",
-    fullName: "Бета Северозвёздный",
-    faculty: "Факультет межзвёздной истории",
-    direction: "Хроники дальних систем",
-    groupName: "ЗР-203",
-    course: 4,
+    ...academicAccountData("student.beta"),
   },
 ] as const;
 
@@ -169,6 +193,11 @@ const scheduleTimes = [
 
 const scheduleKinds = ["LECTURE", "SEMINAR", "PRACTICE"] as const;
 const legacyTargetGroupNames = ["DEMO-ALPHA", "DEMO-BETA"] as const;
+const legacyAcademicLogins = [
+  "student.academic.alpha",
+  "student.academic.beta",
+] as const;
+const legacyAcademicGroupNames = ["TEST-ACADEMIC-31"] as const;
 
 const moscowDateTimeFormatter = new Intl.DateTimeFormat("en-US", {
   timeZone: "Europe/Moscow",
@@ -193,6 +222,10 @@ function getMoscowParts(date: Date): Record<string, number> {
 function timeOfDay(value: string): Date {
   const [hours, minutes] = value.split(":").map(Number);
   return new Date(Date.UTC(1970, 0, 1, hours, minutes));
+}
+
+function dateOnly(value: string): Date {
+  return new Date(`${value}T00:00:00.000Z`);
 }
 
 function dateTimeInMoscow(date: Date, time: string): Date {
@@ -275,14 +308,24 @@ async function main() {
   const managedLogins = [
     ...accounts.map((account) => account.login),
     ...staffAccounts.map((account) => account.login),
+    ...legacyAcademicLogins,
+  ];
+  const managedStudentLogins = [
+    ...accounts.map((account) => account.login),
+    ...legacyAcademicLogins,
   ];
   const groupNames = [...new Set(accounts.map((account) => account.groupName))];
   const managedGroupNames = [
-    ...new Set([...groupNames, ...legacyTargetGroupNames]),
+    ...new Set([
+      ...groupNames,
+      ...legacyTargetGroupNames,
+      ...legacyAcademicGroupNames,
+    ]),
   ];
-  const seedNow = new Date();
+  const seedNow = getDemoNow();
   const seedDay = startOfMoscowDay(seedNow);
   const targetScheduleRows = buildTargetScheduleSeed(seedNow);
+  const deadlineSeedRows = buildDeadlineSeedData(seedNow);
 
   const prisma = new PrismaClient({
     adapter: new PrismaPg({ connectionString }),
@@ -304,7 +347,7 @@ async function main() {
         select: { id: true },
       });
       const students = await tx.student.findMany({
-        where: { user: { login: { in: accounts.map((account) => account.login) } } },
+        where: { user: { login: { in: managedStudentLogins } } },
         select: { id: true },
       });
       const groups = await tx.studentGroup.findMany({
@@ -348,7 +391,9 @@ async function main() {
       });
       await tx.studentGroup.deleteMany({
         where: {
-          name: { in: [...legacyTargetGroupNames] },
+          name: {
+            in: [...legacyTargetGroupNames, ...legacyAcademicGroupNames],
+          },
           students: { none: {} },
         },
       });
@@ -370,6 +415,7 @@ async function main() {
       }
 
       const studentIds = new Map<string, number>();
+      const studentUserIds = new Map<string, number>();
       for (const [index, account] of accounts.entries()) {
         const user = await tx.user.create({
           data: {
@@ -386,34 +432,43 @@ async function main() {
             direction: account.direction,
             course: account.course,
             groupId: getGroupId(groupIds, account.groupName),
+            recordBookNumber: account.recordBookNumber,
+            studyForm: account.studyForm,
           },
         });
         studentIds.set(account.login, student.id);
+        studentUserIds.set(account.login, user.id);
 
-        for (const [subjectIndex, subjectId] of subjectIds.entries()) {
-          const controlTypes = [
-            "EXAM",
-            "CREDIT",
-            "DIFFERENTIATED_CREDIT",
-            "COURSEWORK",
-            "EXAM",
-          ] as const;
-          const values = [
-            String(4 + ((index + subjectIndex) % 2)),
-            "зачтено",
-            String(4 + ((index + subjectIndex + 1) % 2)),
-            "5",
-            String(3 + ((index + subjectIndex) % 3)),
-          ];
-          await tx.grade.create({
-            data: {
-              studentId: student.id,
-              subjectId,
-              semester: "2026-осень",
-              controlType: controlTypes[subjectIndex],
-              value: values[subjectIndex],
-            },
-          });
+        const isAcademicRecordsStudent =
+          academicRecordsSeedData.students.some(
+            (academicStudent) => academicStudent.login === account.login,
+          );
+        if (!isAcademicRecordsStudent) {
+          for (const [subjectIndex, subjectId] of subjectIds.entries()) {
+            const controlTypes = [
+              "EXAM",
+              "CREDIT",
+              "DIFFERENTIATED_CREDIT",
+              "COURSEWORK",
+              "EXAM",
+            ] as const;
+            const values = [
+              String(4 + ((index + subjectIndex) % 2)),
+              "зачтено",
+              String(4 + ((index + subjectIndex + 1) % 2)),
+              "5",
+              String(3 + ((index + subjectIndex) % 3)),
+            ];
+            await tx.grade.create({
+              data: {
+                studentId: student.id,
+                subjectId,
+                semester: "2026-осень",
+                controlType: controlTypes[subjectIndex],
+                value: values[subjectIndex],
+              },
+            });
+          }
         }
 
         if (account.login === "student.alpha") {
@@ -445,7 +500,93 @@ async function main() {
         }
       }
 
+      await tx.academicDataset.upsert({
+        where: { id: academicRecordsSeedData.datasetId },
+        update: {
+          academicYear: academicRecordsSeedData.academicYear,
+          snapshotDate: dateOnly(academicRecordsSeedData.snapshotDate),
+        },
+        create: {
+          id: academicRecordsSeedData.datasetId,
+          academicYear: academicRecordsSeedData.academicYear,
+          snapshotDate: dateOnly(academicRecordsSeedData.snapshotDate),
+        },
+      });
+
+      for (const academicStudent of academicRecordsSeedData.students) {
+        const studentId = studentIds.get(academicStudent.login);
+        if (studentId === undefined) {
+          throw new Error(
+            `Academic records student "${academicStudent.login}" was not created.`,
+          );
+        }
+
+        for (const semester of academicStudent.semesters) {
+          const createdSemester = await tx.academicSemester.create({
+            data: {
+              datasetId: academicRecordsSeedData.datasetId,
+              studentId,
+              code: semester.id,
+              number: semester.number,
+              name: semester.name,
+              isCurrent: semester.isCurrent,
+            },
+          });
+
+          for (const subject of semester.subjects) {
+            const result = semester.results.find(
+              (row) => row.subjectId === subject.id,
+            );
+            await tx.academicPlanItem.create({
+              data: {
+                id: subject.id,
+                semesterId: createdSemester.id,
+                name: subject.name,
+                department: subject.department,
+                teacher: subject.teacher,
+                hours: subject.hours,
+                credits: subject.credits,
+                controlType: subject.controlType,
+                ...(result
+                  ? {
+                      result: {
+                        create: {
+                          status: result.status,
+                          value: result.value,
+                          date: dateOnly(result.date),
+                          attemptCount: result.attemptCount,
+                          attempts: {
+                            create: result.attempts.map((attempt) => ({
+                              attemptNumber: attempt.attempt,
+                              date: dateOnly(attempt.date),
+                              value: attempt.value,
+                            })),
+                          },
+                        },
+                      },
+                    }
+                  : {}),
+              },
+            });
+          }
+        }
+
+        for (const sessionItem of academicStudent.currentSemesterSchedule) {
+          await tx.academicSessionItem.create({
+            data: {
+              planItemId: sessionItem.subjectId,
+              date: dateOnly(sessionItem.date),
+              startTime: timeOfDay(sessionItem.startTime),
+              endTime: timeOfDay(sessionItem.endTime),
+              room: sessionItem.room,
+              status: sessionItem.status,
+            },
+          });
+        }
+      }
+
       const staffProfileIds = new Map<string, number>();
+      const staffUserIds = new Map<string, number>();
       for (const account of staffAccounts) {
         const user = await tx.user.create({
           data: {
@@ -470,51 +611,174 @@ async function main() {
           throw new Error(`Staff profile was not created for ${account.login}.`);
         }
         staffProfileIds.set(account.login, user.staffProfile.id);
+        staffUserIds.set(account.login, user.id);
       }
 
       const alphaStudentId = studentIds.get("student.alpha");
       const betaStudentId = studentIds.get("student.beta");
+      const alphaUserId = studentUserIds.get("student.alpha");
+      const betaUserId = studentUserIds.get("student.beta");
       const demoStaffProfileId = staffProfileIds.get("staff.demo");
       const otherStaffProfileId = staffProfileIds.get("staff.other");
+      const demoStaffUserId = staffUserIds.get("staff.demo");
+      const otherStaffUserId = staffUserIds.get("staff.other");
       if (
         alphaStudentId === undefined ||
         betaStudentId === undefined ||
+        alphaUserId === undefined ||
+        betaUserId === undefined ||
         demoStaffProfileId === undefined ||
-        otherStaffProfileId === undefined
+        otherStaffProfileId === undefined ||
+        demoStaffUserId === undefined ||
+        otherStaffUserId === undefined
       ) {
         throw new Error("The staff request seed accounts were not created.");
       }
 
-      const testRequests = [
+      const profileSnapshot = (login: string) => {
+        const account = accounts.find((item) => item.login === login);
+        if (!account) {
+          throw new Error(`Request seed account "${login}" is missing.`);
+        }
+        return {
+          fullName: account.fullName,
+          faculty: account.faculty,
+          direction: account.direction,
+          course: account.course,
+          groupName: account.groupName,
+          recordBookNumber: account.recordBookNumber ?? null,
+          studyForm: account.studyForm ?? null,
+        };
+      };
+
+      const testRequests: Prisma.RequestUncheckedCreateInput[] = [
         {
           studentId: alphaStudentId,
           type: "CERTIFICATE",
+          catalogCode: "STUDY_CERTIFICATE",
+          formFields: { purpose: "для места работы" },
+          profileSnapshot: profileSnapshot("student.alpha"),
           status: "NEW",
           assignedToId: demoStaffProfileId,
           comment: "[TEST SEED STAFF] Заявка назначена staff.demo.",
+          statusHistory: {
+            create: [
+              {
+                status: "NEW",
+                authorUserId: alphaUserId,
+                comment: "Заявка подана студентом.",
+              },
+            ],
+          },
         },
         {
           studentId: betaStudentId,
           type: "CERTIFICATE",
+          catalogCode: "CALL_CERTIFICATE",
+          formFields: {
+            periodStart: "2026-11-18",
+            periodEnd: "2026-11-25",
+            reason: "SESSION",
+          },
+          profileSnapshot: profileSnapshot("student.beta"),
           status: "IN_PROGRESS",
           comment: "[TEST SEED STAFF] Разрешённый тип без назначения.",
+          statusHistory: {
+            create: [
+              {
+                status: "NEW",
+                authorUserId: betaUserId,
+                comment: "Заявка подана студентом.",
+              },
+              {
+                status: "IN_PROGRESS",
+                authorUserId: demoStaffUserId,
+                comment: "Заявка принята в работу.",
+              },
+            ],
+          },
         },
         {
           studentId: alphaStudentId,
           type: "CERTIFICATE",
+          catalogCode: "STUDY_CERTIFICATE",
+          formFields: { purpose: "для оформления льготы" },
+          profileSnapshot: profileSnapshot("student.alpha"),
           status: "READY",
           assignedToId: otherStaffProfileId,
           comment: "[TEST SEED STAFF] Заявка назначена staff.other.",
+          statusHistory: {
+            create: [
+              {
+                status: "NEW",
+                authorUserId: alphaUserId,
+                comment: "Заявка подана студентом.",
+              },
+              {
+                status: "IN_PROGRESS",
+                authorUserId: otherStaffUserId,
+                comment: "Заявка принята в работу.",
+              },
+              {
+                status: "READY",
+                authorUserId: otherStaffUserId,
+                comment: "Справка подготовлена.",
+              },
+            ],
+          },
         },
         {
           studentId: betaStudentId,
           type: "APPLICATION",
+          catalogCode: "CALL_CERTIFICATE",
+          formFields: {
+            periodStart: "2026-12-01",
+            periodEnd: "2026-12-10",
+            reason: "OTHER",
+          },
+          profileSnapshot: profileSnapshot("student.beta"),
           status: "REJECTED",
           comment: "[TEST SEED STAFF] Тип не разрешён staff.demo.",
+          statusHistory: {
+            create: [
+              {
+                status: "NEW",
+                authorUserId: betaUserId,
+                comment: "Заявка подана студентом.",
+              },
+              {
+                status: "IN_PROGRESS",
+                authorUserId: otherStaffUserId,
+                comment: "Заявка проверена сотрудником.",
+              },
+              {
+                status: "REJECTED",
+                authorUserId: otherStaffUserId,
+                comment: "Тип не разрешён staff.demo.",
+              },
+            ],
+          },
         },
-      ] as const;
+      ];
+      const requestTargets = new Map<
+        string,
+        { publicId: string; status: RequestStatus }
+      >();
       for (const request of testRequests) {
-        await tx.request.create({ data: request });
+        const created = await tx.request.create({
+          data: request,
+          select: { studentId: true, publicId: true, status: true },
+        });
+        const login =
+          created.studentId === alphaStudentId
+            ? "student.alpha"
+            : "student.beta";
+        if (!requestTargets.has(login)) {
+          requestTargets.set(login, {
+            publicId: created.publicId,
+            status: created.status,
+          });
+        }
       }
 
       const monday = nextMonday();
@@ -586,6 +850,10 @@ async function main() {
         }
       }
 
+      const scheduleTargets = new Map<
+        string,
+        { id: number; subject: string }
+      >();
       for (const row of targetScheduleRows) {
         const account = environmentAccounts.find(
           ({ login }) => login === row.login,
@@ -601,7 +869,7 @@ async function main() {
           ? dateTimeInMoscow(row.date, row.originalEndTime)
           : null;
 
-        await tx.scheduleItem.create({
+        const scheduleItem = await tx.scheduleItem.create({
           data: {
             subjectId: subjectIds[row.subjectIndex],
             groupId: getGroupId(groupIds, account.groupName),
@@ -620,6 +888,92 @@ async function main() {
             teacher: subjects[row.subjectIndex].teacher,
             isRescheduled: row.status === "RESCHEDULED",
             changeNote: row.changeNote,
+          },
+          select: { id: true },
+        });
+        if (
+          row.status === "RESCHEDULED" &&
+          !scheduleTargets.has(row.login)
+        ) {
+          scheduleTargets.set(row.login, {
+            id: scheduleItem.id,
+            subject: subjects[row.subjectIndex].name,
+          });
+        }
+      }
+
+      const requestStatusText = {
+        NEW: "Заявка подана и ожидает обработки.",
+        IN_PROGRESS: "Заявка принята в работу.",
+        NEEDS_INFO: "По заявке нужны дополнительные данные.",
+        READY: "Заявка готова.",
+        REJECTED: "Заявка отклонена.",
+        CANCELLED: "Заявка отменена.",
+      } as const;
+      for (const login of ["student.alpha", "student.beta"] as const) {
+        const studentId = studentIds.get(login);
+        const scheduleTarget = scheduleTargets.get(login);
+        const requestTarget = requestTargets.get(login);
+        if (
+          studentId === undefined ||
+          scheduleTarget === undefined ||
+          requestTarget === undefined
+        ) {
+          throw new Error(`Notification targets are missing for ${login}.`);
+        }
+        await tx.notification.create({
+          data: {
+            studentId,
+            type: "SCHEDULE_CHANGE",
+            title: "Изменилось расписание",
+            text: `${scheduleTarget.subject}: время или аудитория занятия перенесены.`,
+            targetType: "SCHEDULE_ITEM",
+            targetId: String(scheduleTarget.id),
+            date: seedNow,
+            createdAt: seedNow,
+          },
+        });
+        await tx.notification.create({
+          data: {
+            studentId,
+            type: "REQUEST_STATUS",
+            title: "Обновлён статус заявки",
+            text: requestStatusText[requestTarget.status],
+            targetType: "REQUEST",
+            targetId: requestTarget.publicId,
+            date: seedNow,
+            createdAt: seedNow,
+          },
+        });
+      }
+
+      for (const deadline of deadlineSeedRows) {
+        const studentId = studentIds.get(deadline.login);
+        if (studentId === undefined) {
+          throw new Error(`Deadline student "${deadline.login}" is missing.`);
+        }
+        const createdDeadline = await tx.deadline.create({
+          data: {
+            studentId,
+            subject: deadline.subject,
+            title: deadline.title,
+            dueAt: deadline.dueAt,
+            status: "OPEN",
+            description: deadline.description,
+            createdAt: seedNow,
+          },
+          select: { id: true },
+        });
+        await tx.notification.create({
+          data: {
+            studentId,
+            type: "DEADLINE",
+            title: `Срок сдачи: ${deadline.title}`,
+            text: `${deadline.subject}. Срок: ${deadline.dueAt.toLocaleDateString("ru-RU", { timeZone: "Europe/Moscow" })}.`,
+            targetType: "DEADLINE",
+            targetId: createdDeadline.id,
+            date: seedNow,
+            createdAt: seedNow,
           },
         });
       }

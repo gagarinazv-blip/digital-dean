@@ -38,6 +38,8 @@ const student = {
   faculty: "Факультет демонстрационных данных",
   direction: "Учебное направление",
   course: 2,
+  recordBookNumber: null,
+  studyForm: null,
   group: { id: 5, name: "DEMO-ALPHA" },
 };
 
@@ -74,6 +76,8 @@ describe("requireStudent", () => {
         faculty: true,
         direction: true,
         course: true,
+        recordBookNumber: true,
+        studyForm: true,
         group: {
           select: { id: true, name: true },
         },

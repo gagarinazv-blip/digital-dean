@@ -3,8 +3,11 @@ import { CampusSection } from "@/components/campus-section";
 import { RequestConversation } from "@/components/request-conversation";
 import { requestStatusLabels, requestTypeLabels } from "@/lib/campus-labels";
 import {
-  getAllowedRequestTransitions,
-} from "@/lib/request-workflow";
+  getRequestCatalogTitle,
+  getRequestFieldEntries,
+  getRequestProfileEntries,
+} from "@/lib/request-catalog";
+import { getAllowedStaffRequestTransitions } from "@/lib/request-workflow";
 import { getStaffRequestDetails } from "@/lib/staff-data";
 import {
   RequestAssignmentForm,
@@ -28,11 +31,19 @@ export default async function StaffRequestPage({
 }) {
   const { requestId } = await params;
   const { request, staff } = await getStaffRequestDetails(requestId);
+  const formEntries = getRequestFieldEntries(
+    request.catalogCode,
+    request.formFields,
+  );
+  const profileEntries = getRequestProfileEntries(request.profileSnapshot) ?? [];
 
   return (
     <CampusSection
       eyebrow="Кабинет сотрудника"
-      title={requestTypeLabels[request.type]}
+      title={getRequestCatalogTitle(
+        request.catalogCode,
+        requestTypeLabels[request.type],
+      )}
       description={`Заявка №${request.id}`}
     >
       <div className={workflowStyles.stack}>
@@ -53,11 +64,70 @@ export default async function StaffRequestPage({
                 : "Заявка назначена вам"}
             </p>
           </div>
-          {request.comment && (
-            <p className={workflowStyles.notice}>
-              Служебная пометка: {request.comment}
+        </section>
+
+        <section className={workflowStyles.panel}>
+          <h2>Данные заявки</h2>
+          {formEntries.length > 0 || request.comment ? (
+            <dl className={workflowStyles.detailList}>
+              {formEntries.map((entry) => (
+                <div key={entry.id}>
+                  <dt>{entry.label}</dt>
+                  <dd>{entry.value}</dd>
+                </div>
+              ))}
+              {request.comment && (
+                <div>
+                  <dt>Дополнительное описание</dt>
+                  <dd>{request.comment}</dd>
+                </div>
+              )}
+            </dl>
+          ) : (
+            <p className={workflowStyles.hint}>
+              Для этой заявки не сохранены дополнительные поля.
             </p>
           )}
+        </section>
+
+        <section className={workflowStyles.panel}>
+          <h2>Снимок профиля на момент подачи</h2>
+          {profileEntries.length > 0 ? (
+            <dl className={workflowStyles.detailList}>
+              {profileEntries.map((entry) => (
+                <div key={entry.label}>
+                  <dt>{entry.label}</dt>
+                  <dd>{entry.value}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : (
+            <p className={workflowStyles.hint}>
+              Снимок профиля для этой заявки недоступен.
+            </p>
+          )}
+        </section>
+
+        <section className={workflowStyles.panel}>
+          <h2>История статусов</h2>
+          <ol className={workflowStyles.statusHistory}>
+            {request.statusHistory.map((entry, index) => {
+              const author =
+                entry.author?.student?.fullName ??
+                entry.author?.staffProfile?.fullName ??
+                "Система";
+              return (
+                <li key={`${entry.changedAt.toISOString()}-${index}`}>
+                  <span className={workflowStyles.statusBadge}>
+                    {requestStatusLabels[entry.status]}
+                  </span>
+                  <p>{requestDateFormatter.format(entry.changedAt)}</p>
+                  <p>{author}</p>
+                  {entry.comment && <p>{entry.comment}</p>}
+                </li>
+              );
+            })}
+          </ol>
         </section>
 
         <section className={workflowStyles.panel}>
@@ -74,7 +144,7 @@ export default async function StaffRequestPage({
             <h2>Статус</h2>
             <RequestStatusForm
               requestId={request.id}
-              transitions={getAllowedRequestTransitions(request.status)}
+              transitions={getAllowedStaffRequestTransitions(request.status)}
             />
           </section>
         )}

@@ -1,6 +1,7 @@
 import { Suspense, type ReactNode } from "react";
 import { CampusLayout } from "@/components/campus-layout";
-import { requireStudent } from "@/lib/student";
+import { countUnreadStudentNotifications } from "@/lib/notification-data";
+import { requireStudentContext } from "@/lib/student";
 
 export default async function CampusRouteLayout({
   children,
@@ -21,6 +22,16 @@ export default async function CampusRouteLayout({
 }
 
 async function ProtectedCampus({ children }: { children: ReactNode }) {
-  const student = await requireStudent();
-  return <CampusLayout student={student}>{children}</CampusLayout>;
+  const { student } = await requireStudentContext();
+  const unreadNotificationCount = await countUnreadStudentNotifications(
+    student.id,
+  );
+  return (
+    <CampusLayout
+      student={student}
+      unreadNotificationCount={unreadNotificationCount}
+    >
+      {children}
+    </CampusLayout>
+  );
 }

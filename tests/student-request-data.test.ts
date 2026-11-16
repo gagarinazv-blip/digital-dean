@@ -47,6 +47,7 @@ describe("student request access", () => {
     expect(findManyMock).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { studentId: 20 },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       }),
     );
   });
@@ -54,12 +55,18 @@ describe("student request access", () => {
   it("loads only public comments for an owned request", async () => {
     findFirstMock.mockResolvedValue({ id: 123 });
 
-    await getStudentRequest("123");
+    await getStudentRequest("b08f54cf-99ce-4a56-a780-8e22ce5ba0a1");
 
     expect(findFirstMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: 123, studentId: 20 },
+        where: {
+          publicId: "b08f54cf-99ce-4a56-a780-8e22ce5ba0a1",
+          studentId: 20,
+        },
         select: expect.objectContaining({
+          statusHistory: expect.objectContaining({
+            orderBy: [{ changedAt: "asc" }, { id: "asc" }],
+          }),
           comments: expect.objectContaining({
             where: { visibility: "PUBLIC" },
           }),
@@ -68,14 +75,19 @@ describe("student request access", () => {
     );
   });
 
-  it("returns not-found for malformed or foreign request IDs", async () => {
+  it("returns not-found for malformed or foreign public IDs", async () => {
     await expect(getStudentRequest("invalid")).rejects.toThrow("Not found");
     expect(findFirstMock).not.toHaveBeenCalled();
 
-    await expect(getStudentRequest("456")).rejects.toThrow("Not found");
+    await expect(
+      getStudentRequest("4f4a8f8e-f3ef-4f34-a65e-b9e3cb279ce0"),
+    ).rejects.toThrow("Not found");
     expect(findFirstMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: 456, studentId: 20 },
+        where: {
+          publicId: "4f4a8f8e-f3ef-4f34-a65e-b9e3cb279ce0",
+          studentId: 20,
+        },
       }),
     );
   });

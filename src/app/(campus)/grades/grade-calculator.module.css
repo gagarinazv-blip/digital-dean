@@ -1,0 +1,263 @@
+.panel {
+  min-width: 0;
+  margin-top: 18px;
+  padding: 20px;
+  border: 1px solid #dfe6f3;
+  border-radius: 16px;
+  background: #f9fbff;
+}
+
+.heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.heading h2 {
+  color: #25334e;
+  font-size: 19px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.subjectName {
+  margin-top: 4px;
+  color: #53617b;
+  font-size: 14px;
+}
+
+.forecastBadge,
+.receivedBadge,
+.missingBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.forecastBadge {
+  background: #fff4dc;
+  color: #805500;
+}
+
+.receivedBadge {
+  background: #e8f5ed;
+  color: #21643b;
+}
+
+.missingBadge {
+  background: #eef3ff;
+  color: #3158bd;
+}
+
+.disclaimer,
+.sourceNote {
+  margin-top: 12px;
+  padding: 11px 13px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.disclaimer {
+  border: 1px solid #ecd7a8;
+  background: #fff8e8;
+  color: #684800;
+}
+
+.sourceNote {
+  border: 1px solid #dce5f7;
+  background: #fff;
+  color: #53617b;
+}
+
+.componentList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 10px;
+  margin-top: 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.component {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #e4e9f2;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.componentHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.componentHeading h3 {
+  min-width: 0;
+  color: #25334e;
+  font-size: 15px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.componentMeta,
+.fixedScore {
+  margin-top: 8px;
+  color: #53617b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.fixedScore strong {
+  color: #25334e;
+  font-size: 16px;
+}
+
+.field {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  margin-top: 12px;
+}
+
+.field label {
+  color: #27324a;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.input,
+.invalidInput {
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid #d5dae5;
+  border-radius: 10px;
+  background: #fff;
+  color: #17213a;
+  font: inherit;
+  font-size: 16px;
+}
+
+.invalidInput {
+  border-color: #b42318;
+}
+
+.input:focus-visible,
+.invalidInput:focus-visible,
+.resetButton:focus-visible {
+  outline: 3px solid #8da7e8;
+  outline-offset: 2px;
+}
+
+.input[aria-invalid="true"]:focus-visible,
+.invalidInput[aria-invalid="true"]:focus-visible {
+  outline-color: #b42318;
+}
+
+.help,
+.error {
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.help {
+  color: #68758e;
+}
+
+.error {
+  color: #8d241d;
+}
+
+.result {
+  min-width: 0;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid #dce5f7;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.result h3 {
+  color: #25334e;
+  font-size: 16px;
+}
+
+.resultGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.resultGrid dt {
+  color: #68758e;
+  font-size: 12px;
+}
+
+.resultGrid dd {
+  margin-top: 4px;
+  color: #25334e;
+  font-size: 15px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.resultDetails {
+  margin-top: 14px;
+  color: #53617b;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.resultDetails h4 {
+  margin-bottom: 4px;
+  color: #34415b;
+  font-size: 13px;
+}
+
+.resultDetails ul {
+  display: grid;
+  gap: 3px;
+  padding-left: 18px;
+}
+
+.resetButton {
+  width: fit-content;
+  max-width: 100%;
+  min-height: 44px;
+  margin-top: 14px;
+  padding: 9px 14px;
+  border: 1px solid #dce2ed;
+  border-radius: 10px;
+  background: #fff;
+  color: #34415b;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+@media (max-width: 560px) {
+  .panel {
+    padding: 16px;
+  }
+
+  .component {
+    padding: 12px;
+  }
+}

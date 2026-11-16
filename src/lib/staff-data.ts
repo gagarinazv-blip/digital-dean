@@ -1,6 +1,7 @@
 import "server-only";
 
 import { notFound } from "next/navigation";
+import type { Prisma } from "@/generated/prisma/client";
 import { getPrisma } from "@/lib/prisma";
 import { requireStaff, requireStaffContext } from "@/lib/staff";
 import {
@@ -11,6 +12,7 @@ import {
 const requestListSelection = {
   id: true,
   type: true,
+  catalogCode: true,
   status: true,
   assignedToId: true,
   createdAt: true,
@@ -27,11 +29,28 @@ const requestListSelection = {
 const requestDetailSelection = {
   id: true,
   type: true,
+  catalogCode: true,
+  formFields: true,
+  profileSnapshot: true,
   status: true,
   comment: true,
   assignedToId: true,
   createdAt: true,
   updatedAt: true,
+  statusHistory: {
+    orderBy: [{ changedAt: "asc" }, { id: "asc" }],
+    select: {
+      status: true,
+      changedAt: true,
+      comment: true,
+      author: {
+        select: {
+          student: { select: { fullName: true } },
+          staffProfile: { select: { fullName: true } },
+        },
+      },
+    },
+  },
   student: {
     select: {
       fullName: true,
@@ -61,7 +80,7 @@ const requestDetailSelection = {
       },
     },
   },
-} as const;
+} satisfies Prisma.RequestSelect;
 
 export async function getStaffRequests() {
   const staff = await requireStaff();

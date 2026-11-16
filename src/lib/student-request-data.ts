@@ -1,13 +1,17 @@
 import "server-only";
 
 import { notFound } from "next/navigation";
+import type { Prisma } from "@/generated/prisma/client";
 import { getPrisma } from "@/lib/prisma";
 import { requireStudent } from "@/lib/student";
-import { parsePositiveIntegerId } from "@/lib/request-workflow";
+import { isRequestPublicId } from "@/lib/request-workflow";
 
 const requestListSelection = {
   id: true,
+  publicId: true,
   type: true,
+  catalogCode: true,
+  comment: true,
   status: true,
   createdAt: true,
   updatedAt: true,
@@ -15,6 +19,22 @@ const requestListSelection = {
 
 const requestDetailSelection = {
   ...requestListSelection,
+  formFields: true,
+  profileSnapshot: true,
+  statusHistory: {
+    orderBy: [{ changedAt: "asc" }, { id: "asc" }],
+    select: {
+      status: true,
+      changedAt: true,
+      comment: true,
+      author: {
+        select: {
+          student: { select: { fullName: true } },
+          staffProfile: { select: { fullName: true } },
+        },
+      },
+    },
+  },
   comments: {
     where: { visibility: "PUBLIC" },
     orderBy: { createdAt: "asc" },
@@ -39,27 +59,26 @@ const requestDetailSelection = {
       },
     },
   },
-} as const;
+} satisfies Prisma.RequestSelect;
 
 export async function getStudentRequests() {
   const student = await requireStudent();
 
   return getPrisma().request.findMany({
     where: { studentId: student.id },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     select: requestListSelection,
   });
 }
 
 export async function getStudentRequest(requestId: string) {
   const student = await requireStudent();
-  const id = parsePositiveIntegerId(requestId);
-  if (id === null) {
+  if (!isRequestPublicId(requestId)) {
     notFound();
   }
 
   const request = await getPrisma().request.findFirst({
-    where: { id, studentId: student.id },
+    where: { publicId: requestId, studentId: student.id },
     select: requestDetailSelection,
   });
 

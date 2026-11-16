@@ -70,6 +70,7 @@ function LessonCards({ lessons }: { lessons: ScheduleLessonView[] }) {
             className={`${styles.lessonCard} ${
               lesson.status === "RESCHEDULED" ? styles.rescheduledCard : ""
             } ${lesson.status === "CANCELLED" ? styles.cancelledCard : ""}`}
+            id={`lesson-${lesson.id.split("-")[0]}`}
             key={lesson.id}
           >
             <div className={styles.lessonHeading}>

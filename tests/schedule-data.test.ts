@@ -205,6 +205,37 @@ describe("getScheduleForStudent", () => {
     }
   });
 
+  it("uses a validated notification date override in production", async () => {
+    scheduleFindManyMock.mockResolvedValue([]);
+    vi.stubEnv("NODE_ENV", "production");
+
+    try {
+      const data = await getScheduleForStudent("week", {
+        date: "2026-12-01",
+        now: new Date("2026-11-16T18:00:00.000Z"),
+        allowDateOverride: true,
+      });
+
+      expect(data.todayKey).toBe("2026-12-01");
+      expect(scheduleFindManyMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            OR: expect.arrayContaining([
+              {
+                startsAt: {
+                  gte: new Date("2026-11-29T21:00:00.000Z"),
+                  lt: new Date("2026-12-06T21:00:00.000Z"),
+                },
+              },
+            ]),
+          }),
+        }),
+      );
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("rejects malformed development date overrides", async () => {
     await expect(
       getScheduleForStudent("today", { date: "2026-02-31" }),

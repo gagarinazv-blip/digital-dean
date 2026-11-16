@@ -46,22 +46,6 @@ export async function proxy(request: NextRequest) {
     });
   }
 
-  const studentRequestPath = pathname.match(/^\/requests\/([^/]+)$/);
-  if (studentRequestPath && studentRequestPath[1] !== "new") {
-    const requestId = parsePositiveIntegerId(studentRequestPath[1]);
-    if (requestId === null || principal.studentId === null) {
-      return notFoundResponse();
-    }
-
-    const ownedRequest = await getPrisma().request.findFirst({
-      where: { id: requestId, studentId: principal.studentId },
-      select: { id: true },
-    });
-    if (!ownedRequest) {
-      return notFoundResponse();
-    }
-  }
-
   const staffRequestPath = pathname.match(/^\/staff\/requests\/([^/]+)$/);
   if (staffRequestPath) {
     const requestId = parsePositiveIntegerId(staffRequestPath[1]);

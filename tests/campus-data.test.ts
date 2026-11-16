@@ -5,6 +5,7 @@ const { requireStudentMock, prismaMock } = vi.hoisted(() => ({
   prismaMock: {
     scheduleItem: { findMany: vi.fn() },
     notification: { findMany: vi.fn(), count: vi.fn() },
+    deadline: { findMany: vi.fn() },
     request: { findMany: vi.fn() },
   },
 }));
@@ -34,6 +35,7 @@ beforeEach(() => {
   prismaMock.scheduleItem.findMany.mockResolvedValue([]);
   prismaMock.notification.findMany.mockResolvedValue([]);
   prismaMock.notification.count.mockResolvedValue(0);
+  prismaMock.deadline.findMany.mockResolvedValue([]);
   prismaMock.request.findMany.mockResolvedValue([]);
 });
 
@@ -55,23 +57,19 @@ describe("getCampusTodayData", () => {
       }),
     );
 
-    const [deadlineQuery, announcementQuery] =
-      prismaMock.notification.findMany.mock.calls.map(([query]) => query);
-    expect(deadlineQuery.where.OR).toEqual([
-      { studentId: student.id },
-      { groupId: student.group.id },
-      { studentId: null, groupId: null },
-    ]);
-    expect(deadlineQuery.where.deadline).toEqual(
-      expect.objectContaining({
-        gte: now,
-        lt: expect.any(Date),
-      }),
+    const [deadlineQuery] = prismaMock.deadline.findMany.mock.calls.map(
+      ([query]) => query,
     );
+    const [announcementQuery] = prismaMock.notification.findMany.mock.calls.map(
+      ([query]) => query,
+    );
+    expect(deadlineQuery.where).toEqual({
+      studentId: student.id,
+      status: "OPEN",
+    });
     expect(deadlineQuery).toEqual(
       expect.objectContaining({
-        orderBy: [{ deadline: "asc" }, { id: "asc" }],
-        take: 3,
+        orderBy: [{ dueAt: "asc" }, { id: "asc" }],
       }),
     );
     expect(announcementQuery.where.OR).toEqual([
@@ -86,12 +84,9 @@ describe("getCampusTodayData", () => {
     );
     expect(prismaMock.notification.count).toHaveBeenCalledWith({
       where: {
-        OR: [
-          { studentId: student.id },
-          { groupId: student.group.id },
-          { studentId: null, groupId: null },
-        ],
-        isRead: false,
+        type: { not: null },
+        studentId: student.id,
+        readAt: null,
       },
     });
   });
@@ -153,9 +148,7 @@ describe("getCampusTodayData", () => {
         subject: { name: "Следующая изменённая пара" },
       },
     ]);
-    prismaMock.notification.findMany
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([
+    prismaMock.notification.findMany.mockResolvedValueOnce([
         {
           id: 5,
           title: "Свежая новость",

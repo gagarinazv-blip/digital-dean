@@ -21,6 +21,8 @@ export async function requireStudentContext() {
       faculty: true,
       direction: true,
       course: true,
+      recordBookNumber: true,
+      studyForm: true,
       group: {
         select: {
           id: true,

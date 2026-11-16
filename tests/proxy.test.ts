@@ -3,11 +3,9 @@ import { NextRequest } from "next/server";
 
 const {
   getSessionPrincipalForTokenMock,
-  findStudentRequestMock,
   findStaffRequestMock,
 } = vi.hoisted(() => ({
   getSessionPrincipalForTokenMock: vi.fn(),
-  findStudentRequestMock: vi.fn(),
   findStaffRequestMock: vi.fn(),
 }));
 
@@ -18,7 +16,6 @@ vi.mock("@/lib/auth", () => ({
 vi.mock("@/lib/prisma", () => ({
   getPrisma: vi.fn(() => ({
     request: {
-      findFirst: findStudentRequestMock,
       findUnique: findStaffRequestMock,
     },
   })),
@@ -54,7 +51,6 @@ function makeRequest(path: string, token?: string) {
 beforeEach(() => {
   vi.clearAllMocks();
   getSessionPrincipalForTokenMock.mockResolvedValue(null);
-  findStudentRequestMock.mockResolvedValue(null);
   findStaffRequestMock.mockResolvedValue(null);
 });
 
@@ -111,42 +107,42 @@ describe("role and request access proxy", () => {
     expect(response.status).toBe(403);
   });
 
-  it("allows a student to open their own request", async () => {
+  it("allows a signed-in student request route to reach its owner-scoped loader", async () => {
     getSessionPrincipalForTokenMock.mockResolvedValue(studentPrincipal);
-    findStudentRequestMock.mockResolvedValue({ id: 243 });
 
     const response = await proxy(
-      makeRequest("/requests/243", "opaque-session-token"),
+      makeRequest(
+        "/requests/b08f54cf-99ce-4a56-a780-8e22ce5ba0a1",
+        "opaque-session-token",
+      ),
     );
 
     expect(response.status).toBe(200);
-    expect(findStudentRequestMock).toHaveBeenCalledWith({
-      where: { id: 243, studentId: 20 },
-      select: { id: true },
-    });
+    expect(findStaffRequestMock).not.toHaveBeenCalled();
   });
 
-  it("returns a real 404 for another student's request", async () => {
+  it("lets the page data loader render its not-found UI for a foreign request", async () => {
     getSessionPrincipalForTokenMock.mockResolvedValue(studentPrincipal);
 
     const response = await proxy(
-      makeRequest("/requests/243", "opaque-session-token"),
+      makeRequest(
+        "/requests/4f4a8f8e-f3ef-4f34-a65e-b9e3cb279ce0",
+        "opaque-session-token",
+      ),
     );
 
-    expect(response.status).toBe(404);
-    expect(response.headers.get("cache-control")).toBe("no-store");
-    expect(await response.text()).toBe("");
+    expect(response.status).toBe(200);
+    expect(findStaffRequestMock).not.toHaveBeenCalled();
   });
 
-  it("returns 404 for malformed request IDs before page streaming", async () => {
+  it("lets malformed student request IDs reach notFound() in the route loader", async () => {
     getSessionPrincipalForTokenMock.mockResolvedValue(studentPrincipal);
 
     const response = await proxy(
       makeRequest("/requests/not-an-id", "opaque-session-token"),
     );
 
-    expect(response.status).toBe(404);
-    expect(findStudentRequestMock).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
   });
 
   it("returns 404 when a staff member cannot access a request", async () => {

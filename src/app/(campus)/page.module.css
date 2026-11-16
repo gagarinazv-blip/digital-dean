@@ -221,12 +221,27 @@
   overflow-wrap: anywhere;
 }
 
+.deadlineDetails strong,
+.deadlineDetails small {
+  display: block;
+}
+
+.deadlineDetails small {
+  margin-top: 3px;
+  color: #77839a;
+  font-size: 11px;
+}
+
 .deadlineTime {
   flex: 0 0 auto;
   color: #2447a8;
   font-size: 13px;
   font-weight: 700;
   text-align: right;
+}
+
+.deadlineOverdue {
+  color: #a52e25;
 }
 
 .deadlineTime small {
@@ -304,6 +319,11 @@
 .statusRejected {
   background: #fff0ef;
   color: #a52e25;
+}
+
+.statusCancelled {
+  background: #f0f1f4;
+  color: #53617b;
 }
 
 @media (max-width: 680px) {

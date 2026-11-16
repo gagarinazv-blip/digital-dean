@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { notFound } from "next/navigation";
 import { assertSameSiteRequest } from "@/lib/auth";
+import { requestStatusLabels } from "@/lib/campus-labels";
 import { getPrisma } from "@/lib/prisma";
 import type { RequestActionState } from "@/lib/request-action-state";
 import {
@@ -28,7 +29,14 @@ async function getActionRequest(
       id: requestId,
       ...getStaffRequestFilter(staff),
     },
-    select: { id: true, status: true, assignedToId: true, type: true },
+    select: {
+      id: true,
+      publicId: true,
+      studentId: true,
+      status: true,
+      assignedToId: true,
+      type: true,
+    },
   });
   if (!request) {
     notFound();
@@ -72,12 +80,12 @@ function getOptionalMessage(formData: FormData): string | null {
   return content.length <= MAX_MESSAGE_LENGTH ? content : null;
 }
 
-function revalidateStaffRequestPaths(requestId: number): void {
+function revalidateStaffRequestPaths(requestId: number, publicId: string): void {
   revalidatePath("/");
   revalidatePath("/staff");
   revalidatePath(`/staff/requests/${requestId}`);
   revalidatePath("/requests");
-  revalidatePath(`/requests/${requestId}`);
+  revalidatePath(`/requests/${publicId}`);
 }
 
 export async function updateRequestStatusAction(
@@ -141,6 +149,24 @@ export async function updateRequestStatusAction(
         },
       });
     }
+    await tx.requestStatusHistory.create({
+      data: {
+        requestId: request.id,
+        status: rawStatus,
+        authorUserId: userId,
+        comment: content || null,
+      },
+    });
+    await tx.notification.create({
+      data: {
+        studentId: request.studentId,
+        type: "REQUEST_STATUS",
+        title: "Изменился статус заявки",
+        text: `Статус заявки изменён: ${requestStatusLabels[rawStatus]}.`,
+        targetType: "REQUEST",
+        targetId: request.publicId,
+      },
+    });
     return true;
   });
 
@@ -151,7 +177,7 @@ export async function updateRequestStatusAction(
     };
   }
 
-  revalidateStaffRequestPaths(requestId);
+  revalidateStaffRequestPaths(requestId, request.publicId);
   return { success: "Статус заявки обновлён." };
 }
 
@@ -206,7 +232,7 @@ export async function addStaffCommentAction(
     };
   }
 
-  revalidateStaffRequestPaths(requestId);
+  revalidateStaffRequestPaths(requestId, request.publicId);
   return { success: "Комментарий добавлен." };
 }
 
@@ -247,6 +273,6 @@ export async function assignRequestAction(
     };
   }
 
-  revalidateStaffRequestPaths(requestId);
+  revalidateStaffRequestPaths(requestId, request.publicId);
   return { success: "Заявка взята в работу." };
 }

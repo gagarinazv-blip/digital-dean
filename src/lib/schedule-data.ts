@@ -39,13 +39,20 @@ export type ScheduleDay = {
 export type ScheduleOptions = {
   date?: string | string[];
   now?: Date;
+  allowDateOverride?: boolean;
 };
 
 function getReferenceDate(
   date: string | string[] | undefined,
   now: Date,
+  allowDateOverride: boolean,
 ): Date {
-  if (process.env.NODE_ENV === "production" || date === undefined) return now;
+  if (
+    (process.env.NODE_ENV === "production" && !allowDateOverride) ||
+    date === undefined
+  ) {
+    return now;
+  }
   if (typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     throw new RangeError("Параметр date должен иметь формат ГГГГ-ММ-ДД.");
   }
@@ -106,9 +113,15 @@ export async function getScheduleForGroup(
   options: ScheduleOptions = {},
 ) {
   const now = options.now ?? new Date();
-  const referenceDate = getReferenceDate(options.date, now);
+  const referenceDate = getReferenceDate(
+    options.date,
+    now,
+    options.allowDateOverride ?? false,
+  );
   const referenceNow =
-    process.env.NODE_ENV !== "production" && options.date !== undefined
+    (process.env.NODE_ENV !== "production" ||
+      options.allowDateOverride === true) &&
+    options.date !== undefined
       ? getMoscowDateTimeOnDate(referenceDate, now)
       : now;
   const period =

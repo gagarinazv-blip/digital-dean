@@ -11,9 +11,11 @@ type CampusStudentMenu = {
 export function CampusLayout({
   children,
   student,
+  unreadNotificationCount,
 }: {
   children: ReactNode;
   student: CampusStudentMenu;
+  unreadNotificationCount: number;
 }) {
   return (
     <div className={styles.layout}>
@@ -45,7 +47,7 @@ export function CampusLayout({
             </div>
           </details>
         </div>
-        <CampusNavigation />
+        <CampusNavigation unreadNotificationCount={unreadNotificationCount} />
       </header>
       <div className={styles.content}>{children}</div>
     </div>

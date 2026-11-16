@@ -7,11 +7,11 @@ import {
   formatCampusDate,
   formatCampusTime,
   formatMoscowDate,
-  formatRemainingMoscowDays,
   getCampusGreeting,
   getCampusTime,
 } from "@/lib/campus-time";
 import { requestStatusLabels, requestTypeLabels } from "@/lib/campus-labels";
+import { getRequestCatalogTitle } from "@/lib/request-catalog";
 import styles from "./page.module.css";
 
 const requestStatusClasses: Record<RequestStatus, string> = {
@@ -20,6 +20,7 @@ const requestStatusClasses: Record<RequestStatus, string> = {
   NEEDS_INFO: styles.statusNeedsInfo,
   READY: styles.statusApproved,
   REJECTED: styles.statusRejected,
+  CANCELLED: styles.statusCancelled,
 };
 
 const quickActionIcons = {
@@ -167,36 +168,38 @@ async function CampusToday() {
           <div className={styles.cardHeading}>
             <div>
               <p className={styles.eyebrow}>Скоро нужно сделать</p>
-              <h2 id="deadlines-title">Ближайшие дедлайны</h2>
+              <h2 id="deadlines-title">Ближайшие задания и сроки</h2>
             </div>
           </div>
           {data.deadlines.length ? (
             <ul className={styles.compactList}>
               {data.deadlines.map((deadline) => (
                 <li className={styles.deadlineItem} key={deadline.id}>
-                  <span>{deadline.title}</span>
-                  <span className={styles.deadlineTime}>
-                    {deadline.deadline
-                      ? formatRemainingMoscowDays(deadline.deadline, data.now)
-                      : "Срок не указан"}
-                    {deadline.deadline && (
-                      <small>{formatMoscowDate(deadline.deadline)}</small>
-                    )}
+                  <span className={styles.deadlineDetails}>
+                    <strong>{deadline.title}</strong>
+                    <small>{deadline.subject}</small>
+                  </span>
+                  <span
+                    className={`${styles.deadlineTime} ${
+                      deadline.countdown.kind === "OVERDUE"
+                        ? styles.deadlineOverdue
+                        : ""
+                    }`}
+                  >
+                    {deadline.countdown.label}
+                    <small>{formatMoscowDate(deadline.dueAt)}</small>
                   </span>
                 </li>
               ))}
             </ul>
           ) : (
             <div className={styles.emptyState}>
-              <p>
-                На ближайшие дни дедлайнов нет. Здесь появятся задачи со сроком
-                сдачи.
-              </p>
-              <Link className={styles.textLink} href="/notifications">
-                Проверить уведомления
-              </Link>
+              <p>Открытых заданий и сроков пока нет.</p>
             </div>
           )}
+          <Link className={styles.textLink} href="/deadlines">
+            Все задания и сроки
+          </Link>
         </section>
 
         <section className={styles.card} aria-labelledby="changes-title">
@@ -233,7 +236,12 @@ async function CampusToday() {
           </div>
           {data.latestRequest ? (
             <div className={styles.request}>
-              <strong>{requestTypeLabels[data.latestRequest.type]}</strong>
+              <strong>
+                {getRequestCatalogTitle(
+                  data.latestRequest.catalogCode,
+                  requestTypeLabels[data.latestRequest.type],
+                )}
+              </strong>
               <span
                 className={`${styles.statusBadge} ${requestStatusClasses[data.latestRequest.status]}`}
               >

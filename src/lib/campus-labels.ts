@@ -24,6 +24,7 @@ export const requestStatusLabels: Record<RequestStatus, string> = {
   NEEDS_INFO: "Нужны данные",
   READY: "Готова",
   REJECTED: "Отклонена",
+  CANCELLED: "Отменена студентом",
 };
 
 export const requestTypeLabels: Record<RequestType, string> = {

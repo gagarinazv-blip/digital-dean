@@ -1,5 +1,8 @@
 import "server-only";
 
+import { getDeadlineCountdown, getNearestDeadlines } from "@/lib/deadline-utils";
+import { getDemoNow } from "@/lib/demo-date";
+import { countUnreadStudentNotifications } from "@/lib/notification-data";
 import { getPrisma } from "@/lib/prisma";
 import { requireStudent } from "@/lib/student";
 import { getMoscowDateKey, getMoscowWeek } from "@/lib/campus-time";
@@ -8,39 +11,34 @@ import {
   getScheduleForGroup,
 } from "@/lib/schedule-data";
 
-export async function getCampusTodayData(now = new Date()) {
+export async function getCampusTodayData(now = getDemoNow()) {
   const student = await requireStudent();
   const week = getMoscowWeek(now);
-  const notificationTarget = {
-    OR: [
-      { studentId: student.id },
-      { groupId: student.group.id },
-      { studentId: null, groupId: null },
-    ],
-  };
   const freshAnnouncementSince = new Date(
     now.getTime() - 7 * 24 * 60 * 60 * 1000,
   );
   const prisma = getPrisma();
   const [
     scheduleData,
-    deadlines,
+    deadlineRecords,
     announcements,
     requests,
     unreadNotificationCount,
   ] = await Promise.all([
     getScheduleForGroup(student.group.id, "week", { now }),
-    prisma.notification.findMany({
+    prisma.deadline.findMany({
       where: {
-        ...notificationTarget,
-        deadline: { gte: now, lt: week.endInstant },
+        studentId: student.id,
+        status: "OPEN",
       },
-      orderBy: [{ deadline: "asc" }, { id: "asc" }],
-      take: 3,
+      orderBy: [{ dueAt: "asc" }, { id: "asc" }],
       select: {
         id: true,
+        subject: true,
         title: true,
-        deadline: true,
+        dueAt: true,
+        status: true,
+        description: true,
       },
     }),
     prisma.notification.findMany({
@@ -67,15 +65,18 @@ export async function getCampusTodayData(now = new Date()) {
       select: {
         id: true,
         type: true,
+        catalogCode: true,
         status: true,
         updatedAt: true,
       },
     }),
-    prisma.notification.count({
-      where: { ...notificationTarget, isRead: false },
-    }),
+    countUnreadStudentNotifications(student.id),
   ]);
 
+  const deadlines = getNearestDeadlines(deadlineRecords, 5).map((deadline) => ({
+    ...deadline,
+    countdown: getDeadlineCountdown(deadline.dueAt, now),
+  }));
   const schedule = scheduleData.lessons.map((item) => ({
     occurrenceId: item.id,
     occurrenceDate: new Date(

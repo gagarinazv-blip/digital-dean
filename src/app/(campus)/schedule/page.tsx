@@ -1,16 +1,21 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
+import { notFound } from "next/navigation";
 import { CampusSection } from "@/components/campus-section";
+import { getPrisma } from "@/lib/prisma";
+import { getDemoNow } from "@/lib/demo-date";
 import {
+  getMoscowDateKey,
   formatMoscowTime,
   formatMoscowWeekdayDate,
 } from "@/lib/campus-time";
 import { scheduleKindLabels } from "@/lib/campus-labels";
 import {
   getNextScheduleLesson,
-  getScheduleForStudent,
+  getScheduleForGroup,
   type ScheduleLesson,
 } from "@/lib/schedule-data";
+import { requireStudent } from "@/lib/student";
 import {
   ScheduleView,
   type ScheduleDayView,
@@ -30,7 +35,33 @@ async function ScheduleContent({
 }: Required<SchedulePageProps>) {
   await connection();
   const params = await searchParams;
-  const data = await getScheduleForStudent("week", { date: params.date });
+  const student = await requireStudent();
+  const lessonId =
+    typeof params.lesson === "string" &&
+    /^\d+$/.test(params.lesson) &&
+    Number.isSafeInteger(Number(params.lesson)) &&
+    Number(params.lesson) > 0
+      ? Number(params.lesson)
+      : null;
+  const targetLesson = lessonId
+    ? await getPrisma().scheduleItem.findFirst({
+        where: { id: lessonId, groupId: student.group.id },
+        select: { id: true, startsAt: true, date: true },
+      })
+    : null;
+
+  if (typeof params.lesson === "string" && !targetLesson) notFound();
+
+  const targetDate = targetLesson?.startsAt
+    ? getMoscowDateKey(targetLesson.startsAt)
+    : targetLesson?.date?.toISOString().slice(0, 10);
+  if (targetLesson && !targetDate) notFound();
+
+  const data = await getScheduleForGroup(student.group.id, "week", {
+    date: targetDate ?? params.date,
+    now: getDemoNow(),
+    allowDateOverride: Boolean(targetLesson),
+  });
   const view = params.view === "week" ? "week" : "today";
   const lastWeekday = new Date(data.endDate);
   lastWeekday.setUTCDate(lastWeekday.getUTCDate() - 1);
@@ -72,9 +103,11 @@ async function ScheduleContent({
     if (!nextLesson) {
       const nextWeekAnchor = new Date(data.endDate);
       nextWeekAnchor.setUTCHours(12, 0, 0, 0);
-      const nextWeekData = await getScheduleForStudent("week", {
-        now: nextWeekAnchor,
-      });
+      const nextWeekData = await getScheduleForGroup(
+        student.group.id,
+        "week",
+        { now: nextWeekAnchor },
+      );
       nextLesson = getNextScheduleLesson(
         nextWeekData.lessons,
         data.referenceNow,
@@ -92,8 +125,9 @@ async function ScheduleContent({
         room: nextLesson.room,
       }
     : null;
-  const dateQuery =
-    process.env.NODE_ENV !== "production" && typeof params.date === "string"
+  const dateQuery = targetLesson
+    ? `&lesson=${targetLesson.id}`
+    : process.env.NODE_ENV !== "production" && typeof params.date === "string"
       ? `&date=${encodeURIComponent(params.date)}`
       : "";
 
@@ -101,7 +135,7 @@ async function ScheduleContent({
     <CampusSection
       eyebrow="Учебный план"
       title="Расписание"
-      description={`Группа ${data.groupName} · ${formatMoscowWeekdayDate(data.startDate)} — ${formatMoscowWeekdayDate(lastWeekday)}`}
+      description={`Группа ${student.group.name} · ${formatMoscowWeekdayDate(data.startDate)} — ${formatMoscowWeekdayDate(lastWeekday)}`}
     >
       <ScheduleView
         days={days}

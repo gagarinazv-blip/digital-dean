@@ -8,11 +8,15 @@ const navigation = [
   { href: "/", label: "Главная", icon: "⌂" },
   { href: "/schedule", label: "Расписание", icon: "▦" },
   { href: "/grades", label: "Оценки", icon: "✓" },
-  { href: "/requests", label: "Заявки", icon: "＋" },
+  { href: "/requests", label: "Мои заявки", icon: "＋" },
   { href: "/notifications", label: "Уведомления", icon: "●" },
 ];
 
-export function CampusNavigation() {
+export function CampusNavigation({
+  unreadNotificationCount,
+}: {
+  unreadNotificationCount: number;
+}) {
   const pathname = usePathname();
 
   return (
@@ -31,8 +35,20 @@ export function CampusNavigation() {
           >
             <span className={styles.icon} aria-hidden="true">
               {item.icon}
+              {item.href === "/notifications" &&
+                unreadNotificationCount > 0 && (
+                  <span className={styles.unreadBadge}>
+                    {unreadNotificationCount}
+                  </span>
+                )}
             </span>
             <span>{item.label}</span>
+            {item.href === "/notifications" &&
+              unreadNotificationCount > 0 && (
+                <span className={styles.desktopUnreadBadge}>
+                  {unreadNotificationCount}
+                </span>
+              )}
           </Link>
         );
       })}

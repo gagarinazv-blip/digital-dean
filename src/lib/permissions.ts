@@ -24,11 +24,12 @@ export const allowedRequestTypesByDepartment: Readonly<
 };
 
 const requestTransitions: Record<RequestStatus, readonly RequestStatus[]> = {
-  NEW: ["IN_PROGRESS"],
+  NEW: ["IN_PROGRESS", "CANCELLED"],
   IN_PROGRESS: ["NEEDS_INFO", "READY", "REJECTED"],
   NEEDS_INFO: ["IN_PROGRESS"],
   READY: [],
   REJECTED: [],
+  CANCELLED: [],
 };
 
 export function canStudentReadRequest(
@@ -47,6 +48,10 @@ export function canStudentCreateRequest(
 
 export function canStudentChangeRequestStatus(): boolean {
   return false;
+}
+
+export function canStudentCancelRequest(status: RequestStatus): boolean {
+  return requestTransitions[status].includes("CANCELLED");
 }
 
 export function canStudentAssignRequest(): boolean {
@@ -106,6 +111,7 @@ export function canStaffTakeRequest(
   request: RequestPermissionData,
 ): boolean {
   return (
+    request.status !== "CANCELLED" &&
     request.assignedToId === null &&
     (allowedRequestTypesByDepartment[staff.department] ?? []).includes(
       request.type,
@@ -126,6 +132,7 @@ export function canStaffChangeStatus(
   nextStatus: RequestStatus,
 ): boolean {
   return (
+    nextStatus !== "CANCELLED" &&
     request.status !== undefined &&
     canStaffManageAssignedRequest(staff, request) &&
     requestTransitions[request.status].includes(nextStatus)

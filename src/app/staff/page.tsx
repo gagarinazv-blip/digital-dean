@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CampusSection } from "@/components/campus-section";
 import { requestStatusLabels, requestTypeLabels } from "@/lib/campus-labels";
+import { getRequestCatalogTitle } from "@/lib/request-catalog";
 import { getStaffRequestList } from "@/lib/staff-data";
 import styles from "@/app/sections.module.css";
 
@@ -34,7 +35,12 @@ export default async function StaffHomePage() {
             <li className={styles.listItem} key={request.id}>
               <div className={styles.itemHeader}>
                 <div>
-                  <h2>{requestTypeLabels[request.type]}</h2>
+                  <h2>
+                    {getRequestCatalogTitle(
+                      request.catalogCode,
+                      requestTypeLabels[request.type],
+                    )}
+                  </h2>
                   <p>
                     {request.student.fullName} · группа{" "}
                     {request.student.group.name} · {request.student.course} курс
