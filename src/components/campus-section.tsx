@@ -26,8 +26,18 @@ export function CampusSection({
 
 export function CampusLoading({ label }: { label: string }) {
   return (
-    <main className={styles.page} aria-busy="true">
-      <p className={styles.description}>Загружаем раздел «{label}»…</p>
+    <main
+      aria-busy="true"
+      aria-live="polite"
+      className={styles.loadingPage}
+      role="status"
+    >
+      <p className={styles.loadingLabel}>Загружаем раздел «{label}»…</p>
+      <div aria-hidden="true" className={styles.skeletonGrid}>
+        <span className={styles.skeletonHeading} />
+        <span className={styles.skeletonCard} />
+        <span className={styles.skeletonCard} />
+      </div>
     </main>
   );
 }

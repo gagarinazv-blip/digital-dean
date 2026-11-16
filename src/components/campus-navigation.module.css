@@ -1,46 +1,67 @@
 .navigation {
-  width: min(100% - 32px, 1120px);
+  position: fixed;
+  z-index: 15;
+  top: var(--size-header-desktop);
+  bottom: 0;
+  left: 0;
+  width: var(--size-sidebar);
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
-  margin: 0 auto;
-  padding-bottom: 12px;
+  align-content: start;
+  gap: var(--space-1);
+  padding: var(--space-6) var(--space-3);
+  overflow-y: auto;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-surface);
 }
 
 .navigationLink {
+  position: relative;
   min-width: 0;
-  min-height: 44px;
+  min-height: var(--size-button-large);
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 8px;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  color: #53617b;
-  font-size: 14px;
-  font-weight: 600;
-  text-align: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--color-muted);
+  font-size: var(--font-size-body-compact);
+  font-weight: 500;
+  line-height: 1.35;
   overflow-wrap: anywhere;
 }
 
 .navigationLink:hover {
-  border-color: #b7c5e1;
-  background: #f7f9fd;
+  background: var(--color-subtle);
+  color: var(--color-ink);
 }
 
-.active {
-  border-color: #dce6fa;
-  background: #eef3ff;
-  color: #2447a8;
+.active,
+.active:hover {
+  background: var(--color-wine-900);
+  color: var(--color-surface);
 }
 
 .navigationLink:focus-visible {
-  outline: 3px solid #8da7e8;
+  outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }
 
 .icon {
-  display: none;
+  position: relative;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+}
+
+.iconSvg {
+  width: 22px;
+  height: 22px;
+}
+
+.navigationLabel {
+  min-width: 0;
 }
 
 .desktopUnreadBadge,
@@ -49,56 +70,103 @@
   height: 20px;
   display: inline-grid;
   place-items: center;
-  padding: 0 5px;
-  border-radius: 999px;
-  background: #bd3440;
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-danger-text);
+  color: var(--color-surface);
+  font-size: var(--font-size-caption);
+  font-weight: 600;
   line-height: 1;
+}
+
+.desktopUnreadBadge {
+  margin-left: auto;
 }
 
 .unreadBadge {
   position: absolute;
   top: -5px;
-  right: -9px;
-  border: 2px solid #fff;
+  right: -7px;
+  border: 2px solid var(--color-surface);
+}
+
+@media (max-width: 1023px) {
+  .navigation {
+    width: var(--size-rail);
+    padding: var(--space-4) var(--space-2);
+  }
+
+  .navigationLink {
+    justify-content: center;
+    padding: var(--space-2);
+  }
+
+  .navigationLabel,
+  .desktopUnreadBadge {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }
 
 @media (max-width: 680px) {
   .navigation {
-    position: fixed;
-    z-index: 20;
+    top: auto;
     right: 0;
     bottom: 0;
     left: 0;
     width: 100%;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 2px;
-    padding: 5px 5px calc(5px + env(safe-area-inset-bottom));
-    border-top: 1px solid #e1e6ef;
-    background: rgb(255 255 255 / 98%);
-    box-shadow: 0 -8px 24px rgb(23 33 58 / 8%);
+    height: calc(var(--size-bottom-nav) + env(safe-area-inset-bottom));
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    align-content: stretch;
+    gap: 0;
+    padding: var(--space-1) var(--space-2) env(safe-area-inset-bottom);
+    overflow: visible;
+    border: 0;
+    border-top: 1px solid var(--color-border);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-soft);
   }
 
   .navigationLink {
-    min-height: 58px;
+    min-width: 0;
+    min-height: var(--size-touch);
     display: grid;
     align-content: center;
     justify-items: center;
-    gap: 2px;
-    padding: 4px 2px;
-    font-size: 10px;
+    gap: var(--space-1);
+    padding: var(--space-1);
+    border-radius: var(--radius-sm);
+  }
+
+  .navigationLabel {
+    position: static;
+    width: auto;
+    height: auto;
+    display: block;
+    overflow: hidden;
+    clip-path: none;
+    font-size: var(--font-size-nav-mobile);
     line-height: 1.15;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .icon {
-    position: relative;
-    display: block;
-    font-size: 17px;
-    line-height: 1;
+    width: 22px;
+    height: 22px;
   }
 
+  .iconSvg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .unreadBadge,
   .desktopUnreadBadge {
     display: none;
   }

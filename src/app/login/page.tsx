@@ -24,7 +24,17 @@ async function LoginContent() {
     <main className={styles.page}>
       <section className={styles.card} aria-labelledby="login-title">
         <div className={styles.brandMark} aria-hidden="true">
-          Д
+          <svg
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="1.6"
+            viewBox="0 0 24 24"
+          >
+            <path d="m2 9 10-5 10 5-10 5z" />
+            <path d="M6 11v5c3 2 9 2 12 0v-5M22 9v6" />
+          </svg>
         </div>
         <p className={styles.eyebrow}>Студенты и сотрудники</p>
         <h1 id="login-title">Вход в цифровой деканат</h1>

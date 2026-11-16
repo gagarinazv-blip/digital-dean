@@ -1,5 +1,6 @@
 import { Suspense, type ReactNode } from "react";
 import { CampusLayout } from "@/components/campus-layout";
+import { CampusLoading } from "@/components/campus-section";
 import { countUnreadStudentNotifications } from "@/lib/notification-data";
 import { requireStudentContext } from "@/lib/student";
 
@@ -11,9 +12,7 @@ export default async function CampusRouteLayout({
   return (
     <Suspense
       fallback={
-        <main aria-busy="true">
-          Проверяем вход в личный кабинет…
-        </main>
+        <CampusLoading label="личный кабинет" />
       }
     >
       <ProtectedCampus>{children}</ProtectedCampus>

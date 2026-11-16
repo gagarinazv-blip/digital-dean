@@ -1,5 +1,6 @@
 import { Suspense, type ReactNode } from "react";
 import { StaffLayout } from "@/components/staff-layout";
+import { CampusLoading } from "@/components/campus-section";
 import { requireStaff } from "@/lib/staff";
 
 export const instant = false;
@@ -12,9 +13,7 @@ export default async function StaffRouteLayout({
   return (
     <Suspense
       fallback={
-        <main aria-busy="true">
-          Проверяем вход сотрудника…
-        </main>
+        <CampusLoading label="кабинет сотрудника" />
       }
     >
       <ProtectedStaff>{children}</ProtectedStaff>

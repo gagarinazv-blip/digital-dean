@@ -1,12 +1,12 @@
 .viewSwitch {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin-bottom: 16px;
-  padding: 4px;
-  border: 1px solid #e1e7f2;
-  border-radius: 14px;
-  background: #edf1f8;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  padding: var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-subtle);
 }
 
 .viewButton {
@@ -14,8 +14,8 @@
   align-items: center;
   justify-content: center;
   min-width: 0;
-  min-height: 44px;
-  border-radius: 10px;
+  min-height: var(--size-touch);
+  border-radius: var(--radius-md);
   font: inherit;
   font-weight: 700;
   text-decoration: none;
@@ -23,37 +23,36 @@
 
 .viewButton {
   background: transparent;
-  color: #53617b;
+  color: var(--color-muted);
 }
 
 .viewButton[aria-current="page"] {
-  background: #fff;
-  color: #2447a8;
-  box-shadow: 0 2px 8px rgb(29 47 83 / 8%);
+  background: var(--color-wine-900);
+  color: var(--color-surface);
 }
 
 .viewButton:focus-visible,
 .emptyLink:focus-visible {
-  outline: 3px solid #8da7e8;
+  outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }
 
 .emptyLink {
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
-  margin-top: 12px;
-  padding: 8px 14px;
-  border-radius: 10px;
-  background: #2447a8;
-  color: #fff;
+  min-height: var(--size-touch);
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-wine-900);
+  color: var(--color-surface);
   font-weight: 700;
   text-decoration: none;
 }
 
 .dayList {
   display: grid;
-  gap: 14px;
+  gap: var(--space-4);
 }
 
 .dayGroup,
@@ -62,10 +61,10 @@
 }
 
 .todayGroup {
-  padding: 12px;
-  border: 1px solid #9bb2ef;
-  border-radius: 14px;
-  background: #f7f9ff;
+  padding: var(--space-3);
+  border: 1px solid var(--color-wine-100);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
 }
 
 .dayTitleRow {
@@ -73,58 +72,57 @@
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .dayHeading {
-  margin-bottom: 10px;
-  color: #34415b;
-  font-size: 17px;
+  margin-bottom: var(--space-3);
+  color: var(--color-ink);
+  font-size: var(--font-size-body);
 }
 
 .todayMark {
   min-height: 28px;
   display: inline-flex;
   align-items: center;
-  padding: 4px 9px;
-  border-radius: 999px;
-  background: #e7edff;
-  color: #2447a8;
-  font-size: 12px;
-  font-weight: 700;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-wine-100);
+  color: var(--color-wine-900);
+  font-size: var(--font-size-caption);
+  font-weight: 500;
 }
 
 .emptyDay {
   margin: 0;
-  padding: 12px;
-  border: 1px dashed #cfd7e6;
-  border-radius: 12px;
-  color: #68758e;
-  font-size: 14px;
+  padding: var(--space-3);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-muted);
+  font-size: var(--font-size-body-compact);
 }
 
 .lessonList {
   display: grid;
-  gap: 10px;
+  gap: var(--space-3);
   list-style: none;
 }
 
 .lessonCard {
-  padding: 16px;
-  border: 1px solid #e4e9f2;
-  border-radius: 14px;
-  background: #fff;
-  box-shadow: 0 6px 18px rgb(29 47 83 / 4%);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
   overflow-wrap: anywhere;
 }
 
 .rescheduledCard {
-  border-color: #e6c46f;
+  border-color: var(--color-warning-text);
 }
 
 .cancelledCard {
-  border-color: #dfe3eb;
-  background: #f6f7f9;
+  border-color: var(--color-border);
+  background: var(--color-subtle);
   box-shadow: none;
 }
 
@@ -133,7 +131,7 @@
 .cancelledCard .lessonDetails,
 .cancelledCard .cancelledDetails,
 .cancelledCard .changeNote {
-  color: #788396;
+  color: var(--color-muted);
 }
 
 .lessonHeading {
@@ -141,12 +139,12 @@
   align-items: flex-start;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .lessonTime {
-  color: #2447a8;
-  font-size: 16px;
+  color: var(--color-ink);
+  font-size: var(--font-size-body);
   font-weight: 750;
   line-height: 1.4;
   font-variant-numeric: tabular-nums;
@@ -156,51 +154,52 @@
   min-height: 28px;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 9px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-caption);
+  font-weight: 500;
 }
 
 .planned {
-  background: #edf2ff;
-  color: #3158bd;
+  background: var(--color-blue-100);
+  color: var(--color-blue-700);
 }
 
 .rescheduled {
-  background: #fff4dc;
-  color: #805500;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
 }
 
 .cancelled {
-  background: #fff0ef;
-  color: #a52e25;
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
 }
 
 .subject {
-  margin-top: 10px;
-  color: #25334e;
-  font-size: 16px;
-  line-height: 1.4;
+  margin-top: var(--space-3);
+  color: var(--color-ink);
+  font-size: var(--font-size-h3);
+  font-weight: 600;
+  line-height: 24px;
 }
 
 .scheduleChange,
 .cancelledDetails {
-  margin-top: 8px;
+  margin-top: var(--space-2);
 }
 
 .changeWas,
 .changeNow,
 .cancelledDetails {
-  margin-bottom: 4px;
-  font-size: 14px;
-  line-height: 1.5;
+  margin-bottom: var(--space-1);
+  font-size: var(--font-size-body-compact);
+  line-height: 20px;
 }
 
 .changeWas,
 .cancelledDetails {
-  color: #68758e;
+  color: var(--color-muted);
 }
 
 .changeWas s,
@@ -209,45 +208,45 @@
 }
 
 .changeNow {
-  color: #25334e;
-  font-size: 17px;
+  color: var(--color-ink);
+  font-size: var(--font-size-body);
   font-weight: 750;
 }
 
 .changeNote {
-  margin-top: 6px;
-  color: #805500;
-  font-size: 14px;
+  margin-top: var(--space-2);
+  color: var(--color-warning-text);
+  font-size: var(--font-size-body-compact);
+  line-height: 20px;
+}
+
+.kind,
+.lessonDetails {
+  margin-top: var(--space-2);
+  font-size: var(--font-size-body-compact);
   line-height: 1.5;
 }
 
 .kind,
 .lessonDetails {
-  margin-top: 6px;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.kind,
-.lessonDetails {
-  color: #68758e;
+  color: var(--color-muted);
 }
 
 .emptyState {
-  padding: 22px;
-  border: 1px dashed #cfd7e6;
-  border-radius: 14px;
-  background: #fff;
-  color: #68758e;
-  font-size: 14px;
-  line-height: 1.55;
+  padding: var(--space-6);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font-size: var(--font-size-body-compact);
+  line-height: 20px;
 }
 
 .emptyState strong {
   display: block;
-  margin-bottom: 6px;
-  color: #25334e;
-  font-size: 16px;
+  margin-bottom: var(--space-2);
+  color: var(--color-ink);
+  font-size: var(--font-size-h3);
 }
 
 .emptyState p {

@@ -1,81 +1,81 @@
 .page {
-  padding: 32px 0 56px;
+  padding: var(--space-8) 0 var(--space-12);
 }
 
 .heading {
-  margin-bottom: 22px;
+  margin-bottom: var(--space-6);
 }
 
 .eyebrow {
-  margin-bottom: 7px;
-  color: #61739a;
-  font-size: 12px;
-  font-weight: 700;
+  margin-bottom: var(--space-2);
+  color: var(--color-blue-700);
+  font-size: var(--font-size-caption);
+  font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .heading h1 {
-  font-size: clamp(26px, 5vw, 34px);
-  line-height: 1.2;
+  font-size: var(--font-size-h1);
+  font-weight: 600;
+  line-height: 38px;
   letter-spacing: -0.03em;
   overflow-wrap: anywhere;
 }
 
 .description {
-  margin-top: 8px;
-  color: #68758e;
-  font-size: 15px;
-  line-height: 1.5;
+  margin-top: var(--space-2);
+  color: var(--color-muted);
+  font-size: var(--font-size-body);
+  line-height: 24px;
 }
 
 .card {
   min-width: 0;
-  padding: 20px;
-  border: 1px solid #e4e9f2;
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 8px 24px rgb(29 47 83 / 4%);
+  padding: var(--space-6);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
 }
 
 .dayGroup + .dayGroup {
-  margin-top: 14px;
+  margin-top: var(--space-3);
 }
 
 .dayTitle {
-  margin-bottom: 9px;
-  color: #53617b;
-  font-size: 14px;
+  margin-bottom: var(--space-2);
+  color: var(--color-muted);
+  font-size: var(--font-size-body-compact);
   font-weight: 700;
   text-transform: capitalize;
 }
 
 .list {
   display: grid;
-  gap: 10px;
+  gap: var(--space-3);
   list-style: none;
 }
 
 .listItem {
   min-width: 0;
-  padding: 16px;
-  border: 1px solid #e8ecf3;
-  border-radius: 12px;
-  background: #fff;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
 }
 
 .listItem h2,
 .listItem h3 {
-  font-size: 16px;
-  line-height: 1.4;
+  font-size: var(--font-size-h3);
+  line-height: 24px;
   overflow-wrap: anywhere;
 }
 
 .listItem p {
-  margin-top: 6px;
-  color: #68758e;
-  font-size: 14px;
-  line-height: 1.5;
+  margin-top: var(--space-2);
+  color: var(--color-muted);
+  font-size: var(--font-size-body-compact);
+  line-height: 20px;
   overflow-wrap: anywhere;
 }
 
@@ -83,7 +83,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .badge {
@@ -91,72 +91,172 @@
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  padding: 4px 9px;
-  border-radius: 999px;
-  background: #eef3ff;
-  color: #3158bd;
-  font-size: 12px;
-  font-weight: 700;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-new-bg);
+  color: var(--color-new-text);
+  font-size: var(--font-size-label);
+  font-weight: 500;
+  line-height: 18px;
+}
+
+.badge[data-status="IN_PROGRESS"] {
+  background: var(--color-blue-100);
+  color: var(--color-blue-700);
+}
+
+.badge[data-status="NEEDS_INFO"] {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.badge[data-status="READY"] {
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.badge[data-status="REJECTED"] {
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
+}
+
+.badge[data-status="CANCELLED"] {
+  background: var(--color-new-bg);
+  color: var(--color-muted);
 }
 
 .badgeWarning {
-  background: #fff4dc;
-  color: #805500;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
 }
 
 .empty {
-  padding: 22px;
-  border: 1px dashed #cfd7e6;
-  border-radius: 14px;
-  background: #fff;
-  color: #68758e;
-  font-size: 14px;
-  line-height: 1.55;
+  padding: var(--space-6);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font-size: var(--font-size-body-compact);
+  line-height: 20px;
 }
 
 .empty strong {
   display: block;
-  margin-bottom: 6px;
-  color: #25334e;
-  font-size: 16px;
+  margin-bottom: var(--space-2);
+  color: var(--color-ink);
+  font-size: var(--font-size-h3);
 }
 
 .empty p {
-  margin-top: 6px;
+  margin-top: var(--space-2);
 }
 
 .link {
-  min-height: 44px;
+  min-height: var(--size-touch);
   display: inline-flex;
   align-items: center;
-  margin-top: 8px;
-  color: #2447a8;
-  font-size: 14px;
-  font-weight: 700;
+  margin-top: var(--space-2);
+  color: var(--color-wine-900);
+  font-size: var(--font-size-body-compact);
+  font-weight: 600;
 }
 
 .link:focus-visible {
-  outline: 3px solid #8da7e8;
+  outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }
 
 .helpGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--space-3);
+}
+
+.loadingPage {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-8) 0;
+}
+
+.loadingLabel {
+  color: var(--color-muted);
+  font-size: var(--font-size-body-compact);
+}
+
+.skeletonGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.skeletonHeading,
+.skeletonCard {
+  display: block;
+  border-radius: var(--radius-card);
+  background: linear-gradient(
+    90deg,
+    var(--color-border),
+    var(--color-surface),
+    var(--color-border)
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+.skeletonHeading {
+  grid-column: 1 / -1;
+  width: min(60%, 360px);
+  height: 38px;
+}
+
+.skeletonCard {
+  min-height: 150px;
+  border: 1px solid var(--color-border);
+}
+
+.listItem,
+.card,
+.empty {
+  overflow-wrap: anywhere;
+}
+
+@keyframes skeleton-shimmer {
+  to {
+    background-position: -200% 0;
+  }
 }
 
 @media (max-width: 560px) {
   .page {
-    padding: 24px 0 40px;
+    padding: var(--space-6) 0 var(--space-8);
+  }
+
+  .heading h1 {
+    font-size: var(--font-size-h1-mobile);
+    line-height: 32px;
   }
 
   .card,
   .listItem {
-    padding: 16px;
+    padding: var(--space-4);
   }
 
   .helpGrid {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .skeletonGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .skeletonHeading {
+    grid-column: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeletonHeading,
+  .skeletonCard {
+    animation: none;
   }
 }

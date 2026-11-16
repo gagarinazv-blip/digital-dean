@@ -2,15 +2,81 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
 import styles from "./campus-navigation.module.css";
 
 const navigation = [
-  { href: "/", label: "Главная", icon: "⌂" },
-  { href: "/schedule", label: "Расписание", icon: "▦" },
-  { href: "/grades", label: "Оценки", icon: "✓" },
-  { href: "/requests", label: "Мои заявки", icon: "＋" },
-  { href: "/notifications", label: "Уведомления", icon: "●" },
-];
+  { href: "/", label: "Сегодня", icon: "home" },
+  { href: "/schedule", label: "Расписание", icon: "calendar" },
+  { href: "/grades", label: "Успеваемость", icon: "chart" },
+  { href: "/help", label: "Документы", icon: "page" },
+  { href: "/requests", label: "Заявки", icon: "clipboard" },
+  { href: "/notifications", label: "Уведомления", icon: "bell" },
+  { href: "/profile", label: "Профиль", icon: "profile" },
+] as const;
+
+const iconPaths: Record<(typeof navigation)[number]["icon"], ReactNode> = {
+  home: (
+    <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" />
+  ),
+  calendar: (
+    <>
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M16 3v4M8 3v4M3 10h18" />
+    </>
+  ),
+  chart: (
+    <>
+      <path d="M4 19V5M4 19h17" />
+      <path d="m7 15 4-4 3 2 6-7" />
+    </>
+  ),
+  page: (
+    <>
+      <path d="M6 3h8l5 5v13H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
+      <path d="M14 3v5h5M8 13h8M8 17h8" />
+    </>
+  ),
+  clipboard: (
+    <>
+      <rect x="5" y="5" width="14" height="16" rx="2" />
+      <path d="M9 5V3h6v2M8 12l2 2 5-5" />
+    </>
+  ),
+  bell: (
+    <>
+      <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+      <path d="M10 21h4" />
+    </>
+  ),
+  profile: (
+    <>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21a8 8 0 0 1 16 0" />
+    </>
+  ),
+};
+
+function NavigationIcon({
+  name,
+}: {
+  name: (typeof navigation)[number]["icon"];
+}) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={styles.iconSvg}
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.8"
+      viewBox="0 0 24 24"
+    >
+      {iconPaths[name]}
+    </svg>
+  );
+}
 
 export function CampusNavigation({
   unreadNotificationCount,
@@ -32,28 +98,29 @@ export function CampusNavigation({
               item.href === "/notifications" &&
               unreadNotificationCount > 0
                 ? `Уведомления, непрочитанных: ${unreadNotificationCount}`
-                : undefined
+                : item.label
             }
             aria-current={isCurrent ? "page" : undefined}
             className={`${styles.navigationLink} ${isCurrent ? styles.active : ""}`}
             href={item.href}
             key={item.href}
+            title={item.label}
           >
-            <span className={styles.icon} aria-hidden="true">
-              {item.icon}
+            <span className={styles.icon}>
+              <NavigationIcon name={item.icon} />
               {item.href === "/notifications" &&
                 unreadNotificationCount > 0 && (
-                  <span className={styles.unreadBadge}>
+                  <span aria-hidden="true" className={styles.unreadBadge}>
                     {unreadNotificationCount > 99
                       ? "99+"
                       : unreadNotificationCount}
                   </span>
                 )}
             </span>
-            <span>{item.label}</span>
+            <span className={styles.navigationLabel}>{item.label}</span>
             {item.href === "/notifications" &&
               unreadNotificationCount > 0 && (
-                <span className={styles.desktopUnreadBadge}>
+                <span aria-hidden="true" className={styles.desktopUnreadBadge}>
                   {unreadNotificationCount > 99
                     ? "99+"
                     : unreadNotificationCount}

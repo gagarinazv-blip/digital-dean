@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { onest } from "./fonts";
+import "./globals.css";
 import styles from "@/app/request-workflow.module.css";
 
 export default function GlobalError({
@@ -10,7 +12,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   return (
-    <html lang="ru">
+    <html className={onest.variable} lang="ru">
       <body>
         <main className={styles.stack}>
           <section className={styles.panel} role="alert">

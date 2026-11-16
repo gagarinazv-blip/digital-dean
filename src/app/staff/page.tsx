@@ -46,7 +46,7 @@ export default async function StaffHomePage() {
                     {request.student.group.name} · {request.student.course} курс
                   </p>
                 </div>
-                <span className={styles.badge}>
+                <span className={styles.badge} data-status={request.status}>
                   {requestStatusLabels[request.status]}
                 </span>
               </div>
