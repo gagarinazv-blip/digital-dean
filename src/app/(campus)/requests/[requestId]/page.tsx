@@ -7,30 +7,134 @@ import {
 } from "@/app/(campus)/requests/request-forms";
 import { requestStatusLabels, requestTypeLabels } from "@/lib/campus-labels";
 import {
+  getRequestCatalogEntry,
   getRequestCatalogTitle,
   getRequestFieldEntries,
   getRequestProfileEntries,
 } from "@/lib/request-catalog";
 import { getStudentRequest } from "@/lib/student-request-data";
-import styles from "@/app/request-workflow.module.css";
-import type { RequestStatus } from "@/generated/prisma/enums";
+import type { RequestStatus, RequestType } from "@/generated/prisma/enums";
+import workflowStyles from "@/app/request-workflow.module.css";
+import styles from "./request-detail.module.css";
 
 export const instant = false;
 
 const requestDateFormatter = new Intl.DateTimeFormat("ru-RU", {
   dateStyle: "long",
+  timeZone: "Europe/Moscow",
+});
+
+const requestDateTimeFormatter = new Intl.DateTimeFormat("ru-RU", {
+  dateStyle: "medium",
   timeStyle: "short",
   timeZone: "Europe/Moscow",
 });
 
 const requestStatusClasses: Record<RequestStatus, string> = {
-  NEW: styles.statusNew,
-  IN_PROGRESS: styles.statusInProgress,
-  NEEDS_INFO: styles.statusNeedsInfo,
-  READY: styles.statusReady,
-  REJECTED: styles.statusRejected,
-  CANCELLED: styles.statusCancelled,
+  NEW: workflowStyles.statusNew,
+  IN_PROGRESS: workflowStyles.statusInProgress,
+  NEEDS_INFO: workflowStyles.statusNeedsInfo,
+  READY: workflowStyles.statusReady,
+  REJECTED: workflowStyles.statusRejected,
+  CANCELLED: workflowStyles.statusCancelled,
 };
+
+const requestStatusIcons: Record<RequestStatus, string> = {
+  NEW: "✓",
+  IN_PROGRESS: "◷",
+  NEEDS_INFO: "!",
+  READY: "✓",
+  REJECTED: "×",
+  CANCELLED: "×",
+};
+
+type StatusPresentation = {
+  kicker: string;
+  headline: string;
+  description: string;
+  tone: string;
+};
+
+function getDemoId(id: number): string {
+  return `DEMO-${String(id).padStart(3, "0")}`;
+}
+
+function getPageTitle(status: RequestStatus, type: RequestType, serviceTitle: string) {
+  if (status === "READY") {
+    return type === "CERTIFICATE" ? "Справка готова" : "Заявка выполнена";
+  }
+  if (status === "REJECTED") {
+    return type === "CERTIFICATE" ? "Заявка отклонена" : "Обращение отклонено";
+  }
+  if (status === "NEW") {
+    return type === "CERTIFICATE" ? "Заявка отправлена" : "Обращение в деканат";
+  }
+  if (status === "CANCELLED") {
+    return "Заявка отменена";
+  }
+  return serviceTitle;
+}
+
+function getStatusPresentation(
+  status: RequestStatus,
+  type: RequestType,
+): StatusPresentation {
+  switch (status) {
+    case "NEW":
+      if (type !== "CERTIFICATE") {
+        return {
+          kicker: "Статус: новая",
+          headline: "Заявка зарегистрирована",
+          description: "Ожидает назначения сотрудником деканата.",
+          tone: styles.heroProgress,
+        };
+      }
+      return {
+        kicker: "Успешно отправлено",
+        headline: "Всё готово! Заявка принята.",
+        description: "Заявление зарегистрировано в системе деканата.",
+        tone: styles.heroSuccess,
+      };
+    case "IN_PROGRESS":
+      return {
+        kicker: "Заявка в работе",
+        headline: "Обращение рассматривает сотрудник",
+        description: "История обработки и сообщения доступны на этой странице.",
+        tone: styles.heroProgress,
+      };
+    case "NEEDS_INFO":
+      return {
+        kicker: "Требуется ваше действие",
+        headline: "Нужны дополнительные сведения",
+        description: "Уточните информацию, чтобы сотрудник мог продолжить работу.",
+        tone: styles.heroAttention,
+      };
+    case "READY":
+      return {
+        kicker: "Документ готов",
+        headline: type === "CERTIFICATE" ? "Справка подготовлена!" : "Заявка выполнена!",
+        description: "Электронный документ можно скачать и использовать.",
+        tone: styles.heroSuccess,
+      };
+    case "REJECTED":
+      return {
+        kicker: "Требует исправления",
+        headline:
+          type === "CERTIFICATE"
+            ? "Справку пока не удалось оформить"
+            : "Нужны дополнительные сведения",
+        description: "Ознакомьтесь с причиной и выберите, что сделать дальше.",
+        tone: styles.heroRejected,
+      };
+    case "CANCELLED":
+      return {
+        kicker: "Заявка закрыта",
+        headline: "Обработка заявки прекращена",
+        description: "Заявка отменена и больше не обрабатывается.",
+        tone: styles.heroCancelled,
+      };
+  }
+}
 
 export default async function StudentRequestPage({
   params,
@@ -41,146 +145,507 @@ export default async function StudentRequestPage({
 }) {
   const [{ requestId }, query] = await Promise.all([params, searchParams]);
   const request = await getStudentRequest(requestId);
-  const profileEntries = getRequestProfileEntries(request.profileSnapshot) ?? [];
+  const serviceTitle = getRequestCatalogTitle(
+    request.catalogCode,
+    requestTypeLabels[request.type],
+  );
+  const service = getRequestCatalogEntry(request.catalogCode);
+  const demoId = getDemoId(request.id);
+  const presentation = getStatusPresentation(request.status, request.type);
+  const title = getPageTitle(request.status, request.type, serviceTitle);
   const formEntries = getRequestFieldEntries(
     request.catalogCode,
     request.formFields,
   );
+  const profileEntries = getRequestProfileEntries(request.profileSnapshot) ?? [];
+  const latestStatusEntry =
+    request.statusHistory[request.statusHistory.length - 1];
+  const latestStaffMessage = request.comments
+    .filter((message) => message.author.role === "STAFF")
+    .at(-1);
+  const statusComment =
+    latestStatusEntry?.status === request.status
+      ? latestStatusEntry.comment
+      : null;
+  const reason = statusComment || latestStaffMessage?.content;
+  const historyForPanel =
+    request.status === "READY" ? request.statusHistory.slice(-1) : request.statusHistory;
 
   return (
     <CampusSection
-      eyebrow="Мои заявки"
-      title={getRequestCatalogTitle(
-        request.catalogCode,
-        requestTypeLabels[request.type],
-      )}
-      description={`Подана: ${requestDateFormatter.format(request.createdAt)}`}
+      eyebrow="Документы / Мои заявки"
+      title={title}
+      description={`${demoId} · ${serviceTitle}`}
     >
-      <div className={styles.stack}>
+      <div className={styles.requestPage}>
         {query.created === "1" && (
-          <p className={styles.success} role="status">
+          <p className={workflowStyles.success} role="status">
             Заявка успешно отправлена.
           </p>
         )}
         {query.cancelled === "1" && (
-          <p className={styles.success} role="status">
+          <p className={workflowStyles.success} role="status">
             Заявка отменена.
           </p>
         )}
-        <section className={styles.panel}>
-          <span
-            className={`${styles.statusBadge} ${requestStatusClasses[request.status]}`}
-          >
-            {requestStatusLabels[request.status]}
+
+        <section
+          aria-label={`Статус заявки: ${requestStatusLabels[request.status]}`}
+          className={`${styles.statusHero} ${presentation.tone}`}
+        >
+          <span aria-hidden="true" className={styles.heroIcon}>
+            {requestStatusIcons[request.status]}
           </span>
-          <div className={styles.metadata}>
-            <p>Обновлена: {requestDateFormatter.format(request.updatedAt)}</p>
+          <div className={styles.heroContent}>
+            <p className={styles.heroKicker}>{presentation.kicker}</p>
+            <h2>{presentation.headline}</h2>
+            <p className={styles.heroDescription}>{presentation.description}</p>
+            <div className={styles.heroMeta}>
+              <span className={styles.demoBadge}>{demoId}</span>
+              <span
+                className={`${styles.heroStatus} ${requestStatusClasses[request.status]}`}
+              >
+                Статус: {requestStatusLabels[request.status].toLowerCase()}
+              </span>
+            </div>
           </div>
         </section>
 
-        <section className={styles.panel}>
-          <h2>Данные заявки</h2>
-          {formEntries.length > 0 || request.comment ? (
-            <dl className={styles.detailList}>
-              {formEntries.map((entry) => (
-                <div key={entry.id}>
-                  <dt>{entry.label}</dt>
-                  <dd>{entry.value}</dd>
+        <div className={styles.requestGrid}>
+          <section className={styles.panel} aria-labelledby="request-main-title">
+            {request.status === "READY" ? (
+              <>
+                <h2 className={styles.panelTitle} id="request-main-title">
+                  Ваш документ
+                </h2>
+                <div className={styles.documentFile}>
+                  <span aria-hidden="true" className={styles.fileIcon}>
+                    ▤
+                  </span>
+                  <div className={styles.fileInfo}>
+                    <strong>{serviceTitle}</strong>
+                    <span>{demoId} · HTML · демонстрационный файл</span>
+                  </div>
                 </div>
-              ))}
-              {request.comment && (
+                <p className={styles.readyNotice}>
+                  <span aria-hidden="true">✓</span>
+                  Документ доступен для скачивания
+                </p>
+                <div className={styles.actions}>
+                  <a
+                    className={workflowStyles.button}
+                    download
+                    href={`/api/requests/${request.publicId}/document`}
+                  >
+                    <span aria-hidden="true">↓</span>
+                    Скачать документ
+                  </a>
+                  <Link
+                    className={workflowStyles.secondaryButton}
+                    href="/requests"
+                  >
+                    К заявкам
+                  </Link>
+                </div>
+              </>
+            ) : request.status === "REJECTED" ? (
+              <>
+                <h2 className={styles.panelTitle} id="request-main-title">
+                  {request.type === "CERTIFICATE"
+                    ? "Что произошло?"
+                    : "Причина отказа"}
+                </h2>
+                <div className={styles.reasonCard}>
+                  <span aria-hidden="true" className={styles.reasonIcon}>
+                    !
+                  </span>
+                  <div>
+                    <strong>Причина отказа</strong>
+                    <p>
+                      {reason ||
+                        "Сотрудник не указал комментарий. Вы можете уточнить причину у деканата."}
+                    </p>
+                  </div>
+                </div>
+                <div className={styles.infoCard}>
+                  <span aria-hidden="true">ⓘ</span>
+                  <p>
+                    Исправленную заявку можно подать повторно. Эта заявка и её
+                    история останутся в списке.
+                  </p>
+                </div>
+                <div className={styles.actions}>
+                  <Link
+                    className={workflowStyles.button}
+                    href={`/requests/new?copy=${request.publicId}`}
+                  >
+                    Исправить и подать повторно
+                  </Link>
+                  <details className={styles.questionDisclosure}>
+                    <summary className={workflowStyles.secondaryButton}>
+                      Задать вопрос
+                    </summary>
+                    <StudentReplyForm
+                      mode="question"
+                      requestPublicId={request.publicId}
+                    />
+                  </details>
+                </div>
+              </>
+            ) : request.status === "NEEDS_INFO" ? (
+              <>
+                <h2 className={styles.panelTitle} id="request-main-title">
+                  Что нужно уточнить?
+                </h2>
+                <div className={styles.reasonCard}>
+                  <span aria-hidden="true" className={styles.reasonIcon}>
+                    !
+                  </span>
+                  <div>
+                    <strong>Комментарий сотрудника</strong>
+                    <p>
+                      {reason || "Сотрудник попросил дополнить сведения заявки."}
+                    </p>
+                  </div>
+                </div>
+                <div className={styles.replyBlock}>
+                  <p className={styles.sectionHint}>
+                    Добавьте пояснение или приложите необходимые документы.
+                  </p>
+                  <StudentReplyForm
+                    mode="reply"
+                    requestPublicId={request.publicId}
+                  />
+                </div>
+              </>
+            ) : request.status === "NEW" ? (
+              <>
+                <h2 className={styles.panelTitle} id="request-main-title">
+                  Информация о заявке
+                </h2>
+                <RequestMetadata
+                  demoId={demoId}
+                  request={request}
+                  serviceTitle={serviceTitle}
+                />
+                {service && (
+                  <p className={styles.deadlineHint}>
+                    Ожидаемый срок: до {service.executionDays} рабочих дней
+                  </p>
+                )}
+                <div className={styles.cancelBlock}>
+                  <StudentCancelForm requestPublicId={request.publicId} />
+                </div>
+              </>
+            ) : request.status === "IN_PROGRESS" ? (
+              <>
+                <h2 className={styles.panelTitle} id="request-main-title">
+                  Сведения о заявке
+                </h2>
+                <RequestMetadata
+                  demoId={demoId}
+                  request={request}
+                  serviceTitle={serviceTitle}
+                />
+                <details className={styles.questionDisclosure}>
+                  <summary className={workflowStyles.secondaryButton}>
+                    Задать вопрос сотруднику
+                  </summary>
+                  <StudentReplyForm
+                    mode="question"
+                    requestPublicId={request.publicId}
+                  />
+                </details>
+              </>
+            ) : (
+              <>
+                <h2 className={styles.panelTitle} id="request-main-title">
+                  Информация о заявке
+                </h2>
+                <RequestMetadata
+                  demoId={demoId}
+                  request={request}
+                  serviceTitle={serviceTitle}
+                />
+                <p className={styles.cancelledNotice}>
+                  Отменённую заявку нельзя возобновить. При необходимости
+                  создайте новую.
+                </p>
+              </>
+            )}
+          </section>
+
+          {request.status === "NEW" && request.type === "CERTIFICATE" ? (
+            <section className={styles.panel} aria-labelledby="next-steps-title">
+              <h2 className={styles.panelTitle} id="next-steps-title">
+                Что происходит дальше?
+              </h2>
+              <ol className={styles.processList}>
+                <li className={styles.processDone}>
+                  <span aria-hidden="true">✓</span>
+                  <div>
+                    <strong>Заявка зарегистрирована</strong>
+                    <p>Номер присвоен, заявка сохранена</p>
+                  </div>
+                </li>
+                <li className={styles.processCurrent}>
+                  <span aria-hidden="true">◷</span>
+                  <div>
+                    <strong>Проверка сотрудником</strong>
+                    <p>Деканат проверит сведения</p>
+                  </div>
+                </li>
+                <li>
+                  <span aria-hidden="true">▤</span>
+                  <div>
+                    <strong>Готовый документ</strong>
+                    <p>Появится здесь после обработки</p>
+                  </div>
+                </li>
+              </ol>
+              <p className={styles.subtleNote}>
+                О смене статуса придёт уведомление.
+              </p>
+            </section>
+          ) : request.status === "REJECTED" &&
+            request.type !== "CERTIFICATE" ? (
+            <section className={styles.panel} aria-labelledby="request-summary-title">
+              <h2 className={styles.panelTitle} id="request-summary-title">
+                Сведения о заявке
+              </h2>
+              <RequestMetadata
+                demoId={demoId}
+                request={request}
+                serviceTitle={serviceTitle}
+              />
+              <dl className={styles.metadataRows}>
                 <div>
-                  <dt>Дополнительное описание</dt>
-                  <dd>{request.comment}</dd>
+                  <dt>Заявитель</dt>
+                  <dd>
+                    {profileEntries.find((entry) => entry.label === "ФИО")
+                      ?.value ?? "Не указано"}
+                  </dd>
                 </div>
-              )}
-            </dl>
-          ) : (
-            <p className={styles.hint}>
-              Для этой заявки не сохранены дополнительные поля.
-            </p>
-          )}
-        </section>
-
-        <section className={styles.panel}>
-          <h2>Данные профиля на момент подачи</h2>
-          {profileEntries.length > 0 ? (
-            <dl className={styles.detailList}>
-              {profileEntries.map((entry) => (
-                <div key={entry.label}>
-                  <dt>{entry.label}</dt>
-                  <dd>{entry.value}</dd>
-                </div>
-              ))}
-            </dl>
-          ) : (
-            <p className={styles.hint}>
-              Снимок профиля для этой заявки недоступен.
-            </p>
-          )}
-        </section>
-
-        <section className={styles.panel} aria-labelledby="request-history-title">
-          <h2 id="request-history-title">История статусов</h2>
-          {request.statusHistory.length === 0 ? (
-            <p className={styles.hint}>История пока пуста.</p>
-          ) : (
-            <ol className={styles.statusHistory}>
-              {request.statusHistory.map((entry, index) => {
-                const author =
-                  entry.author?.student?.fullName ??
-                  entry.author?.staffProfile?.fullName ??
-                  "Система";
-                return (
-                  <li key={`${entry.changedAt.toISOString()}-${index}`}>
+                <div>
+                  <dt>Статус</dt>
+                  <dd>
                     <span
-                      className={`${styles.statusBadge} ${requestStatusClasses[entry.status]}`}
+                      className={`${workflowStyles.statusBadge} ${requestStatusClasses[request.status]}`}
                     >
-                      {requestStatusLabels[entry.status]}
+                      {requestStatusLabels[request.status]}
                     </span>
-                    <p>{requestDateFormatter.format(entry.changedAt)}</p>
-                    <p>{author}</p>
-                    {entry.comment && <p>{entry.comment}</p>}
-                  </li>
-                );
-              })}
-            </ol>
+                  </dd>
+                </div>
+              </dl>
+              <div className={styles.reasonCard}>
+                <span aria-hidden="true" className={styles.reasonIcon}>
+                  ×
+                </span>
+                <div>
+                  <strong>Отклонено</strong>
+                  <p>{reason || "Заявка отклонена сотрудником деканата."}</p>
+                </div>
+              </div>
+            </section>
+          ) : (
+            <section className={styles.panel} aria-labelledby="history-title">
+              <h2 className={styles.panelTitle} id="history-title">
+                {request.status === "READY"
+                  ? "Информация и история"
+                  : request.status === "IN_PROGRESS"
+                    ? "История обработки"
+                    : request.status === "NEW"
+                      ? "История обработки"
+                    : "История заявки"}
+              </h2>
+              {request.status === "READY" && (
+                <RequestMetadata
+                  demoId={demoId}
+                  request={request}
+                  serviceTitle={serviceTitle}
+                />
+              )}
+              {historyForPanel.length > 0 ? (
+                <ol className={styles.timeline}>
+                  {request.status !== "READY" && (
+                    <li className={styles.timelineItem}>
+                      <span
+                        className={`${styles.timelineIcon} ${workflowStyles.statusNew}`}
+                      >
+                        ✓
+                      </span>
+                      <div className={styles.timelineContent}>
+                        <strong>Заявка создана</strong>
+                        <time dateTime={request.createdAt.toISOString()}>
+                          {requestDateTimeFormatter.format(request.createdAt)}
+                        </time>
+                      </div>
+                    </li>
+                  )}
+                  {historyForPanel.map((entry, index) => {
+                    const author =
+                      entry.author?.student?.fullName ??
+                      entry.author?.staffProfile?.fullName ??
+                      "Система";
+                    return (
+                      <li
+                        className={styles.timelineItem}
+                        key={`${entry.changedAt.toISOString()}-${index}`}
+                      >
+                        <span
+                          className={`${styles.timelineIcon} ${requestStatusClasses[entry.status]}`}
+                        >
+                          {requestStatusIcons[entry.status]}
+                        </span>
+                        <div className={styles.timelineContent}>
+                          <strong>
+                            {entry.status === "READY"
+                              ? "Заявка обработана"
+                              : requestStatusLabels[entry.status]}
+                          </strong>
+                          <time dateTime={entry.changedAt.toISOString()}>
+                            {requestDateTimeFormatter.format(entry.changedAt)}
+                          </time>
+                          <span>{author}</span>
+                          {entry.comment && (
+                            <p title={entry.comment}>{entry.comment}</p>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ol>
+              ) : (
+                <p className={styles.subtleNote}>История пока пуста.</p>
+              )}
+              {request.status === "READY" && (
+                <p className={styles.readyNotice}>
+                  <span aria-hidden="true">✓</span>
+                  Заявка обработана
+                </p>
+              )}
+            </section>
           )}
-        </section>
+        </div>
 
-        <section className={styles.panel} aria-labelledby="student-thread-title">
-          <h2 id="student-thread-title">Сообщения</h2>
-          <RequestConversation messages={request.comments} />
-        </section>
-
-        {request.status === "NEEDS_INFO" ? (
-          <section className={styles.panel} aria-labelledby="student-reply-title">
-            <h2 id="student-reply-title">Нужно добавить данные</h2>
-            <p className={styles.hint}>
-              Ответьте сотруднику или приложите документы. После отправки
-              сотрудник проверит информацию и продолжит работу.
-            </p>
-            <StudentReplyForm requestPublicId={request.publicId} />
-          </section>
-        ) : request.status === "NEW" ? (
-          <section className={styles.panel} aria-labelledby="student-cancel-title">
-            <h2 id="student-cancel-title">Отмена заявки</h2>
-            <p className={styles.hint}>
-              Новую заявку можно отменить до начала её обработки.
-            </p>
-            <StudentCancelForm requestPublicId={request.publicId} />
-          </section>
-        ) : (
-          <p className={styles.notice}>
-            Если сотруднику понадобятся дополнительные сведения, он напишет
-            здесь.
-          </p>
+        {(formEntries.length > 0 ||
+          request.comment ||
+          profileEntries.length > 0) && (
+          <div className={styles.disclosures}>
+            {(formEntries.length > 0 || request.comment) && (
+              <details className={styles.disclosure}>
+                <summary>Сведения из заявления</summary>
+                {formEntries.length > 0 || request.comment ? (
+                  <dl className={workflowStyles.detailList}>
+                    {formEntries.map((entry) => (
+                      <div key={entry.id}>
+                        <dt>{entry.label}</dt>
+                        <dd>{entry.value}</dd>
+                      </div>
+                    ))}
+                    {request.comment && (
+                      <div>
+                        <dt>Дополнительное описание</dt>
+                        <dd>{request.comment}</dd>
+                      </div>
+                    )}
+                  </dl>
+                ) : null}
+              </details>
+            )}
+            {profileEntries.length > 0 && (
+              <details className={styles.disclosure}>
+                <summary>Данные профиля на момент подачи</summary>
+                <dl className={workflowStyles.detailList}>
+                  {profileEntries.map((entry) => (
+                    <div key={entry.label}>
+                      <dt>{entry.label}</dt>
+                      <dd>{entry.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </details>
+            )}
+          </div>
         )}
 
-        <Link className={styles.secondaryButton} href="/requests">
-          Вернуться к списку заявок
+        {((request.status === "READY" &&
+          request.statusHistory.length > 1) ||
+          (request.status === "REJECTED" &&
+            request.type !== "CERTIFICATE")) && (
+          <details className={styles.disclosure}>
+            <summary>Полная история статусов</summary>
+            <ol className={styles.timeline}>
+              {request.statusHistory.map((entry, index) => (
+                <li
+                  className={styles.timelineItem}
+                  key={`${entry.changedAt.toISOString()}-full-${index}`}
+                >
+                  <span
+                    className={`${styles.timelineIcon} ${requestStatusClasses[entry.status]}`}
+                  >
+                    {requestStatusIcons[entry.status]}
+                  </span>
+                  <div className={styles.timelineContent}>
+                    <strong>{requestStatusLabels[entry.status]}</strong>
+                    <time dateTime={entry.changedAt.toISOString()}>
+                      {requestDateTimeFormatter.format(entry.changedAt)}
+                    </time>
+                    {entry.comment && <p>{entry.comment}</p>}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </details>
+        )}
+
+        {request.comments.length > 0 && (
+          <details className={styles.disclosure}>
+            <summary>Переписка · {request.comments.length}</summary>
+            <RequestConversation messages={request.comments} />
+          </details>
+        )}
+
+        <Link className={styles.backLink} href="/requests">
+          ← Вернуться к списку заявок
         </Link>
       </div>
     </CampusSection>
+  );
+}
+
+function RequestMetadata({
+  demoId,
+  request,
+  serviceTitle,
+}: {
+  demoId: string;
+  request: {
+    createdAt: Date;
+    updatedAt: Date;
+  };
+  serviceTitle: string;
+}) {
+  return (
+    <dl className={styles.metadataRows}>
+      <div>
+        <dt>Номер</dt>
+        <dd>{demoId}</dd>
+      </div>
+      <div>
+        <dt>Услуга</dt>
+        <dd>{serviceTitle}</dd>
+      </div>
+      <div>
+        <dt>Дата отправки</dt>
+        <dd>{requestDateFormatter.format(request.createdAt)}</dd>
+      </div>
+      {request.updatedAt.getTime() !== request.createdAt.getTime() && (
+        <div>
+          <dt>Последнее действие</dt>
+          <dd>{requestDateTimeFormatter.format(request.updatedAt)}</dd>
+        </div>
+      )}
+    </dl>
   );
 }

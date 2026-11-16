@@ -341,6 +341,54 @@ describe("request actions", () => {
     });
   });
 
+  it("lets a student ask a question on a rejected request without reopening it", async () => {
+    findRequestMock.mockResolvedValue({
+      id: 123,
+      publicId: "b08f54cf-99ce-4a56-a780-8e22ce5ba0a1",
+      status: "REJECTED",
+    });
+    const formData = makeFormData({
+      requestPublicId: "b08f54cf-99ce-4a56-a780-8e22ce5ba0a1",
+      content: "Почему заявка отклонена?",
+    });
+
+    await expect(replyToRequestAction({}, formData)).resolves.toEqual({
+      success: "Сообщение отправлено сотруднику.",
+    });
+
+    expect(updateRequestManyMock).toHaveBeenCalledWith({
+      where: { id: 123, studentId: 20, status: "REJECTED" },
+      data: { updatedAt: expect.any(Date) },
+    });
+    expect(createCommentMock).toHaveBeenCalledWith({
+      data: {
+        requestId: 123,
+        authorUserId: 10,
+        visibility: "PUBLIC",
+        content: "Почему заявка отклонена?",
+        attachments: { create: [] },
+      },
+    });
+  });
+
+  it("does not allow messages on a cancelled request", async () => {
+    findRequestMock.mockResolvedValue({
+      id: 123,
+      publicId: "b08f54cf-99ce-4a56-a780-8e22ce5ba0a1",
+      status: "CANCELLED",
+    });
+    const formData = makeFormData({
+      requestPublicId: "b08f54cf-99ce-4a56-a780-8e22ce5ba0a1",
+      content: "Вопрос",
+    });
+
+    await expect(replyToRequestAction({}, formData)).resolves.toEqual({
+      error: "В отменённой заявке нельзя отправить сообщение.",
+    });
+    expect(updateRequestManyMock).not.toHaveBeenCalled();
+    expect(createCommentMock).not.toHaveBeenCalled();
+  });
+
   it("does not let staff take an unassigned request for another employee", async () => {
     const formData = makeFormData({
       requestId: "123",
@@ -419,7 +467,7 @@ describe("request actions", () => {
         studentId: 20,
         type: "REQUEST_STATUS",
         title: "Изменился статус заявки",
-        text: "Статус заявки изменён: Готова.",
+        text: "Статус заявки изменён: Выполнена.",
         targetType: "REQUEST",
         targetId: "b08f54cf-99ce-4a56-a780-8e22ce5ba0a1",
       },

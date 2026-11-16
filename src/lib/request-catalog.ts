@@ -128,6 +128,24 @@ export function getRequestFieldEntries(
   });
 }
 
+export function getRequestFieldValues(
+  code: string | null | undefined,
+  value: unknown,
+): Record<string, string> {
+  const service = getRequestCatalogEntry(code);
+  const fields = getStringRecord(value);
+  if (!service || !fields) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    service.fields.flatMap((field) => {
+      const fieldValue = fields[field.id];
+      return fieldValue ? [[field.id, fieldValue]] : [];
+    }),
+  );
+}
+
 export function getRequestProfileEntries(
   value: unknown,
 ): { label: string; value: string }[] | null {

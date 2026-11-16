@@ -346,6 +346,62 @@
   overflow-wrap: anywhere;
 }
 
+.statusOverview {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+}
+
+.statusDescription {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: var(--font-size-body);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.statusReason {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--color-danger-border);
+  border-radius: var(--radius-card);
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
+}
+
+.statusReason strong {
+  display: block;
+  margin-bottom: var(--space-2);
+}
+
+.statusReason p {
+  margin: 0;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.documentActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.questionForm {
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-border);
+}
+
+.questionForm h3 {
+  margin: 0;
+}
+
+.questionForm .form {
+  margin-top: var(--space-3);
+}
+
 .profileSnapshot {
   display: grid;
   gap: var(--space-3);
@@ -458,6 +514,10 @@
   }
 
   .errorActions {
+    display: grid;
+  }
+
+  .documentActions {
     display: grid;
   }
 

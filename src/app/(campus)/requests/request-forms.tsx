@@ -42,19 +42,29 @@ function ActionFeedback({ state }: { state: RequestActionState }) {
 export function NewRequestForm({
   profile,
   publicId,
+  initialValues,
 }: {
   profile: RequestProfileSnapshot;
   publicId: string;
+  initialValues?: {
+    catalogCode: RequestCatalogCode;
+    fields: Record<string, string>;
+    description: string;
+  };
 }) {
   const [state, formAction, pending] = useActionState(
     createRequestAction,
     initialState,
   );
   const [catalogCode, setCatalogCode] = useState<RequestCatalogCode>(
-    requestCatalog[0].code,
+    initialValues?.catalogCode ?? requestCatalog[0].code,
   );
-  const [fields, setFields] = useState<Record<string, string>>({});
-  const [description, setDescription] = useState("");
+  const [fields, setFields] = useState<Record<string, string>>(
+    initialValues?.fields ?? {},
+  );
+  const [description, setDescription] = useState(
+    initialValues?.description ?? "",
+  );
   const [showValidation, setShowValidation] = useState(false);
   const [dismissedServerErrors, setDismissedServerErrors] = useState<
     Record<string, true>
@@ -311,8 +321,10 @@ function RequestCatalogFieldInput({
 
 export function StudentReplyForm({
   requestPublicId,
+  mode = "reply",
 }: {
   requestPublicId: string;
+  mode?: "reply" | "question";
 }) {
   const [state, formAction, pending] = useActionState(
     replyToRequestAction,
@@ -326,13 +338,19 @@ export function StudentReplyForm({
     >
       <input name="requestPublicId" type="hidden" value={requestPublicId} />
       <div className={styles.field}>
-        <label htmlFor="student-reply">Ваш ответ</label>
+        <label htmlFor="student-reply">
+          {mode === "reply" ? "Ваш ответ" : "Ваш вопрос"}
+        </label>
         <textarea
           className={styles.textarea}
           id="student-reply"
           maxLength={5000}
           name="content"
-          placeholder="Напишите ответ или пояснение"
+          placeholder={
+            mode === "reply"
+              ? "Напишите ответ или пояснение"
+              : "Напишите вопрос сотруднику"
+          }
         />
       </div>
       <div className={styles.field}>
@@ -352,7 +370,11 @@ export function StudentReplyForm({
       </div>
       <ActionFeedback state={state} />
       <button className={styles.button} disabled={pending} type="submit">
-        {pending ? "Отправляем…" : "Отправить сотруднику"}
+        {pending
+          ? "Отправляем…"
+          : mode === "reply"
+            ? "Отправить ответ"
+            : "Задать вопрос"}
       </button>
     </form>
   );

@@ -1,12 +1,17 @@
 import { randomUUID } from "node:crypto";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { CampusSection } from "@/components/campus-section";
 import { NewRequestForm } from "@/app/(campus)/requests/request-forms";
 import { requireStudentContext } from "@/lib/student";
 import {
+  getRequestCatalogTitle,
+  getRequestFieldValues,
+  isRequestCatalogCode,
   requestCatalog,
   type RequestProfileSnapshot,
 } from "@/lib/request-catalog";
+import { getStudentRequest } from "@/lib/student-request-data";
 import workflowStyles from "@/app/request-workflow.module.css";
 import styles from "./request-page.module.css";
 
@@ -16,8 +21,42 @@ const maxExecutionDays = Math.max(
   ...requestCatalog.map((service) => service.executionDays),
 );
 
-export default async function NewRequestPage() {
+export default async function NewRequestPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ copy?: string | string[] }>;
+}) {
   const { student } = await requireStudentContext();
+  const query = await searchParams;
+  const copyPublicId = typeof query.copy === "string" ? query.copy : null;
+  let initialValues:
+    | {
+        catalogCode: (typeof requestCatalog)[number]["code"];
+        fields: Record<string, string>;
+        description: string;
+      }
+    | undefined;
+
+  if (copyPublicId) {
+    const sourceRequest = await getStudentRequest(copyPublicId);
+    if (
+      sourceRequest.status !== "REJECTED" ||
+      sourceRequest.catalogCode === null ||
+      !isRequestCatalogCode(sourceRequest.catalogCode)
+    ) {
+      notFound();
+    }
+
+    initialValues = {
+      catalogCode: sourceRequest.catalogCode,
+      fields: getRequestFieldValues(
+        sourceRequest.catalogCode,
+        sourceRequest.formFields,
+      ),
+      description: sourceRequest.comment ?? "",
+    };
+  }
+
   const profile: RequestProfileSnapshot = {
     fullName: student.fullName,
     faculty: student.faculty,
@@ -38,17 +77,32 @@ export default async function NewRequestPage() {
         <nav className={styles.breadcrumbs} aria-label="Хлебные крошки">
           <Link href="/help">Документы</Link>
           <span aria-hidden="true">/</span>
-          <span>Справка об обучении</span>
+          <span>
+            {getRequestCatalogTitle(
+              initialValues?.catalogCode ?? requestCatalog[0].code,
+              "Услуга",
+            )}
+          </span>
         </nav>
         <div className={styles.layout}>
           <section
             className={`${workflowStyles.panel} ${styles.formPanel}`}
             aria-labelledby="application-data-title"
           >
+            {initialValues && (
+              <p className={workflowStyles.notice}>
+                Данные отклонённой заявки подставлены для удобства. Повторная
+                подача создаст новую заявку.
+              </p>
+            )}
             <h2 className={styles.panelTitle} id="application-data-title">
               Данные заявления
             </h2>
-            <NewRequestForm profile={profile} publicId={randomUUID()} />
+            <NewRequestForm
+              initialValues={initialValues}
+              profile={profile}
+              publicId={randomUUID()}
+            />
           </section>
           <aside
             className={styles.helpPanel}

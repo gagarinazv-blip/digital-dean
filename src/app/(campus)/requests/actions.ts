@@ -223,8 +223,8 @@ export async function replyToRequestAction(
   if (!request) {
     notFound();
   }
-  if (request.status !== "NEEDS_INFO") {
-    return { error: "Ответить можно только на запрос недостающих данных." };
+  if (request.status === "CANCELLED") {
+    return { error: "В отменённой заявке нельзя отправить сообщение." };
   }
 
   const content = getMessage(formData);
@@ -245,7 +245,7 @@ export async function replyToRequestAction(
       where: {
         id: request.id,
         studentId: student.id,
-        status: "NEEDS_INFO",
+        status: request.status,
       },
       data: { updatedAt: new Date() },
     });
@@ -274,5 +274,10 @@ export async function replyToRequestAction(
   revalidateStudentRequestPaths(request.publicId);
   revalidatePath("/staff");
   revalidatePath(`/staff/requests/${request.id}`);
-  return { success: "Ответ отправлен сотруднику." };
+  return {
+    success:
+      request.status === "NEEDS_INFO"
+        ? "Ответ отправлен сотруднику."
+        : "Сообщение отправлено сотруднику.",
+  };
 }

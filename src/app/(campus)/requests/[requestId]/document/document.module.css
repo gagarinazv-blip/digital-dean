@@ -1,0 +1,109 @@
+.stack {
+  display: grid;
+  gap: var(--space-4);
+  width: min(100%, 820px);
+  margin-inline: auto;
+}
+
+.document {
+  min-width: 0;
+  padding: clamp(var(--space-5), 6vw, 56px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.demoBadge {
+  display: inline-flex;
+  max-width: 100%;
+  min-height: 28px;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  font-size: var(--font-size-caption);
+  font-weight: 650;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.document h2 {
+  margin: var(--space-6) 0 var(--space-3);
+  color: var(--color-ink);
+  font-size: var(--font-size-h2);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.document h3 {
+  margin: var(--space-6) 0 var(--space-3);
+  color: var(--color-ink);
+  font-size: var(--font-size-body);
+}
+
+.document p {
+  color: var(--color-ink);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.documentNumber,
+.disclaimer {
+  color: var(--color-muted) !important;
+  font-size: var(--font-size-label);
+}
+
+.details {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.details > div {
+  display: grid;
+  grid-template-columns: minmax(140px, 0.8fr) minmax(0, 1.2fr);
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.details dt {
+  color: var(--color-muted);
+  font-size: var(--font-size-label);
+}
+
+.details dd {
+  margin: 0;
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.disclaimer {
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+@media (max-width: 560px) {
+  .actions {
+    display: grid;
+  }
+
+  .actions > a {
+    width: 100%;
+  }
+
+  .details > div {
+    grid-template-columns: 1fr;
+    gap: var(--space-1);
+  }
+}
