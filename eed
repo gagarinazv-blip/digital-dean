@@ -1,0 +1,38 @@
+[35mREADME.md[m[36m:[m[32m131[m[36m:[m| `[1;31mstudent.alpha[m` | Значение `SEED_ALPHA_PASSWORD` из `.env` |
+[35mREADME.md[m[36m:[m[32m143[m[36m:[mДля `[1;31mstudent.alpha[m` seed создаёт расписание на сегодня и следующие шесть дней,
+[35mREADME.md[m[36m:[m[32m165[m[36m:[m«Компьютерные сети» (`pi31-s5-networks`) у `[1;31mstudent.alpha[m`; экзамен в фикстуре
+[35mREADME.md[m[36m:[m[32m204[m[36m:[mТестовые заявки для `[1;31mstudent.alpha[m` и `student.beta` создаются повторно вместе
+[35mREADME.md[m[36m:[m[32m375[m[36m:[m| `[1;31mstudent.alpha[m` | `<ПАРОЛЬ_ALPHA>` | Елизавета Воронцова | Факультет прикладных вычислений | 3 | TEST-ACADEMIC-31A |
+[35mREADME.md[m[36m:[m[32m387[m[36m:[m1. Откройте локальный адрес входа и войдите под `[1;31mstudent.alpha[m`, используя
+[35mprisma/academic-records-seed-data.ts[m[36m:[m[32m76[m[36m:[m      login: "[1;31mstudent.alpha[m",
+[35mprisma/deadline-seed-data.ts[m[36m:[m[32m5[m[36m:[m    login: "[1;31mstudent.alpha[m",
+[35mprisma/deadline-seed-data.ts[m[36m:[m[32m12[m[36m:[m    login: "[1;31mstudent.alpha[m",
+[35mprisma/deadline-seed-data.ts[m[36m:[m[32m19[m[36m:[m    login: "[1;31mstudent.alpha[m",
+[35mprisma/deadline-seed-data.ts[m[36m:[m[32m26[m[36m:[m    login: "[1;31mstudent.alpha[m",
+[35mprisma/schedule-seed-data.ts[m[36m:[m[32m6[m[36m:[mtype TargetLogin = "[1;31mstudent.alpha[m" | "student.beta";
+[35mprisma/schedule-seed-data.ts[m[36m:[m[32m97[m[36m:[m  for (const login of ["[1;31mstudent.alpha[m", "student.beta"] as const) {
+[35mprisma/schedule-seed-data.ts[m[36m:[m[32m98[m[36m:[m    const isAlpha = login === "[1;31mstudent.alpha[m";
+[35mprisma/seed.ts[m[36m:[m[32m109[m[36m:[m    login: "[1;31mstudent.alpha[m",
+[35mprisma/seed.ts[m[36m:[m[32m111[m[36m:[m    ...academicAccountData("[1;31mstudent.alpha[m"),
+[35mprisma/seed.ts[m[36m:[m[32m474[m[36m:[m        if (account.login === "[1;31mstudent.alpha[m") {
+[35mprisma/seed.ts[m[36m:[m[32m617[m[36m:[m      const alphaStudentId = studentIds.get("[1;31mstudent.alpha[m");
+[35mprisma/seed.ts[m[36m:[m[32m619[m[36m:[m      const alphaUserId = studentUserIds.get("[1;31mstudent.alpha[m");
+[35mprisma/seed.ts[m[36m:[m[32m660[m[36m:[m          profileSnapshot: profileSnapshot("[1;31mstudent.alpha[m"),
+[35mprisma/seed.ts[m[36m:[m[32m706[m[36m:[m          profileSnapshot: profileSnapshot("[1;31mstudent.alpha[m"),
+[35mprisma/seed.ts[m[36m:[m[32m774[m[36m:[m            ? "[1;31mstudent.alpha[m"
+[35mprisma/seed.ts[m[36m:[m[32m788[m[36m:[m          account.login === "[1;31mstudent.alpha[m" ||
+[35mprisma/seed.ts[m[36m:[m[32m913[m[36m:[m      for (const login of ["[1;31mstudent.alpha[m", "student.beta"] as const) {
+[35mtests/academic-records-seed-data.test.ts[m[36m:[m[32m9[m[36m:[m    ).toEqual(["[1;31mstudent.alpha[m", "student.beta"]);
+[35mtests/auth.test.ts[m[36m:[m[32m67[m[36m:[m  login: "[1;31mstudent.alpha[m",
+[35mtests/auth.test.ts[m[36m:[m[32m284[m[36m:[m      expect.objectContaining({ where: { login: "[1;31mstudent.alpha[m" } }),
+[35mtests/auth.test.ts[m[36m:[m[32m300[m[36m:[m      loginUser("[1;31mstudent.alpha[m", "wrong-demo-password"),
+[35mtests/deadline-seed-data.test.ts[m[36m:[m[32m11[m[36m:[m      new Set(["[1;31mstudent.alpha[m", "student.beta"]),
+[35mtests/grade-formula.test.ts[m[36m:[m[32m136[m[36m:[m      (student) => student.login === "[1;31mstudent.alpha[m",
+[35mtests/login-action.test.ts[m[36m:[m[32m45[m[36m:[m    formData.set("login", "[1;31mstudent.alpha[m");
+[35mtests/request-attachment-route.test.ts[m[36m:[m[32m28[m[36m:[m  login: "[1;31mstudent.alpha[m",
+[35mtests/schedule-seed-data.test.ts[m[36m:[m[32m9[m[36m:[m    const alphaRows = rows.filter((row) => row.login === "[1;31mstudent.alpha[m");
+[35mtests/schedule-seed-data.test.ts[m[36m:[m[32m36[m[36m:[m    for (const login of ["[1;31mstudent.alpha[m", "student.beta"] as const) {
+[35mtests/schedule-seed-data.test.ts[m[36m:[m[32m71[m[36m:[m      (row) => row.login === "[1;31mstudent.alpha[m",
+[35mtests/schedule-seed-data.test.ts[m[36m:[m[32m106[m[36m:[m    const alphaRows = rows.filter((row) => row.login === "[1;31mstudent.alpha[m");
+[35mtests/staff.test.ts[m[36m:[m[32m77[m[36m:[m      login: "[1;31mstudent.alpha[m",
+[35mtests/student.test.ts[m[36m:[m[32m50[m[36m:[m    login: "[1;31mstudent.alpha[m",

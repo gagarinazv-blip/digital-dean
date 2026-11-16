@@ -143,34 +143,34 @@ const staffAccounts = [
 
 const subjects = [
   {
-    name: "[TEST SEED] История вымышленных цивилизаций",
+    name: "История вымышленных цивилизаций",
     teacher: "Профессор Лира Северная",
   },
   {
-    name: "[TEST SEED] Основы межзвёздной дипломатии",
+    name: "Основы межзвёздной дипломатии",
     teacher: "Доцент Орест Тихозвёздный",
   },
   {
-    name: "[TEST SEED] Математика параллельных миров",
+    name: "Математика параллельных миров",
     teacher: "Профессор Элина Меридиан",
   },
   {
-    name: "[TEST SEED] Языки древнего архипелага",
+    name: "Языки древнего архипелага",
     teacher: "Доцент Ника Облачная",
   },
   {
-    name: "[TEST SEED] Введение в картографию снов",
+    name: "Введение в картографию снов",
     teacher: "Профессор Мирон Лунов",
   },
 ] as const;
 
 const generalAnnouncements = [
   {
-    title: "[TEST SEED] Общее объявление: учебная неделя",
+    title: "Общее объявление: учебная неделя",
     text: "Это вымышленное тестовое объявление. Учебная неделя начнётся по расписанию.",
   },
   {
-    title: "[TEST SEED] Общее объявление: библиотека",
+    title: "Общее объявление: библиотека",
     text: "Это вымышленное тестовое объявление. Тестовая библиотека ждёт читателей.",
   },
 ] as const;
@@ -355,7 +355,12 @@ async function main() {
         select: { id: true },
       });
       const seededSubjects = await tx.subject.findMany({
-        where: { name: { in: subjects.map((subject) => subject.name) } },
+        where: {
+          OR: [
+            { name: { in: subjects.map((subject) => subject.name) } },
+            { name: { startsWith: "[TEST SEED]" } },
+          ],
+        },
         select: { id: true },
       });
 
@@ -365,6 +370,7 @@ async function main() {
             { studentId: { in: students.map((student) => student.id) } },
             { groupId: { in: groups.map((group) => group.id) } },
             { title: { in: generalAnnouncements.map(({ title }) => title) } },
+            { title: { startsWith: "[TEST SEED]" } },
           ],
         },
       });
@@ -381,7 +387,12 @@ async function main() {
         where: { subjectId: { in: seededSubjects.map((subject) => subject.id) } },
       });
       await tx.subject.deleteMany({
-        where: { name: { in: subjects.map((subject) => subject.name) } },
+        where: {
+          OR: [
+            { name: { in: subjects.map((subject) => subject.name) } },
+            { name: { startsWith: "[TEST SEED]" } },
+          ],
+        },
       });
       await tx.student.deleteMany({
         where: { userId: { in: users.map((user) => user.id) } },
@@ -660,7 +671,7 @@ async function main() {
           profileSnapshot: profileSnapshot("student.alpha"),
           status: "NEW",
           assignedToId: demoStaffProfileId,
-          comment: "[TEST SEED STAFF] Заявка назначена staff.demo.",
+          comment: "Заявка назначена staff.demo.",
           statusHistory: {
             create: [
               {
@@ -682,7 +693,7 @@ async function main() {
           },
           profileSnapshot: profileSnapshot("student.beta"),
           status: "IN_PROGRESS",
-          comment: "[TEST SEED STAFF] Разрешённый тип без назначения.",
+          comment: "Разрешённый тип без назначения.",
           statusHistory: {
             create: [
               {
@@ -706,7 +717,7 @@ async function main() {
           profileSnapshot: profileSnapshot("student.alpha"),
           status: "READY",
           assignedToId: otherStaffProfileId,
-          comment: "[TEST SEED STAFF] Заявка назначена staff.other.",
+          comment: "Заявка назначена staff.other.",
           statusHistory: {
             create: [
               {
@@ -738,7 +749,7 @@ async function main() {
           },
           profileSnapshot: profileSnapshot("student.beta"),
           status: "REJECTED",
-          comment: "[TEST SEED STAFF] Тип не разрешён staff.demo.",
+          comment: "Тип не разрешён staff.demo.",
           statusHistory: {
             create: [
               {
