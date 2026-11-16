@@ -52,6 +52,7 @@ const requestDetailSelection = {
       attachments: {
         select: {
           id: true,
+          kind: true,
           fileName: true,
           mediaType: true,
           sizeBytes: true,

@@ -6,7 +6,11 @@ import {
   getRequestCatalogTitle,
   requestCatalog,
 } from "@/lib/request-catalog";
-import { getStudentRequests } from "@/lib/student-request-data";
+import {
+  getStudentRequest,
+  getStudentRequests,
+} from "@/lib/student-request-data";
+import { RequestSearchForm } from "./request-search-form";
 import styles from "./help.module.css";
 
 export const instant = false;
@@ -16,8 +20,16 @@ const requestDateFormatter = new Intl.DateTimeFormat("ru-RU", {
   timeZone: "Europe/Moscow",
 });
 
-function requestStatusText(status: RequestStatus): string {
-  return requestStatusLabels[status];
+const requestDateTimeFormatter = new Intl.DateTimeFormat("ru-RU", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "Europe/Moscow",
+});
+
+const requestStatuses = Object.keys(requestStatusLabels) as RequestStatus[];
+
+function isRequestStatus(value: string): value is RequestStatus {
+  return requestStatuses.includes(value as RequestStatus);
 }
 
 function ServiceIcon({ kind }: { kind: "certificate" | "call" }) {
@@ -46,213 +58,463 @@ function ServiceIcon({ kind }: { kind: "certificate" | "call" }) {
   );
 }
 
-export default async function HelpPage() {
+function getRequestStatusHint(status: RequestStatus): string {
+  switch (status) {
+    case "NEW":
+      return "Заявка отправлена";
+    case "IN_PROGRESS":
+      return "Ожидайте решения сотрудника";
+    case "NEEDS_INFO":
+      return "Ответьте на запрос сотрудника";
+    case "READY":
+      return "Посмотреть результат";
+    case "REJECTED":
+      return "Просмотрите причину отказа";
+    case "CANCELLED":
+      return "Заявка закрыта";
+  }
+}
+
+function getRequestSelectionHref(
+  publicId: string,
+  search: string,
+  status: RequestStatus | "",
+): string {
+  const params = new URLSearchParams({
+    tab: "requests",
+    selected: publicId,
+  });
+  if (search) {
+    params.set("q", search);
+  }
+  if (status) {
+    params.set("status", status);
+  }
+  return `/help?${params.toString()}#request-details`;
+}
+
+function SelectedRequestPanel({
+  request,
+}: {
+  request: Awaited<ReturnType<typeof getStudentRequest>>;
+}) {
+  const serviceTitle = getRequestCatalogTitle(
+    request.catalogCode,
+    requestTypeLabels[request.type],
+  );
+  const requestNumber = `№ ${request.publicId.slice(0, 8).toUpperCase()}`;
+  const latestStaffMessage = request.comments
+    .filter((comment) => comment.author.role === "STAFF")
+    .at(-1);
+  const latestStatus = request.statusHistory.at(-1);
+  const requestMessage =
+    request.status === "NEEDS_INFO" || request.status === "REJECTED"
+      ? latestStatus?.comment ?? latestStaffMessage?.content
+      : null;
+  const resultAttachments =
+    request.status === "READY"
+      ? request.comments.flatMap((comment) =>
+          comment.attachments.filter(
+            (attachment) => attachment.kind === "RESULT",
+          ),
+        )
+      : [];
+  const history = [...request.statusHistory].reverse();
+
+  return (
+    <aside
+      className={styles.requestDetails}
+      id="request-details"
+      aria-labelledby="selected-request-title"
+    >
+      <div className={styles.detailHeading}>
+        <div>
+          <p className={styles.detailNumber}>Заявка {requestNumber}</p>
+          <h2 id="selected-request-title">{serviceTitle}</h2>
+        </div>
+        <span className={styles.statusBadge} data-status={request.status}>
+          {requestStatusLabels[request.status]}
+        </span>
+      </div>
+      <p className={styles.detailDates}>
+        Подана {requestDateFormatter.format(request.createdAt)} · Обновлена{" "}
+        {requestDateTimeFormatter.format(request.updatedAt)}
+      </p>
+
+      {requestMessage && (
+        <section className={styles.staffMessage}>
+          <span aria-hidden="true" className={styles.messageIcon}>
+            ◉
+          </span>
+          <div>
+            <h3>
+              {request.status === "NEEDS_INFO"
+                ? "Сотрудник запросил дополнительные сведения"
+                : "Комментарий от деканата"}
+            </h3>
+            <p>{requestMessage}</p>
+            {latestStaffMessage && (
+              <span>
+                Комментарий от деканата ·{" "}
+                {requestDateTimeFormatter.format(latestStaffMessage.createdAt)}
+              </span>
+            )}
+          </div>
+        </section>
+      )}
+
+      {request.status === "READY" && resultAttachments.length > 0 ? (
+        <ul className={styles.resultList}>
+          {resultAttachments.map((attachment) => (
+            <li key={attachment.id}>
+              <span title={attachment.fileName}>{attachment.fileName}</span>
+              <a
+                download
+                href={`/api/request-attachments/${attachment.id}`}
+              >
+                Скачать
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : request.status === "READY" ? (
+        <p className={styles.resultPending}>
+          Решение принято. Файл результата появится здесь после загрузки
+          сотрудником.
+        </p>
+      ) : (
+        <Link
+          className={styles.detailAction}
+          href={`/requests/${request.publicId}`}
+        >
+          {request.status === "NEEDS_INFO"
+            ? "Ответить на запрос"
+            : "Открыть заявку"}
+          <span aria-hidden="true">→</span>
+        </Link>
+      )}
+
+      <section className={styles.historySection} aria-labelledby="history-title">
+        <h3 id="history-title">История обработки</h3>
+        {history.length > 0 ? (
+          <ol className={styles.requestTimeline}>
+            {history.map((entry, index) => (
+              <li
+                className={styles.timelineItem}
+                data-current={index === 0 ? "true" : undefined}
+                key={`${entry.changedAt.toISOString()}-${index}`}
+              >
+                <span
+                  aria-hidden="true"
+                  className={styles.timelineMarker}
+                  data-status={entry.status}
+                >
+                  {index === 0 ? "✓" : ""}
+                </span>
+                <div className={styles.timelineContent}>
+                  <strong>{requestStatusLabels[entry.status]}</strong>
+                  <time dateTime={entry.changedAt.toISOString()}>
+                    {requestDateTimeFormatter.format(entry.changedAt)}
+                  </time>
+                  <p>
+                    {entry.comment ??
+                      (entry.status === "NEW"
+                        ? "Заявка успешно создана."
+                        : entry.status === "IN_PROGRESS"
+                          ? "Заявка передана на рассмотрение."
+                          : entry.status === "NEEDS_INFO"
+                            ? "Запрошены дополнительные сведения."
+                            : entry.status === "READY"
+                              ? "Решение принято."
+                              : entry.status === "REJECTED"
+                                ? "Заявка отклонена."
+                                : "Заявка отменена.")}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className={styles.noHistory}>История обработки пока пуста.</p>
+        )}
+      </section>
+    </aside>
+  );
+}
+
+export default async function HelpPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    tab?: string | string[];
+    q?: string | string[];
+    status?: string | string[];
+    selected?: string | string[];
+  }>;
+}) {
+  const query = await searchParams;
+  const activeTab = query.tab === "requests" ? "requests" : "catalog";
+  const search = typeof query.q === "string" ? query.q.trim() : "";
+  const selectedStatus =
+    typeof query.status === "string" && isRequestStatus(query.status)
+      ? query.status
+      : "";
+  const requestedSelection =
+    typeof query.selected === "string" ? query.selected : "";
+  const normalizedSearch = search.toLocaleLowerCase("ru");
   const requests = await getStudentRequests();
+  const visibleRequests = requests.filter((request) => {
+    if (selectedStatus && request.status !== selectedStatus) {
+      return false;
+    }
+
+    if (!normalizedSearch) {
+      return true;
+    }
+
+    const title = getRequestCatalogTitle(
+      request.catalogCode,
+      requestTypeLabels[request.type],
+    );
+    return [
+      title,
+      request.publicId,
+      request.comment ?? "",
+      requestStatusLabels[request.status],
+    ].some((value) => value.toLocaleLowerCase("ru").includes(normalizedSearch));
+  });
+  const selectedSummary =
+    visibleRequests.find(
+      (request) => request.publicId === requestedSelection,
+    ) ?? visibleRequests[0];
+  const selectedRequest =
+    activeTab === "requests" && selectedSummary
+      ? await getStudentRequest(selectedSummary.publicId)
+      : null;
+  const visibleServices = requestCatalog
+    .filter((service) => service.active)
+    .filter((service) => {
+      if (!normalizedSearch) {
+        return true;
+      }
+
+      return [
+        service.title,
+        service.description,
+        ...service.fields.map((field) => field.label),
+      ].some((value) =>
+        value.toLocaleLowerCase("ru").includes(normalizedSearch),
+      );
+    });
 
   return (
     <CampusSection
       eyebrow="Сервисы кампуса"
-      title="Документы и заявки"
-      description="Справки, обращения и прозрачное отслеживание."
+      title={activeTab === "requests" ? "Мои заявки" : "Справки и обращения"}
+      description={
+        activeTab === "requests"
+          ? "История обращений и ход их обработки."
+          : "Выберите услугу, отправьте обращение и следите за его обработкой."
+      }
     >
       <div className={styles.pageContent}>
-        <section className={styles.hero} aria-label="Новая заявка">
-          <div className={styles.heroArt} aria-hidden="true" />
-          <div className={styles.heroContent}>
-            <p className={styles.heroKicker}>Сервисы для студентов</p>
-            <h2>Нужен документ или помощь деканата?</h2>
-            <p>Оформите заявку онлайн и следите за её статусом в кабинете.</p>
-            <Link className={styles.primaryButton} href="/requests/new">
-              Новая заявка <span aria-hidden="true">→</span>
-            </Link>
-          </div>
-        </section>
+        {activeTab === "catalog" && (
+          <section className={styles.hero} aria-label="Справки и обращения">
+            <div className={styles.heroArt} aria-hidden="true" />
+            <div className={styles.heroContent}>
+              <p className={styles.heroKicker}>Сервисы для студентов</p>
+              <h2>Документы и обращения — онлайн</h2>
+              <p>
+                Каталог услуг, отправка заявления и история общения с деканатом
+                — в одном разделе.
+              </p>
+            </div>
+          </section>
+        )}
 
-        <div className={styles.filterBar} aria-hidden="true">
-          <div className={styles.searchVisual}>
-            <svg
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="1.8"
-              viewBox="0 0 24 24"
+        <nav className={styles.tabs} aria-label="Раздел справок и обращений">
+          <Link
+            aria-current={activeTab === "catalog" ? "page" : undefined}
+            className={activeTab === "catalog" ? styles.activeTab : ""}
+            href="/help?tab=catalog"
+          >
+            Каталог услуг
+          </Link>
+          <Link
+            aria-current={activeTab === "requests" ? "page" : undefined}
+            className={activeTab === "requests" ? styles.activeTab : ""}
+            href="/help?tab=requests"
+          >
+            Мои заявки
+            <span className={styles.tabCount}>· {requests.length}</span>
+          </Link>
+        </nav>
+
+        {activeTab === "catalog" ? (
+          <>
+            <form action="/help" className={styles.filterBar} role="search">
+              <input name="tab" type="hidden" value={activeTab} />
+              <label className={styles.searchField}>
+                <span className={styles.visuallyHidden}>Поиск услуг</span>
+                <svg
+                  aria-hidden="true"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1.8"
+                  viewBox="0 0 24 24"
+                >
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m20 20-4-4" />
+                </svg>
+                <input
+                  defaultValue={search}
+                  name="q"
+                  placeholder="Поиск услуги"
+                  type="search"
+                />
+              </label>
+              <button className={styles.searchButton} type="submit">
+                Найти
+              </button>
+            </form>
+            <section className={styles.section} aria-labelledby="catalog-title">
+              <div className={styles.sectionHeading}>
+                <div>
+                  <p className={styles.kicker}>Выберите подходящую услугу</p>
+                  <h2 id="catalog-title">Каталог услуг</h2>
+                </div>
+              </div>
+              {visibleServices.length === 0 ? (
+                <div className={styles.emptyState}>
+                  По запросу «{search}» услуги не найдены. Измените поисковый
+                  запрос.
+                </div>
+              ) : (
+                <div className={styles.serviceGrid}>
+                  {visibleServices.map((service) => (
+                    <article className={styles.serviceCard} key={service.code}>
+                      <span className={styles.serviceIcon}>
+                        <ServiceIcon
+                          kind={
+                            service.code === "CALL_CERTIFICATE"
+                              ? "call"
+                              : "certificate"
+                          }
+                        />
+                      </span>
+                      <h3>{service.title}</h3>
+                      <p className={styles.serviceDescription}>
+                        {service.description}
+                      </p>
+                      <span className={styles.serviceMeta}>
+                        Электронно · до {service.executionDays} рабочих дней
+                      </span>
+                      <div className={styles.requirements}>
+                        <strong>Для оформления</strong>
+                        <ul>
+                          {service.fields.map((field) => (
+                            <li key={field.id}>{field.label}</li>
+                          ))}
+                          <li>Данные профиля студента</li>
+                        </ul>
+                      </div>
+                      <Link
+                        className={styles.serviceLink}
+                        href={`/requests/new?service=${service.code}`}
+                      >
+                        Выбрать услугу <span aria-hidden="true">→</span>
+                      </Link>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+          </>
+        ) : (
+          <div className={styles.requestWorkspace}>
+            <section
+              className={styles.requestListColumn}
+              aria-label="Список заявок"
             >
-              <circle cx="11" cy="11" r="7" />
-              <path d="m20 20-4-4" />
-            </svg>
-            <span>Поиск услуги или заявки</span>
-          </div>
-          <div className={styles.filterVisual}>
-            <span>Статус: все</span>
-            <svg
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="1.8"
-              viewBox="0 0 24 24"
-            >
-              <path d="m7 10 5 5 5-5" />
-            </svg>
-          </div>
-        </div>
-
-        <section className={styles.section} aria-labelledby="catalog-title">
-          <div className={styles.sectionHeading}>
-            <div>
-              <p className={styles.kicker}>Выберите подходящую услугу</p>
-              <h2 id="catalog-title">Каталог услуг</h2>
-            </div>
-          </div>
-          <div className={styles.serviceGrid}>
-            {requestCatalog
-              .filter((service) => service.active)
-              .map((service) => (
-                <article className={styles.serviceCard} key={service.code}>
-                  <span className={styles.serviceIcon}>
-                    <ServiceIcon
-                      kind={
-                        service.code === "CALL_CERTIFICATE"
-                          ? "call"
-                          : "certificate"
-                      }
-                    />
-                  </span>
-                  <h3>{service.title}</h3>
-                  <p>{service.description}</p>
-                  <span className={styles.serviceMeta}>
-                    Электронно · до {service.executionDays} рабочих дней
-                  </span>
-                  <Link className={styles.serviceLink} href="/requests/new">
-                    Выбрать услугу <span aria-hidden="true">→</span>
-                  </Link>
-                </article>
-              ))}
-          </div>
-        </section>
-
-        <section className={styles.section} aria-labelledby="requests-title">
-          <div className={styles.sectionHeading}>
-            <div>
-              <p className={styles.kicker}>История обращений</p>
-              <h2 id="requests-title">Мои заявки · {requests.length}</h2>
-            </div>
-            <Link className={styles.secondaryLink} href="/requests">
-              Все заявки <span aria-hidden="true">↗</span>
-            </Link>
-          </div>
-
-          {requests.length === 0 ? (
-            <div className={styles.emptyState}>
-              <span className={styles.emptyIcon} aria-hidden="true">
-                <ServiceIcon kind="certificate" />
-              </span>
-              <h3>Заявок пока нет</h3>
-              <p>Выберите услугу в каталоге, чтобы отправить первое обращение.</p>
-            </div>
-          ) : (
-            <>
-              <div className={styles.tableScroller}>
-                <table className={styles.requestTable}>
-                  <thead>
-                    <tr>
-                      <th scope="col">Номер</th>
-                      <th scope="col">Студент</th>
-                      <th scope="col">Услуга</th>
-                      <th scope="col">Подана</th>
-                      <th scope="col">Статус</th>
-                      <th scope="col">
-                        <span className={styles.visuallyHidden}>Открыть</span>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {requests.map((request, index) => (
-                      <tr
-                        className={index === 0 ? styles.selectedRow : ""}
+              <RequestSearchForm search={search} status={selectedStatus} />
+              {visibleRequests.length === 0 ? (
+                <div className={styles.emptyState}>
+                  {requests.length === 0
+                    ? "Заявок пока нет. Выберите услугу в каталоге, чтобы отправить первое обращение."
+                    : "Заявки по заданным параметрам не найдены. Измените поиск или фильтр."}
+                </div>
+              ) : (
+                <ul className={styles.requestList}>
+                  {visibleRequests.map((request) => {
+                    const serviceTitle = getRequestCatalogTitle(
+                      request.catalogCode,
+                      requestTypeLabels[request.type],
+                    );
+                    const isSelected =
+                      request.publicId === selectedSummary?.publicId;
+                    return (
+                      <li
+                        className={styles.requestListItem}
+                        data-selected={isSelected ? "true" : undefined}
                         key={request.id}
                       >
-                        <td>
-                          <Link
-                            className={styles.requestNumber}
-                            href={`/requests/${request.publicId}`}
-                            title={request.publicId}
-                          >
-                            № {request.publicId.slice(0, 8).toUpperCase()}
-                          </Link>
-                        </td>
-                        <td>Вы</td>
-                        <td>
-                          {getRequestCatalogTitle(
-                            request.catalogCode,
-                            requestTypeLabels[request.type],
+                        <Link
+                          aria-current={isSelected ? "page" : undefined}
+                          className={styles.requestListLink}
+                          href={getRequestSelectionHref(
+                            request.publicId,
+                            search,
+                            selectedStatus,
                           )}
-                        </td>
-                        <td>
-                          {requestDateFormatter.format(request.createdAt)}
-                        </td>
-                        <td>
-                          <span
-                            className={styles.statusBadge}
-                            data-status={request.status}
-                          >
-                            {requestStatusText(request.status)}
-                          </span>
-                        </td>
-                        <td>
-                          <Link
-                            aria-label={`Открыть заявку ${request.publicId}`}
-                            className={styles.rowLink}
-                            href={`/requests/${request.publicId}`}
-                          >
-                            <span aria-hidden="true">›</span>
-                          </Link>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <ul className={styles.mobileRequestList}>
-                {requests.map((request, index) => (
-                  <li
-                    className={`${styles.mobileRequestCard} ${
-                      index === 0 ? styles.mobileSelected : ""
-                    }`}
-                    key={request.id}
-                  >
-                    <Link
-                      className={styles.mobileRequestLink}
-                      href={`/requests/${request.publicId}`}
-                    >
-                      <div className={styles.mobileRequestHeading}>
-                        <span className={styles.requestNumber}>
-                          № {request.publicId.slice(0, 8).toUpperCase()}
-                        </span>
-                        <span
-                          className={styles.statusBadge}
-                          data-status={request.status}
                         >
-                          {requestStatusText(request.status)}
-                        </span>
-                      </div>
-                      <strong>
-                        {getRequestCatalogTitle(
-                          request.catalogCode,
-                          requestTypeLabels[request.type],
-                        )}
-                      </strong>
-                      <span className={styles.mobileRequestMeta}>
-                        Вы · {requestDateFormatter.format(request.createdAt)}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-        </section>
+                          <span className={styles.requestListIcon}>
+                            <ServiceIcon
+                              kind={
+                                request.catalogCode === "CALL_CERTIFICATE"
+                                  ? "call"
+                                  : "certificate"
+                              }
+                            />
+                          </span>
+                          <span className={styles.requestListMain}>
+                            <strong>{serviceTitle}</strong>
+                            <span>
+                              № {request.publicId.slice(0, 8).toUpperCase()}
+                            </span>
+                          </span>
+                          <time className={styles.requestListDate}>
+                            {requestDateFormatter.format(request.createdAt)}
+                          </time>
+                          <span className={styles.requestListStatus}>
+                            <span
+                              className={styles.statusBadge}
+                              data-status={request.status}
+                            >
+                              {requestStatusLabels[request.status]}
+                            </span>
+                            <small>{getRequestStatusHint(request.status)}</small>
+                          </span>
+                          <span aria-hidden="true" className={styles.requestChevron}>
+                            ›
+                          </span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+            {selectedRequest ? (
+              <SelectedRequestPanel request={selectedRequest} />
+            ) : (
+              <aside className={styles.noSelectedRequest}>
+                Выберите заявку, чтобы посмотреть её детали и историю обработки.
+              </aside>
+            )}
+          </div>
+        )}
       </div>
     </CampusSection>
   );

@@ -38,6 +38,7 @@ const studentUser = {
 };
 
 const attachment = {
+  kind: "RESULT",
   fileName: "document.pdf",
   mediaType: "application/pdf",
   sizeBytes: 7,
@@ -48,6 +49,7 @@ const attachment = {
       studentId: 20,
       assignedToId: 40,
       type: "CERTIFICATE",
+      status: "READY",
     },
   },
 };
@@ -90,6 +92,18 @@ describe("request attachment download access", () => {
     expect(new Uint8Array(await response.arrayBuffer())).toEqual(
       attachment.data,
     );
+  });
+
+  it("does not allow a result attachment before the request is complete", async () => {
+    findAttachmentMock.mockResolvedValue({
+      ...attachment,
+      comment: {
+        ...attachment.comment,
+        request: { ...attachment.comment.request, status: "IN_PROGRESS" },
+      },
+    });
+
+    expect((await getAttachment()).status).toBe(404);
   });
 
   it("hides private comments and other students' files with 404", async () => {

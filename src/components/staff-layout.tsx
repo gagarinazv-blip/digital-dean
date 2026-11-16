@@ -36,13 +36,24 @@ export function StaffLayout({
             </span>
             <span className={styles.brandText}>
               <strong>Кампус ОЭС</strong>
-              <span>Кабинет сотрудника</span>
+              <span>Цифровой деканат</span>
             </span>
           </Link>
+          <div className={styles.headerContext}>
+            <strong>Кабинет сотрудника</strong>
+            <span>{staff.position} · {staff.department}</span>
+          </div>
           <div className={styles.account}>
             <div className={styles.accountText}>
-              <strong>{staff.fullName}</strong>
-              <span>{staff.position} · {staff.department}</span>
+              <span aria-hidden="true" className={styles.avatar}>
+                {staff.fullName
+                  .split(/\s+/)
+                  .slice(0, 2)
+                  .map((part) => part[0] ?? "")
+                  .join("")
+                  .toLocaleUpperCase("ru-RU")}
+              </span>
+              <strong title={staff.fullName}>{staff.fullName}</strong>
             </div>
             <form action={logoutAction}>
               <button className={styles.logout} type="submit">
@@ -52,6 +63,7 @@ export function StaffLayout({
           </div>
         </div>
         <nav className={styles.navigation} aria-label="Разделы сотрудника">
+          <p className={styles.navigationTitle}>Рабочее место</p>
           <Link
             aria-current="page"
             className={styles.navigationLink}

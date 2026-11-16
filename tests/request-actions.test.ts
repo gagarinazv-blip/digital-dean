@@ -71,6 +71,7 @@ import {
   replyToRequestAction,
 } from "../src/app/(campus)/requests/actions";
 import {
+  addStaffCommentAction,
   assignRequestAction,
   updateRequestStatusAction,
 } from "../src/app/staff/requests/actions";
@@ -462,12 +463,77 @@ describe("request actions", () => {
       where: { id: 123, status: "IN_PROGRESS", assignedToId: 40 },
       data: { status: "READY", updatedAt: expect.any(Date) },
     });
+    expect(prismaTransactionMock).toHaveBeenCalledOnce();
+    expect(createStatusHistoryMock).toHaveBeenCalledWith({
+      data: {
+        requestId: 123,
+        status: "READY",
+        authorUserId: 11,
+        comment: null,
+      },
+    });
     expect(createNotificationMock).toHaveBeenCalledWith({
       data: {
         studentId: 20,
         type: "REQUEST_STATUS",
         title: "Изменился статус заявки",
         text: "Статус заявки изменён: Выполнена.",
+        targetType: "REQUEST",
+        targetId: "b08f54cf-99ce-4a56-a780-8e22ce5ba0a1",
+      },
+    });
+  });
+
+  it("saves a real result file and notifies the owner in one transaction", async () => {
+    findRequestMock.mockResolvedValue({
+      id: 123,
+      publicId: "b08f54cf-99ce-4a56-a780-8e22ce5ba0a1",
+      status: "READY",
+      assignedToId: 40,
+      studentId: 20,
+      type: "CERTIFICATE",
+    });
+    const formData = makeFormData({
+      requestId: "123",
+      visibility: "PUBLIC",
+      content: "",
+    });
+    formData.append(
+      "files",
+      new Blob(["%PDF-1.7\nresult"], { type: "application/pdf" }),
+      "result.pdf",
+    );
+
+    await expect(addStaffCommentAction({}, formData)).resolves.toEqual({
+      success: "Документ результата добавлен.",
+    });
+
+    expect(prismaTransactionMock).toHaveBeenCalledOnce();
+    expect(updateRequestManyMock).toHaveBeenCalledWith({
+      where: { id: 123, assignedToId: 40, status: "READY" },
+      data: { updatedAt: expect.any(Date) },
+    });
+    expect(createCommentMock).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        requestId: 123,
+        authorUserId: 11,
+        visibility: "PUBLIC",
+        attachments: {
+          create: [
+            expect.objectContaining({
+              fileName: "result.pdf",
+              kind: "RESULT",
+            }),
+          ],
+        },
+      }),
+    });
+    expect(createNotificationMock).toHaveBeenCalledWith({
+      data: {
+        studentId: 20,
+        type: "REQUEST_STATUS",
+        title: "Документ по заявке готов",
+        text: "Сотрудник приложил результат — его можно скачать в карточке заявки.",
         targetType: "REQUEST",
         targetId: "b08f54cf-99ce-4a56-a780-8e22ce5ba0a1",
       },

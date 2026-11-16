@@ -24,18 +24,27 @@ const maxExecutionDays = Math.max(
 export default async function NewRequestPage({
   searchParams,
 }: {
-  searchParams: Promise<{ copy?: string | string[] }>;
+  searchParams: Promise<{
+    copy?: string | string[];
+    service?: string | string[];
+  }>;
 }) {
   const { student } = await requireStudentContext();
   const query = await searchParams;
   const copyPublicId = typeof query.copy === "string" ? query.copy : null;
+  const serviceCode =
+    typeof query.service === "string" && isRequestCatalogCode(query.service)
+      ? query.service
+      : null;
   let initialValues:
     | {
         catalogCode: (typeof requestCatalog)[number]["code"];
         fields: Record<string, string>;
         description: string;
       }
-    | undefined;
+    | undefined = serviceCode
+    ? { catalogCode: serviceCode, fields: {}, description: "" }
+    : undefined;
 
   if (copyPublicId) {
     const sourceRequest = await getStudentRequest(copyPublicId);
@@ -69,13 +78,13 @@ export default async function NewRequestPage({
 
   return (
     <CampusSection
-      eyebrow="Документы"
+      eyebrow="Справки и обращения"
       title="Новая заявка"
       description="Заполните заявление — профильные сведения подставятся автоматически."
     >
       <div className={styles.content}>
         <nav className={styles.breadcrumbs} aria-label="Хлебные крошки">
-          <Link href="/help">Документы</Link>
+          <Link href="/help">Справки и обращения</Link>
           <span aria-hidden="true">/</span>
           <span>
             {getRequestCatalogTitle(

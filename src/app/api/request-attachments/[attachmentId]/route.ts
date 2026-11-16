@@ -44,6 +44,7 @@ export async function GET(
   const attachment = await prisma.requestAttachment.findUnique({
     where: { id },
     select: {
+      kind: true,
       fileName: true,
       mediaType: true,
       sizeBytes: true,
@@ -56,6 +57,7 @@ export async function GET(
               studentId: true,
               assignedToId: true,
               type: true,
+              status: true,
             },
           },
         },
@@ -70,7 +72,9 @@ export async function GET(
     if (
       !user.student ||
       user.student.id !== attachment.comment.request.studentId ||
-      attachment.comment.visibility !== "PUBLIC"
+      attachment.comment.visibility !== "PUBLIC" ||
+      (attachment.kind === "RESULT" &&
+        attachment.comment.request.status !== "READY")
     ) {
       return notFoundResponse();
     }

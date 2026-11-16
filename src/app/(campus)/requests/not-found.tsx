@@ -9,7 +9,7 @@ export default function RequestNotFound() {
         <p className={styles.hint}>
           Возможно, ссылка устарела или заявка недоступна.
         </p>
-        <Link className={styles.secondaryButton} href="/requests">
+        <Link className={styles.secondaryButton} href="/help?tab=requests">
           Вернуться к моим заявкам
         </Link>
       </section>

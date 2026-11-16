@@ -83,6 +83,11 @@ enum RequestCommentVisibility {
   INTERNAL
 }
 
+enum RequestAttachmentKind {
+  REQUEST
+  RESULT
+}
+
 enum NotificationType {
   SCHEDULE_CHANGE
   DEADLINE
@@ -353,14 +358,15 @@ model RequestComment {
 }
 
 model RequestAttachment {
-  id        Int            @id @default(autoincrement())
+  id        Int                   @id @default(autoincrement())
   commentId Int
+  kind      RequestAttachmentKind @default(REQUEST)
   fileName  String
   mediaType String
   sizeBytes Int
   data      Bytes
-  comment   RequestComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  createdAt DateTime       @default(now())
+  comment   RequestComment        @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  createdAt DateTime              @default(now())
 
   @@index([commentId])
 }

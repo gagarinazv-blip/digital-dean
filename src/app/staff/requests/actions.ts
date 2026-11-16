@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { assertSameSiteRequest } from "@/lib/auth";
 import { requestStatusLabels } from "@/lib/campus-labels";
 import { getPrisma } from "@/lib/prisma";
+import { validateRequestUploads } from "@/lib/request-attachments";
 import type { RequestActionState } from "@/lib/request-action-state";
 import {
   canStaffAssignRequest,
@@ -84,6 +85,7 @@ function revalidateStaffRequestPaths(requestId: number, publicId: string): void 
   revalidatePath("/");
   revalidatePath("/staff");
   revalidatePath(`/staff/requests/${requestId}`);
+  revalidatePath("/help");
   revalidatePath("/requests");
   revalidatePath(`/requests/${publicId}`);
 }
@@ -194,13 +196,30 @@ export async function addStaffCommentAction(
   }
 
   const content = getOptionalMessage(formData);
-  if (content === null || content.length === 0) {
-    return { error: "Добавьте комментарий длиной до 5000 символов." };
+  if (content === null) {
+    return { error: "Комментарий не должен превышать 5000 символов." };
+  }
+
+  const uploads = await validateRequestUploads(formData.getAll("files"));
+  if (!uploads.ok) {
+    return { error: uploads.error };
+  }
+  if (content.length === 0 && uploads.files.length === 0) {
+    return { error: "Добавьте комментарий или прикрепите файл." };
   }
 
   const request = await getActionRequest(requestId, staff);
   if (!canStaffManageAssignedRequest(staff, request)) {
     return { error: "Сначала возьмите заявку в работу." };
+  }
+  if (
+    request.status === "READY" &&
+    uploads.files.length > 0 &&
+    rawVisibility !== "PUBLIC"
+  ) {
+    return {
+      error: "Документ результата должен быть доступен студенту.",
+    };
   }
 
   const saved = await getPrisma().$transaction(async (tx) => {
@@ -208,6 +227,7 @@ export async function addStaffCommentAction(
       where: {
         id: request.id,
         assignedToId: staff.id,
+        status: request.status,
       },
       data: { updatedAt: new Date() },
     });
@@ -220,9 +240,35 @@ export async function addStaffCommentAction(
         requestId: request.id,
         authorUserId: userId,
         visibility: rawVisibility,
-        content,
+        content:
+          content ||
+          (request.status === "READY"
+            ? "К заявке приложен готовый документ."
+            : "Файлы приложены к комментарию."),
+        ...(uploads.files.length > 0
+          ? {
+              attachments: {
+                create: uploads.files.map((file) => ({
+                  ...file,
+                  kind: request.status === "READY" ? "RESULT" : "REQUEST",
+                })),
+              },
+            }
+          : {}),
       },
     });
+    if (request.status === "READY" && uploads.files.length > 0) {
+      await tx.notification.create({
+        data: {
+          studentId: request.studentId,
+          type: "REQUEST_STATUS",
+          title: "Документ по заявке готов",
+          text: "Сотрудник приложил результат — его можно скачать в карточке заявки.",
+          targetType: "REQUEST",
+          targetId: request.publicId,
+        },
+      });
+    }
     return true;
   });
   if (!saved) {
@@ -233,7 +279,14 @@ export async function addStaffCommentAction(
   }
 
   revalidateStaffRequestPaths(requestId, request.publicId);
-  return { success: "Комментарий добавлен." };
+  return {
+    success:
+      request.status === "READY" && uploads.files.length > 0
+        ? "Документ результата добавлен."
+        : uploads.files.length > 0
+          ? "Комментарий и файлы добавлены."
+          : "Комментарий добавлен.",
+  };
 }
 
 export async function assignRequestAction(

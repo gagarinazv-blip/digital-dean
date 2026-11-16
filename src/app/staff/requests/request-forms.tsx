@@ -54,42 +54,62 @@ export function RequestStatusForm({
     <form action={formAction} className={styles.form}>
       <input name="requestId" type="hidden" value={requestId} />
       <div className={styles.field}>
-        <label htmlFor={`request-status-${requestId}`}>Новый статус</label>
-        <select
-          className={styles.select}
-          defaultValue={transitions[0]}
-          id={`request-status-${requestId}`}
-          name="status"
-          required
-        >
-          {transitions.map((status) => (
-            <option key={status} value={status}>
-              {requestStatusLabels[status]}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className={styles.field}>
         <label htmlFor={`request-status-message-${requestId}`}>
-          Сообщение студенту
+          Комментарий студенту
         </label>
         <textarea
           className={styles.textarea}
           id={`request-status-message-${requestId}`}
           maxLength={5000}
           name="content"
-          placeholder="Обязательно для статусов «Нужны данные» и «Отклонена»"
+          placeholder="Укажите причину для уточнения или отказа"
         />
       </div>
       <ActionFeedback state={state} />
-      <button className={styles.button} disabled={pending} type="submit">
-        {pending ? "Сохраняем…" : "Обновить статус"}
-      </button>
+      <div className={styles.formActions}>
+        {transitions.map((status) => {
+          const buttonClass =
+            status === "READY"
+              ? styles.button
+              : status === "REJECTED"
+                ? styles.statusRejectButton
+                : status === "NEEDS_INFO"
+                  ? styles.statusClarifyButton
+                  : styles.secondaryButton;
+          const buttonLabel =
+            status === "READY"
+              ? "Одобрить"
+              : status === "NEEDS_INFO"
+                ? "Запросить уточнение"
+                : status === "REJECTED"
+                  ? "Отклонить"
+                  : `Перевести: ${requestStatusLabels[status]}`;
+
+          return (
+            <button
+              className={buttonClass}
+              disabled={pending}
+              key={status}
+              name="status"
+              type="submit"
+              value={status}
+            >
+              {pending ? "Сохраняем…" : buttonLabel}
+            </button>
+          );
+        })}
+      </div>
     </form>
   );
 }
 
-export function StaffCommentForm({ requestId }: { requestId: number }) {
+export function StaffCommentForm({
+  requestId,
+  requestStatus,
+}: {
+  requestId: number;
+  requestStatus: RequestStatus;
+}) {
   const [state, formAction, pending] = useActionState(
     addStaffCommentAction,
     initialState,
@@ -98,20 +118,29 @@ export function StaffCommentForm({ requestId }: { requestId: number }) {
   return (
     <form action={formAction} className={styles.form}>
       <input name="requestId" type="hidden" value={requestId} />
-      <div className={styles.field}>
-        <label htmlFor={`comment-visibility-${requestId}`}>
-          Кто увидит комментарий
-        </label>
-        <select
-          className={styles.select}
-          defaultValue="PUBLIC"
-          id={`comment-visibility-${requestId}`}
-          name="visibility"
-        >
-          <option value="PUBLIC">Студент и сотрудники</option>
-          <option value="INTERNAL">Только сотрудники</option>
-        </select>
-      </div>
+      {requestStatus === "READY" ? (
+        <>
+          <input name="visibility" type="hidden" value="PUBLIC" />
+          <p className={styles.hint}>
+            Документ результата будет доступен студенту.
+          </p>
+        </>
+      ) : (
+        <div className={styles.field}>
+          <label htmlFor={`comment-visibility-${requestId}`}>
+            Кто увидит комментарий
+          </label>
+          <select
+            className={styles.select}
+            defaultValue="PUBLIC"
+            id={`comment-visibility-${requestId}`}
+            name="visibility"
+          >
+            <option value="PUBLIC">Студент и сотрудники</option>
+            <option value="INTERNAL">Только сотрудники</option>
+          </select>
+        </div>
+      )}
       <div className={styles.field}>
         <label htmlFor={`staff-comment-${requestId}`}>Комментарий</label>
         <textarea
@@ -119,8 +148,28 @@ export function StaffCommentForm({ requestId }: { requestId: number }) {
           id={`staff-comment-${requestId}`}
           maxLength={5000}
           name="content"
-          required
+          placeholder="Комментарий (необязательно, если прикреплён файл)"
         />
+      </div>
+      <div className={styles.field}>
+        <label htmlFor={`staff-comment-files-${requestId}`}>
+          {requestStatus === "READY"
+            ? "Прикрепить документ результата"
+            : "Прикрепить файлы"}
+        </label>
+        <input
+          accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+          className={styles.fileInput}
+          id={`staff-comment-files-${requestId}`}
+          multiple
+          name="files"
+          type="file"
+        />
+        <p className={styles.hint}>
+          До 5 файлов PDF, JPEG или PNG, каждый не больше 5 МБ.
+          {requestStatus === "READY" &&
+            " Файл станет доступен студенту как результат заявки."}
+        </p>
       </div>
       <ActionFeedback state={state} />
       <button className={styles.button} disabled={pending} type="submit">

@@ -64,6 +64,7 @@ export async function getCampusTodayData(now = getDemoNow()) {
       take: 1,
       select: {
         id: true,
+        publicId: true,
         type: true,
         catalogCode: true,
         status: true,

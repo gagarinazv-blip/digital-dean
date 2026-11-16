@@ -27,6 +27,7 @@ function getMessage(formData: FormData): string | null {
 
 function revalidateStudentRequestPaths(publicId?: string): void {
   revalidatePath("/");
+  revalidatePath("/help");
   revalidatePath("/requests");
   if (publicId !== undefined) {
     revalidatePath(`/requests/${publicId}`);

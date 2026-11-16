@@ -169,6 +169,35 @@
   background: #fcf4ef;
 }
 
+.resultFiles {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.resultFiles li {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #f0e2da;
+  border-radius: 9px;
+  background: #fcf4ef;
+}
+
+.resultFiles .fileInfo {
+  flex: 1;
+}
+
+.resultFiles a {
+  min-height: 36px;
+  padding-inline: 12px;
+  font-size: var(--font-size-caption);
+}
+
 .fileIcon {
   width: 34px;
   height: 38px;

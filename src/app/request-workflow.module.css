@@ -87,6 +87,8 @@
 .fileInput:focus-visible,
 .button:focus-visible,
 .secondaryButton:focus-visible,
+.statusRejectButton:focus-visible,
+.statusClarifyButton:focus-visible,
 .attachmentLink:focus-visible {
   outline: 3px solid var(--color-focus);
   outline-offset: 2px;
@@ -155,12 +157,53 @@
   color: var(--color-ink);
 }
 
+.statusRejectButton,
+.statusClarifyButton {
+  width: fit-content;
+  max-width: 100%;
+  min-height: var(--size-touch);
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--font-size-body-compact);
+  font-weight: 600;
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.statusRejectButton {
+  border-color: var(--color-danger-border);
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
+}
+
+.statusClarifyButton {
+  border-color: #efdfc4;
+  background: #fbf3e5;
+  color: #815b20;
+}
+
 .secondaryButton:hover:not(:disabled) {
   background: var(--color-subtle);
 }
 
+.statusRejectButton:hover:not(:disabled) {
+  background: #f5d9d9;
+}
+
+.statusClarifyButton:hover:not(:disabled) {
+  background: #f6ead6;
+}
+
 .button:disabled,
-.secondaryButton:disabled {
+.secondaryButton:disabled,
+.statusRejectButton:disabled,
+.statusClarifyButton:disabled {
   cursor: wait;
   background: var(--color-disabled);
   color: var(--color-surface);
@@ -505,7 +548,9 @@
   }
 
   .button,
-  .secondaryButton {
+  .secondaryButton,
+  .statusRejectButton,
+  .statusClarifyButton {
     width: 100%;
   }
 

@@ -55,10 +55,6 @@ type StatusPresentation = {
   tone: string;
 };
 
-function getDemoId(id: number): string {
-  return `DEMO-${String(id).padStart(3, "0")}`;
-}
-
 function getPageTitle(status: RequestStatus, type: RequestType, serviceTitle: string) {
   if (status === "READY") {
     return type === "CERTIFICATE" ? "Справка готова" : "Заявка выполнена";
@@ -78,6 +74,7 @@ function getPageTitle(status: RequestStatus, type: RequestType, serviceTitle: st
 function getStatusPresentation(
   status: RequestStatus,
   type: RequestType,
+  hasResultDocument: boolean,
 ): StatusPresentation {
   switch (status) {
     case "NEW":
@@ -113,7 +110,9 @@ function getStatusPresentation(
       return {
         kicker: "Документ готов",
         headline: type === "CERTIFICATE" ? "Справка подготовлена!" : "Заявка выполнена!",
-        description: "Электронный документ можно скачать и использовать.",
+        description: hasResultDocument
+          ? "Сотрудник приложил результат — его можно скачать."
+          : "Решение принято. Скачивание появится, когда сотрудник приложит результат.",
         tone: styles.heroSuccess,
       };
     case "REJECTED":
@@ -150,8 +149,15 @@ export default async function StudentRequestPage({
     requestTypeLabels[request.type],
   );
   const service = getRequestCatalogEntry(request.catalogCode);
-  const demoId = getDemoId(request.id);
-  const presentation = getStatusPresentation(request.status, request.type);
+  const requestNumber = `№ ${request.publicId.slice(0, 8).toUpperCase()}`;
+  const resultAttachments = request.comments.flatMap((comment) =>
+    comment.attachments.filter((attachment) => attachment.kind === "RESULT"),
+  );
+  const presentation = getStatusPresentation(
+    request.status,
+    request.type,
+    resultAttachments.length > 0,
+  );
   const title = getPageTitle(request.status, request.type, serviceTitle);
   const formEntries = getRequestFieldEntries(
     request.catalogCode,
@@ -168,14 +174,13 @@ export default async function StudentRequestPage({
       ? latestStatusEntry.comment
       : null;
   const reason = statusComment || latestStaffMessage?.content;
-  const historyForPanel =
-    request.status === "READY" ? request.statusHistory.slice(-1) : request.statusHistory;
+  const historyForPanel = request.statusHistory;
 
   return (
     <CampusSection
-      eyebrow="Документы / Мои заявки"
+      eyebrow="Справки и обращения"
       title={title}
-      description={`${demoId} · ${serviceTitle}`}
+      description={`${requestNumber} · ${serviceTitle}`}
     >
       <div className={styles.requestPage}>
         {query.created === "1" && (
@@ -201,7 +206,7 @@ export default async function StudentRequestPage({
             <h2>{presentation.headline}</h2>
             <p className={styles.heroDescription}>{presentation.description}</p>
             <div className={styles.heroMeta}>
-              <span className={styles.demoBadge}>{demoId}</span>
+              <span className={styles.demoBadge}>{requestNumber}</span>
               <span
                 className={`${styles.heroStatus} ${requestStatusClasses[request.status]}`}
               >
@@ -216,37 +221,46 @@ export default async function StudentRequestPage({
             {request.status === "READY" ? (
               <>
                 <h2 className={styles.panelTitle} id="request-main-title">
-                  Ваш документ
+                  Результат заявки
                 </h2>
-                <div className={styles.documentFile}>
-                  <span aria-hidden="true" className={styles.fileIcon}>
-                    ▤
-                  </span>
-                  <div className={styles.fileInfo}>
-                    <strong>{serviceTitle}</strong>
-                    <span>{demoId} · HTML · демонстрационный файл</span>
-                  </div>
-                </div>
-                <p className={styles.readyNotice}>
-                  <span aria-hidden="true">✓</span>
-                  Документ доступен для скачивания
-                </p>
-                <div className={styles.actions}>
-                  <a
-                    className={workflowStyles.button}
-                    download
-                    href={`/api/requests/${request.publicId}/document`}
-                  >
-                    <span aria-hidden="true">↓</span>
-                    Скачать документ
-                  </a>
-                  <Link
-                    className={workflowStyles.secondaryButton}
-                    href="/requests"
-                  >
-                    К заявкам
-                  </Link>
-                </div>
+                {resultAttachments.length > 0 ? (
+                  <>
+                    <ul className={styles.resultFiles}>
+                      {resultAttachments.map((attachment) => (
+                        <li key={attachment.id}>
+                          <span aria-hidden="true" className={styles.fileIcon}>
+                            ▤
+                          </span>
+                          <span className={styles.fileInfo}>
+                            <strong title={attachment.fileName}>
+                              {attachment.fileName}
+                            </strong>
+                            <span>
+                              {Math.max(1, Math.ceil(attachment.sizeBytes / 1024))} КБ
+                            </span>
+                          </span>
+                          <a
+                            className={workflowStyles.button}
+                            download
+                            href={`/api/request-attachments/${attachment.id}`}
+                          >
+                            Скачать
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                    <p className={styles.readyNotice}>
+                      <span aria-hidden="true">✓</span>
+                      Документ приложен сотрудником
+                    </p>
+                  </>
+                ) : (
+                  <p className={styles.cancelledNotice}>
+                    Решение принято, но сотрудник ещё не приложил файл
+                    результата. Ссылка для скачивания появится здесь после его
+                    загрузки.
+                  </p>
+                )}
               </>
             ) : request.status === "REJECTED" ? (
               <>
@@ -324,7 +338,7 @@ export default async function StudentRequestPage({
                   Информация о заявке
                 </h2>
                 <RequestMetadata
-                  demoId={demoId}
+                  requestNumber={requestNumber}
                   request={request}
                   serviceTitle={serviceTitle}
                 />
@@ -343,7 +357,7 @@ export default async function StudentRequestPage({
                   Сведения о заявке
                 </h2>
                 <RequestMetadata
-                  demoId={demoId}
+                  requestNumber={requestNumber}
                   request={request}
                   serviceTitle={serviceTitle}
                 />
@@ -363,7 +377,7 @@ export default async function StudentRequestPage({
                   Информация о заявке
                 </h2>
                 <RequestMetadata
-                  demoId={demoId}
+                  requestNumber={requestNumber}
                   request={request}
                   serviceTitle={serviceTitle}
                 />
@@ -414,7 +428,7 @@ export default async function StudentRequestPage({
                 Сведения о заявке
               </h2>
               <RequestMetadata
-                demoId={demoId}
+                requestNumber={requestNumber}
                 request={request}
                 serviceTitle={serviceTitle}
               />
@@ -460,7 +474,7 @@ export default async function StudentRequestPage({
               </h2>
               {request.status === "READY" && (
                 <RequestMetadata
-                  demoId={demoId}
+                  requestNumber={requestNumber}
                   request={request}
                   serviceTitle={serviceTitle}
                 />
@@ -606,7 +620,7 @@ export default async function StudentRequestPage({
           </details>
         )}
 
-        <Link className={styles.backLink} href="/requests">
+        <Link className={styles.backLink} href="/help?tab=requests">
           ← Вернуться к списку заявок
         </Link>
       </div>
@@ -615,11 +629,11 @@ export default async function StudentRequestPage({
 }
 
 function RequestMetadata({
-  demoId,
+  requestNumber,
   request,
   serviceTitle,
 }: {
-  demoId: string;
+  requestNumber: string;
   request: {
     createdAt: Date;
     updatedAt: Date;
@@ -630,7 +644,7 @@ function RequestMetadata({
     <dl className={styles.metadataRows}>
       <div>
         <dt>Номер</dt>
-        <dd>{demoId}</dd>
+        <dd>{requestNumber}</dd>
       </div>
       <div>
         <dt>Услуга</dt>

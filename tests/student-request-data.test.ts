@@ -69,6 +69,11 @@ describe("student request access", () => {
           }),
           comments: expect.objectContaining({
             where: { visibility: "PUBLIC" },
+            select: expect.objectContaining({
+              attachments: {
+                select: expect.objectContaining({ kind: true }),
+              },
+            }),
           }),
         }),
       }),

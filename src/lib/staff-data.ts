@@ -28,6 +28,7 @@ const requestListSelection = {
 
 const requestDetailSelection = {
   id: true,
+  publicId: true,
   type: true,
   catalogCode: true,
   formFields: true,

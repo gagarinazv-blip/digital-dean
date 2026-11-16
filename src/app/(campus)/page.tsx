@@ -192,7 +192,10 @@ async function CampusToday() {
                 <p>
                   Обновлена {formatMoscowDate(data.latestRequest.updatedAt)}
                 </p>
-                <Link className={styles.textLink} href="/requests">
+                <Link
+                  className={styles.textLink}
+                  href={`/requests/${data.latestRequest.publicId}`}
+                >
                   Отследить заявку ↗
                 </Link>
               </div>
