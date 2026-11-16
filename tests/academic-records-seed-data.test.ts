@@ -110,6 +110,20 @@ describe("academic records seed data", () => {
     const [strongStudent, studentWithDebt] = academicRecordsSeedData.students;
 
     expect(
+      strongStudent.semesters[0].subjects.map((subject) => subject.id),
+    ).not.toEqual(
+      studentWithDebt.semesters[0].subjects.map((subject) => subject.id),
+    );
+    expect(
+      strongStudent.semesters[0].results.map(
+        (result) => `${result.subjectId}:${result.value}`,
+      ),
+    ).not.toEqual(
+      studentWithDebt.semesters[0].results.map(
+        (result) => `${result.subjectId}:${result.value}`,
+      ),
+    );
+    expect(
       strongStudent.semesters[0].results.every(
         (result) =>
           result.status === "PASSED" &&

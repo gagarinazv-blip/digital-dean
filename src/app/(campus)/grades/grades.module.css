@@ -23,8 +23,13 @@
 
 .semesterList {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
   margin-top: 18px;
+}
+
+.semester {
+  min-width: 0;
 }
 
 .semesterHeading {
@@ -59,7 +64,15 @@
 }
 
 .tableWrap {
+  max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.tableWrap:focus-visible {
+  outline: 3px solid #8da7e8;
+  outline-offset: 3px;
 }
 
 .planTable {

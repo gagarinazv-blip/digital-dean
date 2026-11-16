@@ -175,6 +175,30 @@ describe("getScheduleForStudent", () => {
     );
   });
 
+  it("uses each session's current student group instead of a shared group", async () => {
+    scheduleFindManyMock.mockResolvedValue([]);
+    requireStudentMock
+      .mockResolvedValueOnce(student)
+      .mockResolvedValueOnce({
+        ...student,
+        id: 18,
+        group: { id: 52, name: "ЗР-203" },
+      });
+
+    await getScheduleForStudent("week", {
+      now: new Date("2026-11-14T18:00:00.000Z"),
+    });
+    await getScheduleForStudent("week", {
+      now: new Date("2026-11-14T18:00:00.000Z"),
+    });
+
+    expect(
+      scheduleFindManyMock.mock.calls.map(
+        ([query]) => query.where.groupId,
+      ),
+    ).toEqual([41, 52]);
+  });
+
   it("ignores the requested date in production", async () => {
     scheduleFindManyMock.mockResolvedValue([]);
     vi.stubEnv("NODE_ENV", "production");

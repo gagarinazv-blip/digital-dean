@@ -55,6 +55,7 @@
 .accountText strong {
   font-size: 14px;
   line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 
 .brandText span,

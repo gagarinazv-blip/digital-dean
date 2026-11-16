@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { connection } from "next/server";
 import { CampusSection } from "@/components/campus-section";
 import type {
   AcademicResultStatus,
@@ -10,6 +12,8 @@ import { getAcademicRecords } from "@/lib/academic-records";
 import { computerNetworksFormula } from "@/lib/grade-formula";
 import { GradeCalculator } from "./grade-calculator";
 import styles from "./grades.module.css";
+
+export const instant = false;
 
 const studyFormLabels: Record<StudyForm, string> = {
   FULL_TIME: "очная",
@@ -31,7 +35,8 @@ function displayDate(date: Date) {
   return formatCampusDate(date);
 }
 
-export default async function GradesPage() {
+async function GradesContent() {
+  await connection();
   const { student, dataset } = await getAcademicRecords();
   const hasGradeFormula = dataset?.semesters.some((semester) =>
     semester.planItems.some(
@@ -100,7 +105,12 @@ export default async function GradesPage() {
                     )}
                   </div>
 
-                  <div className={styles.tableWrap}>
+                  <div
+                    aria-label={`Учебный план: ${semester.name} семестр`}
+                    className={styles.tableWrap}
+                    role="region"
+                    tabIndex={0}
+                  >
                     <table className={styles.planTable}>
                       <thead>
                         <tr>
@@ -228,5 +238,25 @@ export default async function GradesPage() {
         </div>
       )}
     </CampusSection>
+  );
+}
+
+function GradesFallback() {
+  return (
+    <CampusSection
+      eyebrow="Учебные результаты"
+      title="Учебный план и оценки"
+      description="Загружаем данные текущего студента."
+    >
+      <p aria-busy="true">Загружаем учебный план и оценки…</p>
+    </CampusSection>
+  );
+}
+
+export default function GradesPage() {
+  return (
+    <Suspense fallback={<GradesFallback />}>
+      <GradesContent />
+    </Suspense>
   );
 }

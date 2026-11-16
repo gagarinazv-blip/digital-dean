@@ -50,4 +50,36 @@ describe("getAcademicRecords", () => {
     expect(records.student.recordBookNumber).toBe("ЗК-26-031");
     expect(records.dataset).toBeNull();
   });
+
+  it("uses the current session's student id for every academic query", async () => {
+    requireStudentMock.mockResolvedValueOnce({
+      id: 42,
+      fullName: "Елизавета Воронцова",
+      faculty: "Факультет прикладных вычислений",
+      direction: "Прикладная информатика",
+      course: 3,
+      recordBookNumber: "ЗК-26-031",
+      studyForm: "FULL_TIME",
+      group: { id: 8, name: "TEST-ACADEMIC-31" },
+    });
+    requireStudentMock.mockResolvedValueOnce({
+      id: 43,
+      fullName: "Даниил Климов",
+      faculty: "Факультет прикладных вычислений",
+      direction: "Прикладная информатика",
+      course: 3,
+      recordBookNumber: "ЗК-26-047",
+      studyForm: "FULL_TIME",
+      group: { id: 9, name: "TEST-ACADEMIC-32" },
+    });
+
+    await getAcademicRecords();
+    await getAcademicRecords();
+
+    expect(
+      findDatasetMock.mock.calls.map(
+        ([query]) => query.select.semesters.where.studentId,
+      ),
+    ).toEqual([42, 43]);
+  });
 });

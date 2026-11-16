@@ -31,19 +31,3 @@ export function CampusLoading({ label }: { label: string }) {
     </main>
   );
 }
-
-export function CampusPlaceholder({
-  description,
-  children,
-}: {
-  description: string;
-  children?: ReactNode;
-}) {
-  return (
-    <div className={styles.empty}>
-      <strong>Раздел появится скоро</strong>
-      <p>{description}</p>
-      {children}
-    </div>
-  );
-}

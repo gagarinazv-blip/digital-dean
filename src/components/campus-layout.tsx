@@ -32,7 +32,12 @@ export function CampusLayout({
           </Link>
           <details className={styles.accountMenu}>
             <summary className={styles.accountSummary}>
-              <span className={styles.accountName}>{student.fullName}</span>
+              <span
+                className={styles.accountName}
+                title={student.fullName}
+              >
+                {student.fullName}
+              </span>
               <span aria-hidden="true">⌄</span>
             </summary>
             <div className={styles.accountPopover}>

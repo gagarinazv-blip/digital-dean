@@ -28,6 +28,12 @@ export function CampusNavigation({
 
         return (
           <Link
+            aria-label={
+              item.href === "/notifications" &&
+              unreadNotificationCount > 0
+                ? `Уведомления, непрочитанных: ${unreadNotificationCount}`
+                : undefined
+            }
             aria-current={isCurrent ? "page" : undefined}
             className={`${styles.navigationLink} ${isCurrent ? styles.active : ""}`}
             href={item.href}
@@ -38,7 +44,9 @@ export function CampusNavigation({
               {item.href === "/notifications" &&
                 unreadNotificationCount > 0 && (
                   <span className={styles.unreadBadge}>
-                    {unreadNotificationCount}
+                    {unreadNotificationCount > 99
+                      ? "99+"
+                      : unreadNotificationCount}
                   </span>
                 )}
             </span>
@@ -46,7 +54,9 @@ export function CampusNavigation({
             {item.href === "/notifications" &&
               unreadNotificationCount > 0 && (
                 <span className={styles.desktopUnreadBadge}>
-                  {unreadNotificationCount}
+                  {unreadNotificationCount > 99
+                    ? "99+"
+                    : unreadNotificationCount}
                 </span>
               )}
           </Link>

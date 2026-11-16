@@ -17,24 +17,24 @@ async function HelpContent() {
         <section className={styles.card}>
           <h2>Расписание изменилось?</h2>
           <p className={styles.description}>
-            Скоро здесь появится расписание. Пока уточните актуальные данные у
-            деканата.
+            В расписании группы указаны время и аудитории занятий. Переносы и
+            отмены отмечены отдельно.
           </p>
           <Link className={styles.link} href="/schedule">Открыть расписание</Link>
         </section>
         <section className={styles.card}>
           <h2>Нужна справка или заявление?</h2>
           <p className={styles.description}>
-            Скоро здесь можно будет смотреть статусы обращений. Порядок подачи
-            уточните по официальным каналам вашего факультета.
+            Создайте обращение в разделе заявок. Статус, переписка и история
+            доступны в карточке заявки.
           </p>
           <Link className={styles.link} href="/requests">Мои заявки</Link>
         </section>
         <section className={styles.card}>
           <h2>Не видите оценку?</h2>
           <p className={styles.description}>
-            Раздел оценок появится скоро. По срокам публикации обратитесь к
-            преподавателю или в деканат.
+            Учебный план, результаты аттестации и расписание сессии собраны в
+            разделе оценок.
           </p>
           <Link className={styles.link} href="/grades">Мои оценки</Link>
         </section>
