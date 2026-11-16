@@ -6,25 +6,33 @@ import { getPrisma } from "@/lib/prisma";
 import { requireStaff, requireStaffContext } from "@/lib/staff";
 import {
   getStaffRequestFilter,
+  getStaffRequestListFilter,
   parsePositiveIntegerId,
 } from "@/lib/request-workflow";
+import type { RequestStatus } from "@/generated/prisma/enums";
 
 const requestListSelection = {
   id: true,
   type: true,
   catalogCode: true,
   status: true,
-  assignedToId: true,
   createdAt: true,
-  updatedAt: true,
   student: {
     select: {
       fullName: true,
-      course: true,
       group: { select: { name: true } },
     },
   },
-} as const;
+} satisfies Prisma.RequestSelect;
+
+const requestStatusCounts: Record<RequestStatus, number> = {
+  NEW: 0,
+  IN_PROGRESS: 0,
+  NEEDS_INFO: 0,
+  READY: 0,
+  REJECTED: 0,
+  CANCELLED: 0,
+};
 
 const requestDetailSelection = {
   id: true,
@@ -93,15 +101,29 @@ export async function getStaffRequests() {
   });
 }
 
-export async function getStaffRequestList() {
+export async function getStaffRequestList(rawStatus?: string | string[]) {
   const { staff } = await requireStaffContext();
-  const requests = await getPrisma().request.findMany({
-    where: getStaffRequestFilter(staff),
-    orderBy: { updatedAt: "desc" },
-    select: requestListSelection,
-  });
+  const prisma = getPrisma();
+  const { status, where } = getStaffRequestListFilter(staff, rawStatus);
+  const accessFilter = getStaffRequestFilter(staff);
+  const [requests, groupedCounts] = await Promise.all([
+    prisma.request.findMany({
+      where,
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      select: requestListSelection,
+    }),
+    prisma.request.groupBy({
+      by: ["status"],
+      where: accessFilter,
+      _count: { _all: true },
+    }),
+  ]);
+  const counts = { ...requestStatusCounts };
+  for (const { status: requestStatus, _count } of groupedCounts) {
+    counts[requestStatus] = _count._all;
+  }
 
-  return { staff, requests };
+  return { requests, counts, selectedStatus: status };
 }
 
 export async function getStaffRequest(requestId: string) {

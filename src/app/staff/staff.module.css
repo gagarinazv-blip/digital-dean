@@ -50,6 +50,30 @@
   border-radius: 12px;
   background: #fff;
   box-shadow: var(--shadow-soft);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+
+.summaryCard:hover {
+  border-color: #d9c4bd;
+  box-shadow: 0 5px 16px rgb(65 37 31 / 9%);
+  transform: translateY(-1px);
+}
+
+.summaryCard[aria-current="page"] {
+  border-color: var(--color-wine-900);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-wine-900) 16%, white);
+}
+
+.summaryCard:focus-visible,
+.showAll:focus-visible,
+.table a:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
 }
 
 .summaryIcon {
@@ -134,17 +158,34 @@
   font-size: var(--font-size-caption);
 }
 
+.showAll {
+  min-height: 44px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 10px;
+  border: 1px solid #eadbd6;
+  border-radius: 9px;
+  color: var(--color-wine-900);
+  font-size: var(--font-size-caption);
+  font-weight: 650;
+  text-align: center;
+  text-decoration: none;
+}
+
+.showAll:hover {
+  background: #fbf4f0;
+}
+
 .tableScroller {
   width: 100%;
-  overflow-x: auto;
-  overscroll-behavior-inline: contain;
-  scrollbar-color: #d7ceca transparent;
-  scrollbar-width: thin;
+  min-width: 0;
 }
 
 .table {
   width: 100%;
-  min-width: 800px;
+  min-width: 0;
   border-collapse: collapse;
   text-align: left;
 }
@@ -163,6 +204,7 @@
   color: var(--color-ink);
   font-size: var(--font-size-caption);
   vertical-align: middle;
+  overflow-wrap: anywhere;
 }
 
 .table tbody tr:hover {
@@ -187,26 +229,23 @@
 .studentName,
 .studentGroup {
   display: block;
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  max-width: 260px;
+  overflow-wrap: anywhere;
 }
 
 .studentName {
   font-weight: 650;
-  white-space: nowrap;
 }
 
 .studentGroup {
   margin-top: 2px;
   color: var(--color-muted);
   font-size: 10px;
-  white-space: nowrap;
 }
 
 .serviceCell {
   display: flex;
-  min-width: 160px;
+  min-width: 0;
   align-items: center;
   gap: 8px;
   line-height: 1.35;
@@ -227,29 +266,17 @@
 }
 
 .dateCell {
-  min-width: 130px;
+  min-width: 0;
   color: var(--color-muted) !important;
-  white-space: nowrap;
-}
-
-.unassigned,
-.staffAssignment {
-  color: var(--color-muted);
-  white-space: nowrap;
-}
-
-.staffAssignment {
-  color: var(--color-ink);
 }
 
 .openLink {
-  min-height: 34px;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   color: var(--color-wine-900);
   font-size: var(--font-size-caption);
   font-weight: 650;
-  white-space: nowrap;
 }
 
 .empty {
@@ -293,11 +320,6 @@
   clip-path: inset(50%);
 }
 
-.table a:focus-visible {
-  outline: 3px solid var(--color-focus);
-  outline-offset: 2px;
-}
-
 @media (max-width: 900px) {
   .summary {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -333,5 +355,89 @@
 
   .queuePanel {
     overflow: hidden;
+  }
+
+  .queueHeading {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    padding: 12px;
+  }
+
+  .tableScroller {
+    padding: 8px;
+  }
+
+  .table,
+  .table tbody,
+  .table tr,
+  .table td {
+    display: block;
+    width: 100%;
+  }
+
+  .table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    clip-path: inset(50%);
+  }
+
+  .table tbody {
+    display: grid;
+    gap: 8px;
+  }
+
+  .table tr {
+    min-width: 0;
+    padding: 6px 8px;
+    border: 1px solid #f0e8e4;
+    border-radius: 10px;
+  }
+
+  .table td {
+    display: grid;
+    grid-template-columns: minmax(75px, 30%) minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    padding: 5px 2px;
+    border: 0;
+  }
+
+  .table td::before {
+    content: attr(data-label);
+    color: var(--color-muted);
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .table td:first-child::before {
+    content: "Тип заявки";
+  }
+
+  .table td:nth-child(2)::before {
+    content: "Студент";
+  }
+
+  .studentName,
+  .studentGroup {
+    max-width: none;
+  }
+
+  .studentGroup {
+    font-size: var(--font-size-caption);
+  }
+
+  .serviceCell {
+    align-items: flex-start;
+  }
+
+  .serviceIcon {
+    width: 24px;
+    height: 24px;
+    flex-basis: 24px;
   }
 }

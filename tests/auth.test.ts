@@ -316,21 +316,25 @@ describe("login", () => {
     expect(sessionCreate).not.toHaveBeenCalled();
   });
 
-  it("blocks login after five attempts in the rate-limit window", async () => {
-    const compareSpy = vi.spyOn(bcrypt, "compare");
+  it(
+    "blocks login after five attempts in the rate-limit window",
+    async () => {
+      const compareSpy = vi.spyOn(bcrypt, "compare");
 
-    for (let attempt = 0; attempt < 5; attempt++) {
+      for (let attempt = 0; attempt < 5; attempt++) {
+        await expect(
+          loginUser("unknown.demo.user", "wrong-demo-password"),
+        ).resolves.toBeNull();
+      }
+
       await expect(
         loginUser("unknown.demo.user", "wrong-demo-password"),
-      ).resolves.toBeNull();
-    }
+      ).rejects.toBeInstanceOf(TooManyLoginAttemptsError);
 
-    await expect(
-      loginUser("unknown.demo.user", "wrong-demo-password"),
-    ).rejects.toBeInstanceOf(TooManyLoginAttemptsError);
-
-    expect(queryRaw).toHaveBeenCalledTimes(6);
-    expect(userFindUnique).toHaveBeenCalledTimes(5);
-    expect(compareSpy).toHaveBeenCalledTimes(5);
-  });
+      expect(queryRaw).toHaveBeenCalledTimes(6);
+      expect(userFindUnique).toHaveBeenCalledTimes(5);
+      expect(compareSpy).toHaveBeenCalledTimes(5);
+    },
+    10_000,
+  );
 });

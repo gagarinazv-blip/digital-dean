@@ -39,6 +39,26 @@ export function isRequestStatus(value: string): value is RequestStatus {
   );
 }
 
+export function getStaffRequestListFilter(
+  staff: StaffRequestAccess,
+  rawStatus: unknown,
+) {
+  const accessFilter = getStaffRequestFilter(staff);
+  const status =
+    typeof rawStatus === "string" && isRequestStatus(rawStatus)
+      ? rawStatus
+      : null;
+
+  return {
+    status,
+    where: status
+      ? {
+          AND: [accessFilter, { status }],
+        }
+      : accessFilter,
+  };
+}
+
 export function parsePositiveIntegerId(value: string | null): number | null {
   if (!value || !/^[1-9]\d*$/.test(value)) {
     return null;

@@ -35,14 +35,14 @@ const requestStatusClasses: Record<RequestStatus, string> = {
   CANCELLED: workflowStyles.statusCancelled,
 };
 
-export default async function StaffHomePage() {
-  const { requests } = await getStaffRequestList();
-  const counts = new Map(
-    statusSummary.map(({ status }) => [
-      status,
-      requests.filter((request) => request.status === status).length,
-    ]),
-  );
+export default async function StaffHomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const { status: rawStatus } = await searchParams;
+  const { requests, counts, selectedStatus } =
+    await getStaffRequestList(rawStatus);
 
   return (
     <main className={styles.page}>
@@ -58,7 +58,12 @@ export default async function StaffHomePage() {
 
       <section aria-label="Сводка заявок" className={styles.summary}>
         {statusSummary.map(({ status, title, tone }) => (
-          <article className={`${styles.summaryCard} ${styles[tone]}`} key={status}>
+          <Link
+            aria-current={selectedStatus === status ? "page" : undefined}
+            className={`${styles.summaryCard} ${styles[tone]}`}
+            href={`/staff?status=${status}`}
+            key={status}
+          >
             <span aria-hidden="true" className={styles.summaryIcon}>
               {status === "NEW"
                 ? "▤"
@@ -72,30 +77,44 @@ export default async function StaffHomePage() {
             </span>
             <div className={styles.summaryContent}>
               <span>{title}</span>
-              <strong>{counts.get(status) ?? 0}</strong>
+              <strong>{counts[status]}</strong>
             </div>
-          </article>
+          </Link>
         ))}
       </section>
 
       <section className={styles.queuePanel} aria-labelledby="queue-title">
         <div className={styles.queueHeading}>
           <div>
-            <h2 id="queue-title">Очередь заявок</h2>
+            <h2 id="queue-title">
+              {selectedStatus
+                ? `Заявки: ${requestStatusLabels[selectedStatus]}`
+                : "Очередь заявок"}
+            </h2>
             <p>
-            {requests.length === 1
-              ? "1 заявка доступна по правилам вашего отдела"
-              : `${requests.length} заявок доступно по правилам вашего отдела`}
+              {requests.length === 1
+                ? "1 заявка доступна по правилам вашего отдела"
+                : `${requests.length} заявок доступно по правилам вашего отдела`}
             </p>
           </div>
+          {selectedStatus ? (
+            <Link className={styles.showAll} href="/staff">
+              Показать все заявки
+            </Link>
+          ) : null}
         </div>
         {requests.length === 0 ? (
           <div className={styles.empty}>
-            <span aria-hidden="true">✓</span>
-            <strong>Доступных заявок пока нет</strong>
+            <span aria-hidden="true">⌕</span>
+            <strong>
+              {selectedStatus
+                ? `Заявок со статусом «${requestStatusLabels[selectedStatus]}» нет`
+                : "Доступных заявок пока нет"}
+            </strong>
             <p>
-              Новые заявки появятся здесь, когда их назначат вам или когда они
-              подойдут вашему отделу.
+              {selectedStatus
+                ? "Выберите другой статус или покажите все заявки."
+                : "Новые заявки появятся здесь, когда они будут доступны по правилам вашего отдела."}
             </p>
           </div>
         ) : (
@@ -103,36 +122,16 @@ export default async function StaffHomePage() {
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th scope="col">№ заявки</th>
+                  <th scope="col">Тип заявки</th>
                   <th scope="col">Студент</th>
-                  <th scope="col">Услуга</th>
                   <th scope="col">Дата</th>
                   <th scope="col">Статус</th>
-                  <th scope="col">Сотрудник</th>
-                  <th scope="col">
-                    <span className={styles.visuallyHidden}>Действие</span>
-                  </th>
+                  <th scope="col">Детали</th>
                 </tr>
               </thead>
               <tbody>
                 {requests.map((request) => (
                   <tr key={request.id}>
-                    <td>
-                      <Link
-                        className={styles.requestNumber}
-                        href={`/staff/requests/${request.id}`}
-                      >
-                        № {request.id}
-                      </Link>
-                    </td>
-                    <td>
-                      <span className={styles.studentName}>
-                        {request.student.fullName}
-                      </span>
-                      <span className={styles.studentGroup}>
-                        {request.student.group.name}
-                      </span>
-                    </td>
                     <td>
                       <span className={styles.serviceCell}>
                         <span aria-hidden="true" className={styles.serviceIcon}>
@@ -144,33 +143,30 @@ export default async function StaffHomePage() {
                         )}
                       </span>
                     </td>
-                    <td className={styles.dateCell}>
+                    <td>
+                      <span className={styles.studentName}>
+                        {request.student.fullName}
+                      </span>
+                      <span className={styles.studentGroup}>
+                        {request.student.group.name}
+                      </span>
+                    </td>
+                    <td data-label="Дата подачи" className={styles.dateCell}>
                       {requestDateFormatter.format(request.createdAt)}
                     </td>
-                    <td>
+                    <td data-label="Статус">
                       <span
                         className={`${workflowStyles.statusBadge} ${requestStatusClasses[request.status]}`}
                       >
                         {requestStatusLabels[request.status]}
                       </span>
                     </td>
-                    <td>
-                      {request.assignedToId === null ? (
-                        <span className={styles.unassigned}>Не назначен</span>
-                      ) : (
-                        <span className={styles.staffAssignment}>
-                          <span aria-hidden="true">✓</span>
-                          Назначена вам
-                        </span>
-                      )}
-                    </td>
-                    <td>
+                    <td data-label="Детали">
                       <Link
-                        aria-label={`Открыть заявку № ${request.id}`}
                         className={styles.openLink}
                         href={`/staff/requests/${request.id}`}
                       >
-                        Открыть →
+                        Открыть заявку →
                       </Link>
                     </td>
                   </tr>
