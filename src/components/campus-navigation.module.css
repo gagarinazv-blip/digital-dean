@@ -28,6 +28,11 @@
   font-weight: 500;
   line-height: 1.35;
   overflow-wrap: anywhere;
+  transition:
+    color var(--motion-fast) var(--motion-ease),
+    background-color var(--motion-fast) var(--motion-ease),
+    transform var(--motion-fast) var(--motion-ease),
+    box-shadow var(--motion-fast) var(--motion-ease);
 }
 
 .navigationLink:hover {
@@ -58,6 +63,15 @@
 .iconSvg {
   width: 22px;
   height: 22px;
+  transition: transform var(--motion-fast) var(--motion-ease);
+}
+
+.navigationLink:hover .iconSvg {
+  transform: scale(1.06);
+}
+
+.navigationLink:active {
+  transform: scale(0.985);
 }
 
 .navigationLabel {

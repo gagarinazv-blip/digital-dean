@@ -62,11 +62,17 @@
 
   --shadow-soft: 0 4px 16px rgb(38 34 34 / 4%);
   --shadow-overlay: 0 12px 32px rgb(38 34 34 / 14%);
+
+  --motion-fast: 160ms;
+  --motion-page: 220ms;
+  --motion-ease: cubic-bezier(0.2, 0.75, 0.25, 1);
 }
 
 html {
   height: 100%;
   color-scheme: light;
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--size-header-desktop) + var(--space-4));
 }
 
 body {
@@ -89,4 +95,173 @@ body {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+a[class],
+button,
+input,
+select,
+textarea,
+summary,
+[role="button"],
+[role="tab"] {
+  transition:
+    color var(--motion-fast) var(--motion-ease),
+    background-color var(--motion-fast) var(--motion-ease),
+    border-color var(--motion-fast) var(--motion-ease),
+    box-shadow var(--motion-fast) var(--motion-ease),
+    transform var(--motion-fast) var(--motion-ease);
+}
+
+a[class]:hover,
+button:not(:disabled):hover,
+[role="button"]:hover,
+summary:hover {
+  transform: translateY(-1px);
+}
+
+a[class]:active,
+button:not(:disabled):active,
+[role="button"]:active {
+  transform: scale(0.985);
+}
+
+:where(a, button, input, select, textarea, summary, [role="button"], [role="tab"]):focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+main {
+  animation: campus-enter var(--motion-page) var(--motion-ease) both;
+}
+
+main > * {
+  animation: campus-enter var(--motion-page) var(--motion-ease) both;
+}
+
+main > *:nth-child(2) {
+  animation-delay: 24ms;
+}
+
+main > *:nth-child(3) {
+  animation-delay: 48ms;
+}
+
+main article[class],
+main [class*="Card"],
+main [class*="card"] {
+  transition:
+    transform var(--motion-fast) var(--motion-ease),
+    box-shadow var(--motion-fast) var(--motion-ease),
+    border-color var(--motion-fast) var(--motion-ease);
+}
+
+main [role="alert"],
+main [role="status"],
+dialog[open],
+[role="dialog"] {
+  animation: campus-enter var(--motion-page) var(--motion-ease) both;
+}
+
+main [data-status] {
+  transition:
+    color var(--motion-fast) var(--motion-ease),
+    background-color var(--motion-fast) var(--motion-ease),
+    border-color var(--motion-fast) var(--motion-ease);
+}
+
+details[open] > :not(summary) {
+  animation: campus-enter var(--motion-page) var(--motion-ease) both;
+}
+
+@keyframes campus-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@supports (animation-timeline: view()) {
+  main section,
+  main article {
+    animation: campus-view-enter linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 18%;
+  }
+
+  @keyframes campus-view-enter {
+    from {
+      opacity: 0.86;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  main article[class]:hover,
+  main [class*="Card"]:hover,
+  main [class*="card"]:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-soft);
+  }
+
+  body {
+    cursor: url("/campus-cursor.svg") 3 2, auto;
+  }
+
+  a,
+  button,
+  select,
+  summary,
+  [role="button"],
+  [role="tab"] {
+    cursor: url("/campus-cursor-action.svg") 3 2, pointer;
+  }
+
+  a:hover,
+  button:not(:disabled):hover,
+  summary:hover,
+  [role="button"]:hover,
+  [role="tab"]:hover {
+    cursor: url("/campus-cursor-action.svg") 3 2, pointer;
+  }
+
+  input:not([type="button"]):not([type="submit"]):not([type="reset"]),
+  textarea,
+  [contenteditable="true"] {
+    cursor: text;
+  }
+
+  input[type="file"],
+  input[type="checkbox"],
+  input[type="radio"] {
+    cursor: url("/campus-cursor-action.svg") 3 2, pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
+@media (max-width: 680px) {
+  html {
+    scroll-padding-top: calc(var(--size-header-mobile) + var(--space-3));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
