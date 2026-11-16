@@ -73,6 +73,26 @@
   font-size: var(--font-size-body-compact);
 }
 
+.headerSearch {
+  width: 260px;
+  min-height: 47px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-left: auto;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 10%);
+  color: rgb(255 255 255 / 72%);
+  font-size: var(--font-size-label);
+}
+
+.headerSearch svg {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 auto;
+}
+
 .headerActions {
   display: flex;
   align-items: center;
@@ -198,7 +218,8 @@
 }
 
 @media (max-width: 1023px) {
-  .headerDescriptor {
+  .headerDescriptor,
+  .headerSearch {
     display: none;
   }
 

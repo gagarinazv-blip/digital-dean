@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 import {
   getRequestProfileEntries,
@@ -90,21 +91,6 @@ export function NewRequestForm({
     >
       <input name="requestPublicId" type="hidden" value={publicId} />
 
-      <section className={styles.profileSnapshot} aria-labelledby="request-profile-title">
-        <h2 id="request-profile-title">Данные из вашего профиля</h2>
-        <dl className={styles.profileGrid}>
-          {profileEntries.map((entry) => (
-            <div key={entry.label}>
-              <dt>{entry.label}</dt>
-              <dd>{entry.value}</dd>
-            </div>
-          ))}
-        </dl>
-        <p className={styles.hint}>
-          Эти данные будут сохранены в заявке и не редактируются в форме.
-        </p>
-      </section>
-
       <div className={styles.field}>
         <label htmlFor="request-type">Услуга</label>
         <select
@@ -154,6 +140,25 @@ export function NewRequestForm({
           </p>
         )}
       </div>
+
+      <section
+        className={styles.profileSnapshot}
+        aria-labelledby="request-profile-title"
+      >
+        <h2 id="request-profile-title">Профиль заполнен автоматически</h2>
+        <dl className={styles.profileGrid}>
+          {profileEntries.map((entry) => (
+            <div key={entry.label}>
+              <dt>{entry.label}</dt>
+              <dd>{entry.value}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className={styles.hint}>
+          Эти данные нельзя изменить в заявке. Если нашли ошибку, обратитесь в
+          деканат.
+        </p>
+      </section>
 
       {service?.fields.map((field) => (
         <RequestCatalogFieldInput
@@ -223,9 +228,14 @@ export function NewRequestForm({
       </div>
 
       <ActionFeedback state={state} />
-      <button className={styles.button} disabled={pending} type="submit">
-        {pending ? "Отправляем…" : "Отправить заявку"}
-      </button>
+      <div className={styles.formActions}>
+        <button className={styles.button} disabled={pending} type="submit">
+          {pending ? "Отправляем…" : "Отправить заявку"}
+        </button>
+        <Link className={styles.secondaryButton} href="/help">
+          Отмена
+        </Link>
+      </div>
     </form>
   );
 }

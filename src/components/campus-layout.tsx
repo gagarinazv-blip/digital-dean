@@ -70,6 +70,20 @@ export function CampusLayout({
             </span>
           </Link>
           <span className={styles.headerDescriptor}>Студенческий кабинет</span>
+          <div className={styles.headerSearch} aria-hidden="true">
+            <svg
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="1.8"
+              viewBox="0 0 24 24"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-4-4" />
+            </svg>
+            <span>Поиск по сервисам</span>
+          </div>
           <div className={styles.headerActions}>
             <Link
               aria-label={

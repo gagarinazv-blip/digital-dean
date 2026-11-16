@@ -56,6 +56,26 @@ describe("grade calculator input", () => {
     });
   });
 
+  it("allows changing received component scores while defaulting to their baseline", () => {
+    const { scores, errors } = prepareGradeInputs(computerNetworksFormula, {
+      "midterm-1": "12",
+    });
+
+    expect(errors).toEqual({});
+    expect(scores).toMatchObject({
+      "midterm-1": 12,
+      "midterm-2": 18,
+      labs: 27,
+      activity: 9,
+      exam: undefined,
+    });
+
+    expect(calculateGrade(computerNetworksFormula, scores)).toMatchObject({
+      totalPoints: 66,
+      grade: null,
+    });
+  });
+
   it("keeps a field error out of calculation while passing other hypothetical values", () => {
     const formula = formulaWithTwoPendingComponents();
     const { scores, errors } = prepareGradeInputs(formula, {

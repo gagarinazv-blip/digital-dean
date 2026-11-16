@@ -1,6 +1,13 @@
 import { Suspense } from "react";
+import type { StudyForm } from "@/generated/prisma/enums";
 import { requireStudent } from "@/lib/student";
 import styles from "./profile.module.css";
+
+const studyFormLabels: Record<StudyForm, string> = {
+  FULL_TIME: "Очная",
+  PART_TIME: "Очно-заочная",
+  CORRESPONDENCE: "Заочная",
+};
 
 function ProfileFallback() {
   return (
@@ -12,34 +19,79 @@ function ProfileFallback() {
 
 async function ProfileContent() {
   const student = await requireStudent();
+  const initials = student.fullName
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toLocaleUpperCase("ru-RU");
 
   return (
-      <main className={styles.page}>
-        <section className={styles.content} aria-labelledby="profile-title">
-          <p className={styles.eyebrow}>Личный кабинет</p>
-          <h1 id="profile-title">Здравствуйте, {student.fullName}</h1>
-          <p className={styles.intro}>Ваши данные цифрового деканата.</p>
+    <main className={styles.page}>
+      <section className={styles.content} aria-labelledby="profile-title">
+        <p className={styles.eyebrow}>Личный кабинет</p>
+        <h1 id="profile-title">Профиль</h1>
+
+        <section className={styles.profileHero} aria-label="Профиль студента">
+          <div className={styles.avatar} aria-hidden="true">
+            {initials}
+          </div>
+          <div className={styles.profileIdentity}>
+            <p className={styles.identityLabel}>Студент</p>
+            <h2>{student.fullName}</h2>
+            <p className={styles.identityMeta}>
+              {student.course} курс · группа {student.group.name}
+            </p>
+          </div>
+          <span className={styles.heroAccent} aria-hidden="true" />
+        </section>
+
+        <section
+          aria-labelledby="study-information-title"
+          className={styles.information}
+        >
+          <div className={styles.sectionHeading}>
+            <div>
+              <p className={styles.sectionEyebrow}>Образовательная программа</p>
+              <h2 id="study-information-title">Учебная информация</h2>
+            </div>
+            <span className={styles.readOnly}>Только для просмотра</span>
+          </div>
 
           <dl className={styles.details}>
-            <div>
+            <div className={styles.detailCard}>
               <dt>Факультет</dt>
               <dd>{student.faculty}</dd>
             </div>
-            <div>
+            <div className={styles.detailCard}>
               <dt>Направление</dt>
               <dd>{student.direction}</dd>
             </div>
-            <div>
+            <div className={styles.detailCard}>
               <dt>Курс</dt>
               <dd>{student.course}</dd>
             </div>
-            <div>
+            <div className={styles.detailCard}>
               <dt>Группа</dt>
               <dd>{student.group.name}</dd>
             </div>
+            <div className={styles.detailCard}>
+              <dt>Зачётная книжка</dt>
+              <dd>{student.recordBookNumber ?? "Не указана"}</dd>
+            </div>
+            <div className={styles.detailCard}>
+              <dt>Форма обучения</dt>
+              <dd>
+                {student.studyForm
+                  ? studyFormLabels[student.studyForm]
+                  : "Не указана"}
+              </dd>
+            </div>
           </dl>
         </section>
-      </main>
+      </section>
+    </main>
   );
 }
 

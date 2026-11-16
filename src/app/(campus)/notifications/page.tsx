@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CampusSection } from "@/components/campus-section";
 import { markAllNotificationsReadAction } from "@/app/(campus)/notifications/actions";
+import type { NotificationTargetType, NotificationType } from "@/generated/prisma/enums";
 import { notificationTypeLabels } from "@/lib/notification-workflow";
 import { getStudentNotifications } from "@/lib/notification-data";
 import { requireStudent } from "@/lib/student";
@@ -14,65 +15,173 @@ const notificationDateFormatter = new Intl.DateTimeFormat("ru-RU", {
   timeZone: "Europe/Moscow",
 });
 
+function NotificationIcon({ type }: { type: NotificationType | null }) {
+  return (
+    <svg
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.7"
+      viewBox="0 0 24 24"
+    >
+      {type === "SCHEDULE_CHANGE" ? (
+        <>
+          <rect x="3" y="5" width="18" height="16" rx="2" />
+          <path d="M16 3v4M8 3v4M3 10h18" />
+        </>
+      ) : type === "DEADLINE" ? (
+        <>
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 7v5l3 2" />
+        </>
+      ) : (
+        <>
+          <path d="M6 3h8l5 5v13H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
+          <path d="M14 3v5h5M8 13h8M8 17h6" />
+        </>
+      )}
+    </svg>
+  );
+}
+
+function getTargetLabel(targetType: NotificationTargetType | null): string {
+  switch (targetType) {
+    case "SCHEDULE_ITEM":
+      return "Перейти к занятию";
+    case "DEADLINE":
+      return "Открыть задание";
+    case "REQUEST":
+      return "Открыть заявку";
+    default:
+      return "Открыть событие";
+  }
+}
+
 export default async function NotificationsPage() {
   const student = await requireStudent();
   const notifications = await getStudentNotifications(student.id);
-  const hasUnread = notifications.some(
+  const unreadCount = notifications.filter(
     (notification) => notification.readAt === null,
-  );
+  ).length;
+  const selectedNotification = notifications[0];
 
   return (
     <CampusSection
       eyebrow="Новости и сроки"
       title="Уведомления"
-      description="Изменения расписания, сроки и статусы ваших заявок."
+      description={
+        unreadCount
+          ? `${unreadCount} непрочитанных · важное об учёбе и заявках`
+          : "Важное об учёбе и заявках."
+      }
     >
       <div className={styles.stack}>
-        {hasUnread && (
-          <form action={markAllNotificationsReadAction}>
-            <button className={styles.secondaryButton} type="submit">
-              Отметить все прочитанными
-            </button>
-          </form>
-        )}
+        <div className={styles.toolbar}>
+          <div className={styles.segments} aria-hidden="true">
+            <span className={styles.segmentActive}>Все</span>
+            <span>Непрочитанные</span>
+          </div>
+          {unreadCount > 0 && (
+            <form action={markAllNotificationsReadAction}>
+              <button className={styles.secondaryButton} type="submit">
+                Прочитать все <span aria-hidden="true">✓✓</span>
+              </button>
+            </form>
+          )}
+        </div>
+
         {notifications.length === 0 ? (
           <div className={styles.empty}>
             <strong>Уведомлений пока нет</strong>
             <p>Здесь появятся важные изменения и напоминания для вас.</p>
           </div>
         ) : (
-          <ul className={styles.list}>
-            {notifications.map((notification) => (
-              <li
-                className={`${styles.item} ${
-                  notification.readAt === null ? styles.unread : ""
-                }`}
-                key={notification.publicId}
+          <div className={styles.notificationGrid}>
+            <section
+              className={styles.eventsPanel}
+              aria-labelledby="latest-events-title"
+            >
+              <div className={styles.panelHeading}>
+                <h2 id="latest-events-title">Последние события</h2>
+                <span>{notifications.length}</span>
+              </div>
+              <ul className={styles.list}>
+                {notifications.map((notification) => (
+                  <li
+                    className={`${styles.item} ${
+                      notification.readAt === null ? styles.unread : ""
+                    }`}
+                    key={notification.publicId}
+                  >
+                    <Link
+                      aria-label={`${notification.readAt === null ? "Новое уведомление. " : ""}${notification.title}`}
+                      className={styles.itemLink}
+                      href={`/notifications/${notification.publicId}`}
+                    >
+                      <span className={styles.icon}>
+                        <NotificationIcon type={notification.type} />
+                      </span>
+                      <span className={styles.itemContent}>
+                        <span className={styles.heading}>
+                          <span className={styles.type}>
+                            {notification.type
+                              ? notificationTypeLabels[notification.type]
+                              : "Уведомление"}
+                          </span>
+                          {notification.readAt === null && (
+                            <span className={styles.unreadMark}>Новое</span>
+                          )}
+                        </span>
+                        <strong className={styles.itemTitle}>
+                          {notification.title}
+                        </strong>
+                        <span className={styles.context}>
+                          {notificationDateFormatter.format(
+                            notification.createdAt,
+                          )}{" "}
+                          · открыть контекст
+                        </span>
+                      </span>
+                      <span className={styles.itemArrow} aria-hidden="true">
+                        →
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            {selectedNotification && (
+              <aside
+                className={styles.detailPanel}
+                aria-labelledby="selected-notification-title"
               >
+                <p className={styles.detailEyebrow}>
+                  {selectedNotification.type
+                    ? notificationTypeLabels[selectedNotification.type]
+                    : "Уведомление"}
+                </p>
+                <h2 id="selected-notification-title">
+                  {selectedNotification.title}
+                </h2>
+                <time dateTime={selectedNotification.createdAt.toISOString()}>
+                  {notificationDateFormatter.format(
+                    selectedNotification.createdAt,
+                  )}
+                </time>
+                <p className={styles.detailText}>{selectedNotification.text}</p>
                 <Link
-                  aria-label={`${notification.readAt === null ? "Новое уведомление. " : ""}${notification.title}`}
-                  className={styles.itemLink}
-                  href={`/notifications/${notification.publicId}`}
+                  className={styles.primaryButton}
+                  href={`/notifications/${selectedNotification.publicId}`}
                 >
-                  <div className={styles.heading}>
-                    <span className={styles.type}>
-                      {notification.type
-                        ? notificationTypeLabels[notification.type]
-                        : "Уведомление"}
-                    </span>
-                    {notification.readAt === null && (
-                      <span className={styles.unreadMark}>Новое</span>
-                    )}
-                  </div>
-                  <h2>{notification.title}</h2>
-                  <p>{notification.text}</p>
-                  <time dateTime={notification.createdAt.toISOString()}>
-                    {notificationDateFormatter.format(notification.createdAt)}
-                  </time>
+                  {getTargetLabel(selectedNotification.targetType)}
+                  <span aria-hidden="true">→</span>
                 </Link>
-              </li>
-            ))}
-          </ul>
+              </aside>
+            )}
+          </div>
         )}
       </div>
     </CampusSection>

@@ -1,6 +1,6 @@
 :root {
   --color-canvas: #f7f4f0;
-  --color-surface: var(--color-surface);
+  --color-surface: #ffffff;
   --color-subtle: #f6f0eb;
   --color-border: #eae4de;
   --color-ink: #262222;

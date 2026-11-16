@@ -1,0 +1,327 @@
+.page {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-6);
+  padding: var(--space-6) 0 var(--space-12);
+}
+
+.subjectHero {
+  min-height: 180px;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: var(--space-2);
+  padding: var(--space-6);
+  overflow: hidden;
+  border: 1px solid var(--color-blue-300);
+  border-radius: var(--radius-card);
+  background-color: #dce5f0;
+  background-image:
+    linear-gradient(90deg, #dce5f0 0%, rgb(220 229 240 / 88%) 54%, rgb(220 229 240 / 8%) 100%),
+    url("/images/University%20architecture%20%C2%B7%20hero%20%C2%B7%20%D1%84%D1%80%D0%B0%D0%B3%D0%BC%D0%B5%D0%BD%D1%82%20%D1%80%D0%B5%D1%84%D0%B5%D1%80%D0%B5%D0%BD%D1%81%D0%B0.png");
+  background-position: center, right 43%;
+  background-size: cover;
+}
+
+.subjectHero h1 {
+  max-width: min(720px, 85%);
+  color: var(--color-ink);
+  font-size: var(--font-size-h1);
+  font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.subjectHero p {
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+}
+
+.allSubjectsLink {
+  min-height: var(--size-touch);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid rgb(255 255 255 / 70%);
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 70%);
+  color: var(--color-ink);
+  font-size: var(--font-size-caption);
+  font-weight: 500;
+}
+
+.allSubjectsLink:hover {
+  background: var(--color-surface);
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: var(--space-4);
+}
+
+.detailCard {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.cardHeading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.cardHeading h2 {
+  color: var(--color-ink);
+  font-size: var(--font-size-h3);
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.infoIcon,
+.resultsIcon {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+}
+
+.infoIcon {
+  color: var(--color-wine-900);
+}
+
+.resultsIcon {
+  color: var(--color-blue-700);
+}
+
+.infoIcon svg,
+.resultsIcon svg {
+  width: 19px;
+  height: 19px;
+}
+
+.details {
+  display: grid;
+  margin-top: auto;
+}
+
+.details > div {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.details > div:last-child {
+  border-bottom: 0;
+}
+
+.details dt {
+  flex: 0 0 auto;
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+}
+
+.details dd {
+  color: var(--color-ink);
+  font-size: var(--font-size-caption);
+  font-weight: 500;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.resultContent {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.resultHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.resultValue,
+.resultDebt {
+  color: var(--color-ink);
+  font-size: clamp(32px, 4vw, 42px);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.resultDebt {
+  color: var(--color-danger-text);
+}
+
+.resultStatus {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+  font-size: var(--font-size-caption);
+}
+
+.resultStatus[data-status="ACADEMIC_DEBT"] {
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
+}
+
+.attempts {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.attempts li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--font-size-caption);
+}
+
+.attempts li:last-child {
+  border-bottom: 0;
+}
+
+.attempts li span {
+  color: var(--color-muted);
+}
+
+.attempts li strong {
+  color: var(--color-ink);
+  font-weight: 500;
+}
+
+.noResult {
+  margin-bottom: auto;
+  color: var(--color-muted);
+  font-size: var(--font-size-body-compact);
+  line-height: 1.5;
+}
+
+.calculateButton {
+  min-height: var(--size-touch);
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: auto;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-wine-900);
+  color: var(--color-surface);
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+  text-align: center;
+}
+
+.calculateButton:hover {
+  background: var(--color-wine-700);
+}
+
+.allSubjectsLink:focus-visible,
+.calculateButton:focus-visible,
+.backLink:focus-visible,
+.retryButton:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.backLink {
+  width: fit-content;
+  min-height: var(--size-touch);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-wine-900);
+  font-size: var(--font-size-body-compact);
+  font-weight: 600;
+}
+
+.errorActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.retryButton {
+  min-height: var(--size-touch);
+  padding: var(--space-2) var(--space-4);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-wine-900);
+  color: var(--color-surface);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (max-width: 800px) {
+  .detailGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .page {
+    gap: var(--space-4);
+    padding: var(--space-4) 0 var(--space-8);
+  }
+
+  .subjectHero {
+    min-height: 174px;
+    padding: var(--space-4);
+    background-image:
+      linear-gradient(90deg, #dce5f0 0%, rgb(220 229 240 / 92%) 54%, rgb(220 229 240 / 20%) 100%),
+      url("/images/University%20architecture%20%C2%B7%20hero%20%C2%B7%20%D1%84%D1%80%D0%B0%D0%B3%D0%BC%D0%B5%D0%BD%D1%82%20%D1%80%D0%B5%D1%84%D0%B5%D1%80%D0%B5%D0%BD%D1%81%D0%B0.png");
+    background-position: center, 72% center;
+  }
+
+  .subjectHero h1 {
+    max-width: 100%;
+    font-size: var(--font-size-h1-mobile);
+  }
+
+  .detailCard {
+    padding: var(--space-4);
+  }
+
+  .details > div {
+    gap: var(--space-2);
+  }
+
+  .details dt,
+  .details dd {
+    font-size: var(--font-size-caption);
+  }
+
+  .calculateButton {
+    width: 100%;
+  }
+}

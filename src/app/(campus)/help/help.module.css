@@ -1,0 +1,520 @@
+.pageContent {
+  display: grid;
+  gap: var(--space-6);
+  min-width: 0;
+}
+
+.hero {
+  position: relative;
+  min-height: 190px;
+  display: flex;
+  overflow: hidden;
+  padding: var(--space-6);
+  border: 1px solid var(--color-blue-300);
+  border-radius: var(--radius-card);
+  background: linear-gradient(110deg, #dce5f0 0%, #dce5f0 52%, #e8edf4 100%);
+}
+
+.heroArt {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 43%;
+  background:
+    linear-gradient(90deg, #dce5f0 0%, rgb(220 229 240 / 22%) 48%, transparent 100%);
+  pointer-events: none;
+}
+
+.heroArt::before,
+.heroArt::after {
+  position: absolute;
+  right: -5%;
+  bottom: -62%;
+  width: min(390px, 70vw);
+  aspect-ratio: 1;
+  border: 1px solid rgb(54 87 115 / 18%);
+  border-radius: 48% 48% 0 0;
+  content: "";
+}
+
+.heroArt::after {
+  right: 12%;
+  bottom: -76%;
+  width: min(250px, 45vw);
+  border-width: 2px;
+  border-color: rgb(54 87 115 / 12%);
+}
+
+.heroContent {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 750px);
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+}
+
+.heroKicker,
+.kicker {
+  color: var(--color-blue-700);
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+}
+
+.hero h2 {
+  max-width: 700px;
+  color: var(--color-ink);
+  font-size: clamp(24px, 2.4vw, 32px);
+  font-weight: 600;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.heroContent > p:not(.heroKicker) {
+  max-width: 640px;
+  color: var(--color-muted);
+  font-size: var(--font-size-body-compact);
+  line-height: 1.5;
+}
+
+.primaryButton {
+  min-height: 45px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-wine-900);
+  color: var(--color-surface);
+  font-size: var(--font-size-body-compact);
+  font-weight: 600;
+}
+
+.primaryButton:hover {
+  background: var(--color-wine-700);
+}
+
+.primaryButton:focus-visible,
+.serviceLink:focus-visible,
+.secondaryLink:focus-visible,
+.requestNumber:focus-visible,
+.rowLink:focus-visible,
+.mobileRequestLink:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.filterBar {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(220px, 1fr);
+  gap: var(--space-3);
+}
+
+.searchVisual,
+.filterVisual {
+  min-width: 0;
+  min-height: 49px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font-size: var(--font-size-body-compact);
+}
+
+.searchVisual svg {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 auto;
+}
+
+.filterVisual {
+  justify-content: space-between;
+  color: var(--color-ink);
+}
+
+.filterVisual svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+}
+
+.section {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.sectionHeading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.sectionHeading h2 {
+  margin-top: var(--space-1);
+  color: var(--color-ink);
+  font-size: var(--font-size-h2);
+  font-weight: 600;
+  line-height: 28px;
+  overflow-wrap: anywhere;
+}
+
+.serviceGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.serviceCard {
+  min-width: 0;
+  min-height: 204px;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-content: start;
+  align-items: start;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.serviceIcon,
+.emptyIcon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-md);
+  background: var(--color-wine-100);
+  color: var(--color-wine-900);
+}
+
+.serviceIcon svg,
+.emptyIcon svg {
+  width: 21px;
+  height: 21px;
+}
+
+.serviceCard h3 {
+  align-self: center;
+  color: var(--color-ink);
+  font-size: var(--font-size-h3);
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.serviceCard > p,
+.serviceMeta,
+.serviceLink {
+  grid-column: 2;
+}
+
+.serviceCard > p {
+  min-height: 40px;
+  color: var(--color-muted);
+  font-size: var(--font-size-label);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.serviceMeta {
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+}
+
+.serviceLink {
+  min-height: var(--size-touch);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-wine-900);
+  font-size: var(--font-size-body-compact);
+  font-weight: 600;
+}
+
+.serviceLink:hover,
+.secondaryLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.secondaryLink {
+  min-height: var(--size-touch);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-wine-900);
+  font-size: var(--font-size-body-compact);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tableScroller {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  scrollbar-color: var(--color-blue-300) var(--color-subtle);
+}
+
+.requestTable {
+  width: 100%;
+  min-width: 780px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.requestTable th {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.requestTable td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-ink);
+  font-size: var(--font-size-body-compact);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.requestTable tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.requestTable .selectedRow {
+  background: var(--color-wine-100);
+  box-shadow: inset 3px 0 0 var(--color-wine-900);
+}
+
+.requestNumber {
+  color: var(--color-wine-900);
+  font-size: var(--font-size-label);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.statusBadge {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-new-bg);
+  color: var(--color-new-text);
+  font-size: var(--font-size-label);
+  font-weight: 500;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+.statusBadge[data-status="IN_PROGRESS"] {
+  background: var(--color-blue-100);
+  color: var(--color-blue-700);
+}
+
+.statusBadge[data-status="NEEDS_INFO"] {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.statusBadge[data-status="READY"] {
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.statusBadge[data-status="REJECTED"] {
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
+}
+
+.statusBadge[data-status="CANCELLED"] {
+  color: var(--color-muted);
+}
+
+.rowLink {
+  width: var(--size-touch);
+  height: var(--size-touch);
+  display: inline-grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  color: var(--color-wine-900);
+  font-size: 26px;
+}
+
+.rowLink:hover {
+  background: var(--color-surface);
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.mobileRequestList {
+  display: none;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mobileRequestCard {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.mobileSelected {
+  border-color: var(--color-wine-100);
+  background: var(--color-wine-100);
+  box-shadow: inset 3px 0 0 var(--color-wine-900);
+}
+
+.mobileRequestLink {
+  min-height: var(--size-touch);
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+}
+
+.mobileRequestHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.mobileRequestLink > strong {
+  color: var(--color-ink);
+  font-size: var(--font-size-body-compact);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.mobileRequestMeta {
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+}
+
+.emptyState {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  padding: var(--space-8) var(--space-4);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  text-align: center;
+}
+
+.emptyState h3 {
+  color: var(--color-ink);
+  font-size: var(--font-size-h3);
+}
+
+.emptyState p {
+  max-width: 400px;
+  color: var(--color-muted);
+  font-size: var(--font-size-body-compact);
+  line-height: 1.5;
+}
+
+@media (max-width: 1023px) {
+  .serviceGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .pageContent {
+    gap: var(--space-4);
+  }
+
+  .hero {
+    min-height: 210px;
+    padding: var(--space-4);
+  }
+
+  .heroArt {
+    width: 38%;
+    opacity: 0.75;
+  }
+
+  .hero h2 {
+    font-size: 24px;
+  }
+
+  .filterBar {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2);
+  }
+
+  .serviceGrid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+  }
+
+  .serviceCard {
+    min-height: 0;
+    padding: var(--space-4);
+  }
+
+  .serviceCard > p {
+    min-height: 0;
+  }
+
+  .sectionHeading {
+    align-items: flex-start;
+  }
+
+  .secondaryLink {
+    white-space: normal;
+    text-align: right;
+  }
+
+  .tableScroller {
+    display: none;
+  }
+
+  .mobileRequestList {
+    display: grid;
+  }
+}
+
+@media (max-width: 380px) {
+  .hero {
+    padding: var(--space-4);
+  }
+
+  .sectionHeading {
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .secondaryLink {
+    min-height: 38px;
+    text-align: left;
+  }
+}

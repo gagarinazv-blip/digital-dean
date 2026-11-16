@@ -4,11 +4,9 @@ import { connection } from "next/server";
 import type { RequestStatus } from "@/generated/prisma/enums";
 import { getCampusTodayData } from "@/lib/campus-data";
 import {
-  formatCampusDate,
   formatCampusTime,
   formatMoscowDate,
   getCampusGreeting,
-  getCampusTime,
 } from "@/lib/campus-time";
 import { requestStatusLabels, requestTypeLabels } from "@/lib/campus-labels";
 import { getRequestCatalogTitle } from "@/lib/request-catalog";
@@ -39,10 +37,13 @@ const quickActionIcons = {
       <path d="M12 11v5m0-8h.01" />
     </>
   ),
-  notifications: (
-    <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-8 12a2 2 0 0 0 4 0" />
-  ),
 };
+
+const welcomeDateFormatter = new Intl.DateTimeFormat("ru-RU", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+});
 
 type QuickActionName = keyof typeof quickActionIcons;
 
@@ -79,140 +80,179 @@ async function CampusToday() {
   return (
     <main className={styles.page}>
       <section className={styles.welcome} aria-labelledby="welcome-title">
-        <div>
+        <div className={styles.welcomeContent}>
           <p className={styles.eyebrow}>
-            {formatCampusDate(todayDate)} · {getCampusTime()} МСК
+            {welcomeDateFormatter.format(todayDate)} · группа{" "}
+            {data.student.group.name}
           </p>
           <h1 id="welcome-title">
-            {getCampusGreeting(data.now)}, {firstName}!
+            {getCampusGreeting(data.now)}, {firstName}
           </h1>
-          <p className={styles.welcomeText}>
-            Ваша группа: <strong>{data.student.group.name}</strong>
-          </p>
         </div>
       </section>
 
-      <nav className={styles.quickActions} aria-label="Быстрые действия">
-        {(
-          [
-            { href: "/schedule", label: "Расписание", name: "schedule" },
-            { href: "/grades", label: "Оценки", name: "grades" },
-            { href: "/requests/new", label: "Справка", name: "help" },
-            {
-              href: "/notifications",
-              label: "Уведомления",
-              name: "notifications",
-            },
-          ] as const
-        ).map((action) => (
-          <Link
-            aria-label={
-              action.name === "notifications" &&
-              data.unreadNotificationCount > 0
-                ? `Уведомления, непрочитанных: ${data.unreadNotificationCount}`
-                : undefined
-            }
-            className={styles.actionTile}
-            href={action.href}
-            key={action.name}
-          >
-            <span className={styles.actionIcon}>
-              <QuickActionIcon name={action.name} />
-              {action.name === "notifications" &&
-                data.unreadNotificationCount > 0 && (
-                  <span className={styles.unreadBadge}>
-                    {data.unreadNotificationCount}
-                  </span>
-                )}
-            </span>
-            <span className={styles.actionLabel}>{action.label}</span>
-          </Link>
-        ))}
-      </nav>
+      <div className={styles.dashboardGrid}>
+        <section
+          className={styles.nextLesson}
+          aria-labelledby="next-lesson-title"
+        >
+          <div className={styles.heroArt} aria-hidden="true" />
+          <div className={styles.heroContent}>
+            <span className={styles.heroBadge}>Ближайшая пара</span>
+            {data.nextLesson ? (
+              <div className={styles.lesson}>
+                <h2 id="next-lesson-title">{data.nextLesson.subject.name}</h2>
+                <p className={styles.lessonTime}>
+                  {formatCampusTime(data.nextLesson.startTime)}–
+                  {formatCampusTime(data.nextLesson.endTime)} · занятие
+                </p>
+                <p>
+                  Аудитория {data.nextLesson.room} · {data.nextLesson.teacher}
+                </p>
+              </div>
+            ) : (
+              <div className={styles.emptyState}>
+                <h2 id="next-lesson-title">
+                  {data.todaySchedule.length
+                    ? "Сегодня пар больше нет"
+                    : "На сегодня занятий нет"}
+                </h2>
+                <p>
+                {data.todaySchedule.length
+                    ? "Посмотрите расписание на другие дни."
+                    : "В расписании пока нет ближайших занятий."}
+                </p>
+              </div>
+            )}
+            <Link className={styles.heroButton} href="/schedule">
+              Открыть расписание
+            </Link>
+          </div>
+        </section>
+
+        <div className={styles.sideStack}>
+          <section className={styles.card} aria-labelledby="deadlines-title">
+            <div className={styles.cardHeading}>
+              <p className={styles.eyebrow}>Скоро нужно сделать</p>
+              <h2 id="deadlines-title">Ближайшие дедлайны</h2>
+            </div>
+            {data.deadlines.length ? (
+              <ul className={styles.compactList}>
+                {data.deadlines.slice(0, 3).map((deadline) => (
+                  <li className={styles.deadlineItem} key={deadline.id}>
+                    <span className={styles.deadlineIcon} aria-hidden="true">
+                      <QuickActionIcon name="grades" />
+                    </span>
+                    <span className={styles.deadlineDetails}>
+                      <strong>{deadline.title}</strong>
+                      <small>
+                        {deadline.subject} · {formatMoscowDate(deadline.dueAt)}
+                      </small>
+                    </span>
+                    <span
+                      className={`${styles.deadlineTime} ${
+                        deadline.countdown.kind === "OVERDUE"
+                          ? styles.deadlineOverdue
+                          : ""
+                      }`}
+                    >
+                      {deadline.countdown.label}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className={styles.emptyState}>
+                <p>Открытых заданий и сроков пока нет.</p>
+              </div>
+            )}
+            <Link className={styles.textLink} href="/deadlines">
+              Все задания и сроки
+            </Link>
+          </section>
+
+          <section className={styles.card} aria-labelledby="request-title">
+            <div className={styles.cardHeading}>
+              <p className={styles.eyebrow}>Последнее обращение</p>
+              <h2 id="request-title">Моя последняя заявка</h2>
+            </div>
+            {data.latestRequest ? (
+              <div className={styles.request}>
+                <strong>
+                  {getRequestCatalogTitle(
+                    data.latestRequest.catalogCode,
+                    requestTypeLabels[data.latestRequest.type],
+                  )}
+                </strong>
+                <span
+                  className={`${styles.statusBadge} ${requestStatusClasses[data.latestRequest.status]}`}
+                >
+                  {requestStatusLabels[data.latestRequest.status]}
+                </span>
+                <p>
+                  Обновлена {formatMoscowDate(data.latestRequest.updatedAt)}
+                </p>
+                <Link className={styles.textLink} href="/requests">
+                  Отследить заявку ↗
+                </Link>
+              </div>
+            ) : (
+              <div className={styles.emptyState}>
+                <p>
+                  У вас пока нет заявок. Здесь появится статус, когда заявка
+                  будет подана.
+                </p>
+                <Link className={styles.textLink} href="/requests/new">
+                  Создать первую заявку
+                </Link>
+              </div>
+            )}
+          </section>
+        </div>
+      </div>
 
       <div className={styles.dashboardGrid}>
-        <section className={styles.card} aria-labelledby="next-lesson-title">
+        <section className={styles.card} aria-labelledby="today-schedule-title">
           <div className={styles.cardHeading}>
-            <div>
-              <p className={styles.eyebrow}>Ближайшее занятие</p>
-              <h2 id="next-lesson-title">Следующая пара</h2>
-            </div>
+            <p className={styles.eyebrow}>Пары и занятия</p>
+            <h2 id="today-schedule-title">Расписание на сегодня</h2>
           </div>
-          {data.nextLesson ? (
-            <div className={styles.lesson}>
-              <strong>{data.nextLesson.subject.name}</strong>
-              <p>
-                {formatCampusDate(data.nextLesson.occurrenceDate)} ·{" "}
-                {formatCampusTime(data.nextLesson.startTime)}–
-                {formatCampusTime(data.nextLesson.endTime)}
-              </p>
-              <p>Аудитория {data.nextLesson.room}</p>
-              <p>Преподаватель: {data.nextLesson.teacher}</p>
-            </div>
-          ) : (
-            <div className={styles.emptyState}>
-              <p>
-                {data.todaySchedule.length
-                  ? "Сегодня пар больше нет."
-                  : "На сегодня занятий нет."}{" "}
-                В расписании пока не найдена следующая пара.
-              </p>
-              <Link className={styles.textLink} href="/schedule">
-                Открыть расписание
-              </Link>
-            </div>
-          )}
-        </section>
-
-        <section className={styles.card} aria-labelledby="deadlines-title">
-          <div className={styles.cardHeading}>
-            <div>
-              <p className={styles.eyebrow}>Скоро нужно сделать</p>
-              <h2 id="deadlines-title">Ближайшие задания и сроки</h2>
-            </div>
-          </div>
-          {data.deadlines.length ? (
-            <ul className={styles.compactList}>
-              {data.deadlines.map((deadline) => (
-                <li className={styles.deadlineItem} key={deadline.id}>
-                  <span className={styles.deadlineDetails}>
-                    <strong>{deadline.title}</strong>
-                    <small>{deadline.subject}</small>
-                  </span>
-                  <span
-                    className={`${styles.deadlineTime} ${
-                      deadline.countdown.kind === "OVERDUE"
-                        ? styles.deadlineOverdue
-                        : ""
-                    }`}
-                  >
-                    {deadline.countdown.label}
-                    <small>{formatMoscowDate(deadline.dueAt)}</small>
-                  </span>
+          {data.todaySchedule.length ? (
+            <ol className={styles.timeline}>
+              {data.todaySchedule.map((lesson) => (
+                <li className={styles.timelineItem} key={lesson.occurrenceId}>
+                  <time>{formatCampusTime(lesson.startTime)}</time>
+                  <span className={styles.timelineDot} aria-hidden="true" />
+                  <div className={styles.timelineDetails}>
+                    <strong>{lesson.subject.name}</strong>
+                    <span>
+                      Занятие · ауд. {lesson.room}
+                      {lesson.status === "RESCHEDULED" && " · перенесено"}
+                      {lesson.status === "CANCELLED" && " · отменено"}
+                    </span>
+                  </div>
                 </li>
               ))}
-            </ul>
+            </ol>
           ) : (
-            <div className={styles.emptyState}>
-              <p>Открытых заданий и сроков пока нет.</p>
-            </div>
+            <p className={styles.emptyState}>На сегодня занятий нет.</p>
           )}
-          <Link className={styles.textLink} href="/deadlines">
-            Все задания и сроки
-          </Link>
         </section>
 
-        <section className={styles.card} aria-labelledby="changes-title">
+        <section className={styles.card} aria-labelledby="announcements-title">
           <div className={styles.cardHeading}>
-            <div>
-              <p className={styles.eyebrow}>Расписание и новости</p>
-              <h2 id="changes-title">Изменения</h2>
-            </div>
+            <p className={styles.eyebrow}>Важное</p>
+            <h2 id="announcements-title">Объявления</h2>
           </div>
           {data.changes.length ? (
             <ul className={styles.changeList}>
-              {data.changes.map((change) => (
-                <li className={styles.changeItem} key={change.id}>
+              {data.changes.map((change, index) => (
+                <li
+                  className={`${styles.changeItem} ${
+                    index === 0 ? styles.highlightedChange : ""
+                  }`}
+                  key={change.id}
+                >
                   <span className={styles.changeKind}>{change.kind}</span>
                   <strong>{change.title}</strong>
                   <p>{change.text}</p>
@@ -222,49 +262,41 @@ async function CampusToday() {
             </ul>
           ) : (
             <p className={styles.emptyState}>
-              Переносов занятий и свежих объявлений пока нет.
+              Новых объявлений и изменений пока нет.
             </p>
           )}
         </section>
-
-        <section className={styles.card} aria-labelledby="request-title">
-          <div className={styles.cardHeading}>
-            <div>
-              <p className={styles.eyebrow}>Последнее обращение</p>
-              <h2 id="request-title">Моя заявка</h2>
-            </div>
-          </div>
-          {data.latestRequest ? (
-            <div className={styles.request}>
-              <strong>
-                {getRequestCatalogTitle(
-                  data.latestRequest.catalogCode,
-                  requestTypeLabels[data.latestRequest.type],
-                )}
-              </strong>
-              <span
-                className={`${styles.statusBadge} ${requestStatusClasses[data.latestRequest.status]}`}
-              >
-                {requestStatusLabels[data.latestRequest.status]}
-              </span>
-              <p>Обновлена {formatMoscowDate(data.latestRequest.updatedAt)}</p>
-              <Link className={styles.textLink} href="/requests">
-                Открыть заявки
-              </Link>
-            </div>
-          ) : (
-            <div className={styles.emptyState}>
-              <p>
-                У вас пока нет заявок. Здесь появится статус, когда заявка будет
-                подана.
-              </p>
-              <Link className={styles.textLink} href="/requests/new">
-                Новая заявка
-              </Link>
-            </div>
-          )}
-        </section>
       </div>
+
+      <section
+        className={styles.quickActionsSection}
+        aria-labelledby="quick-actions-title"
+      >
+        <div className={styles.cardHeading}>
+          <p className={styles.eyebrow}>Часто используемое</p>
+          <h2 id="quick-actions-title">Быстрые действия</h2>
+        </div>
+        <nav className={styles.quickActions} aria-label="Быстрые действия">
+          {(
+            [
+              { href: "/requests/new", label: "Заказать справку", name: "help" },
+              { href: "/grades", label: "Рассчитать оценку", name: "grades" },
+              { href: "/schedule", label: "Моё расписание", name: "schedule" },
+            ] as const
+          ).map((action) => (
+            <Link
+              className={styles.actionTile}
+              href={action.href}
+              key={action.name}
+            >
+              <span className={styles.actionIcon}>
+                <QuickActionIcon name={action.name} />
+              </span>
+              <span className={styles.actionLabel}>{action.label}</span>
+            </Link>
+          ))}
+        </nav>
+      </section>
     </main>
   );
 }

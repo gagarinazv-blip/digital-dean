@@ -59,11 +59,15 @@ export function prepareGradeInputs(
   const errors: Record<string, string> = {};
 
   for (const component of formula.components) {
-    if (component.status === "RECEIVED") {
-      continue;
-    }
-
-    const parsed = parseGradeInput(values[component.id] ?? "", component.maxPoints);
+    const defaultValue =
+      component.status === "RECEIVED" &&
+      component.baselineScore !== undefined
+        ? String(component.baselineScore)
+        : "";
+    const parsed = parseGradeInput(
+      values[component.id] ?? defaultValue,
+      component.maxPoints,
+    );
     if (parsed.kind === "valid") {
       scores[component.id] = parsed.score;
     } else {

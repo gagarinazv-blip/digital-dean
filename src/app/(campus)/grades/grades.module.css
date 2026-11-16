@@ -1,160 +1,522 @@
-.studentSummary,
-.semester {
-  padding: var(--space-6);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
-}
-
-.studentSummary h2,
-.semesterHeading h2 {
-  font-size: var(--font-size-h2);
-  font-weight: 600;
-  line-height: 28px;
-  overflow-wrap: anywhere;
-}
-
-.studentSummary p {
-  margin-top: var(--space-2);
-  color: var(--color-muted);
-  font-size: var(--font-size-body-compact);
-  line-height: 20px;
-}
-
-.semesterList {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-6);
+.tabSection {
+  min-width: 0;
   margin-top: var(--space-6);
 }
 
-.semester {
+.tabs {
+  width: fit-content;
+  max-width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-subtle);
+}
+
+.tab {
+  min-height: var(--size-touch);
+  padding: var(--space-2) var(--space-4);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-muted);
+  font: inherit;
+  font-size: var(--font-size-body-compact);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tab[aria-selected="true"] {
+  background: var(--color-wine-900);
+  color: var(--color-surface);
+}
+
+.tab:focus-visible,
+.tabPanel:focus-visible,
+.periodTab:focus-visible,
+.subjectLink:focus-visible,
+.openSubject:focus-visible,
+.semesterSelect:focus-within,
+.contentPanel:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.tabPanel[hidden] {
+  display: none;
+}
+
+.tabPanel {
+  min-width: 0;
+  margin-top: var(--space-4);
+}
+
+.overview {
+  display: grid;
+  gap: var(--space-4);
   min-width: 0;
 }
 
-.semesterHeading {
+.overviewHero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr);
+  gap: var(--space-4);
+}
+
+.averageCard {
+  min-width: 0;
+  min-height: 238px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-6);
+  overflow: hidden;
+  border: 1px solid var(--color-blue-300);
+  border-radius: var(--radius-card);
+  background-color: #dce5f0;
+  background-image:
+    linear-gradient(90deg, #dce5f0 0%, rgb(220 229 240 / 94%) 44%, rgb(220 229 240 / 18%) 100%),
+    url("/images/University%20architecture%20%C2%B7%20hero%20%C2%B7%20%D1%84%D1%80%D0%B0%D0%B3%D0%BC%D0%B5%D0%BD%D1%82%20%D1%80%D0%B5%D1%84%D0%B5%D1%80%D0%B5%D0%BD%D1%81%D0%B0.png");
+  background-position: center, right 44%;
+  background-size: cover;
+}
+
+.currentSemesterBadge {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: var(--font-size-caption);
+  font-weight: 500;
+}
+
+.averageValue {
+  margin-top: var(--space-3);
+  color: var(--color-ink);
+  font-size: clamp(42px, 5vw, 56px);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.averageCaption {
+  color: var(--color-ink);
+  font-size: var(--font-size-body);
+}
+
+.creditsCaption {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  color: var(--color-ink);
+  font-size: var(--font-size-label);
+}
+
+.creditsCaption svg {
+  width: 18px;
+  height: 18px;
+}
+
+.overviewSummary {
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.summaryCard {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.summaryCard h2 {
+  color: var(--color-ink);
+  font-size: var(--font-size-h3);
+  font-weight: 600;
+}
+
+.progressLabel {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
-  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
 }
 
-.currentBadge,
-.plannedBadge,
-.completedBadge {
-  flex: 0 0 auto;
+.progressLabel strong {
+  color: var(--color-ink);
+  font-size: var(--font-size-label);
+  font-variant-numeric: tabular-nums;
+}
+
+.progressTrack,
+.dynamicsTrack {
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--color-wine-100);
+}
+
+.progressTrack span,
+.dynamicsTrack span {
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  background: var(--color-wine-900);
+  transition: width 180ms ease;
+}
+
+.studyStatus {
+  width: fit-content;
+  max-width: 100%;
+  min-height: 30px;
   display: inline-flex;
   align-items: center;
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-pill);
   font-size: var(--font-size-caption);
-  font-weight: 500;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
-.currentBadge,
-.completedBadge {
+.studyStatusGood {
   background: var(--color-success-bg);
   color: var(--color-success-text);
 }
 
-.plannedBadge {
-  background: var(--color-blue-100);
-  color: var(--color-blue-700);
+.studyStatusDebt {
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
 }
 
-.tableWrap {
+.periodControls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.periodTabs {
   max-width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.periodTab {
+  min-height: var(--size-touch);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  background: var(--color-subtle);
+  color: var(--color-muted);
+  font: inherit;
+  font-size: var(--font-size-caption);
+  cursor: pointer;
+}
+
+.periodTab[aria-selected="true"] {
+  border-color: var(--color-danger-bg);
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
+}
+
+.semesterSelect {
+  position: relative;
+  min-height: var(--size-touch);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: var(--font-size-caption);
+}
+
+.semesterSelect select {
+  max-width: min(260px, 60vw);
+  min-height: 42px;
+  appearance: none;
+  padding-right: var(--space-4);
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.semesterSelect > span:last-child {
+  position: absolute;
+  right: var(--space-3);
+  pointer-events: none;
+}
+
+.contentPanel {
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.tableTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.tableTitle h2 {
+  color: var(--color-ink);
+  font-size: var(--font-size-body-compact);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.tableTitle > span,
+.currentLabel {
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+}
+
+.currentLabel {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.subjectTableWrap {
+  width: 100%;
   min-width: 0;
   overflow-x: auto;
   overscroll-behavior-x: contain;
 }
 
-.tableWrap:focus-visible {
-  outline: 3px solid var(--color-focus);
-  outline-offset: 3px;
-}
-
-.planTable {
+.subjectTable {
   width: 100%;
-  min-width: 860px;
+  min-width: 600px;
   border-collapse: collapse;
-  font-size: var(--font-size-label);
-  line-height: 18px;
   text-align: left;
 }
 
-.planTable th,
-.planTable td {
-  padding: var(--space-3) var(--space-2);
+.subjectTable th {
+  padding: var(--space-3);
   border-bottom: 1px solid var(--color-border);
-  vertical-align: top;
-}
-
-.planTable thead th {
   color: var(--color-muted);
   font-size: var(--font-size-caption);
+  font-weight: 500;
 }
 
-.planTable tbody th {
-  width: 21%;
-  font-weight: 700;
+.subjectTable td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-ink);
+  font-size: var(--font-size-label);
+  vertical-align: middle;
 }
 
-.subjectName {
-  display: block;
-  min-width: 160px;
+.subjectTable tbody tr:last-child td {
+  border-bottom: 0;
 }
 
-.subtext {
-  display: block;
-  margin-top: var(--space-1);
+.subjectTable th:first-child,
+.subjectTable td:first-child {
+  width: 56%;
+}
+
+.subjectTable th:nth-child(2),
+.subjectTable th:nth-child(3),
+.subjectTable th:nth-child(4),
+.subjectTable td:nth-child(2),
+.subjectTable td:nth-child(3),
+.subjectTable td:nth-child(4) {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.subjectLink {
+  min-width: 0;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  border-radius: var(--radius-sm);
+  color: inherit;
+  text-decoration: none;
+}
+
+.subjectLink:hover strong {
+  color: var(--color-wine-900);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.subjectStackIcon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
   color: var(--color-muted);
-  font-size: var(--font-size-caption);
-  font-weight: 400;
 }
 
-.debt {
+.subjectStackIcon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.subjectText {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.subjectText strong {
+  color: var(--color-ink);
+  font-size: var(--font-size-label);
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.subjectText small {
+  color: var(--color-muted);
+  font-size: 11px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.periodLabel {
+  color: var(--color-blue-700) !important;
+}
+
+.gradeValue {
+  font-size: var(--font-size-label);
+  font-weight: 600;
+}
+
+.statusBadge {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-caption);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.passed {
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.debtStatus {
+  background: var(--color-danger-bg);
   color: var(--color-danger-text);
 }
 
-.attemptList {
-  display: grid;
-  gap: var(--space-1);
-  margin-top: var(--space-2);
-  padding-left: var(--space-4);
+.pending {
+  background: var(--color-blue-100);
+  color: var(--color-blue-700);
+}
+
+.openCell {
+  width: 36px;
+  text-align: right;
+}
+
+.openSubject {
+  width: var(--size-touch);
+  height: var(--size-touch);
+  display: inline-grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
   color: var(--color-muted);
-  font-size: var(--font-size-caption);
+  font-size: 24px;
+  line-height: 1;
 }
 
-.sessionSection {
-  margin-top: var(--space-6);
+.openSubject:hover {
+  background: var(--color-wine-100);
+  color: var(--color-wine-900);
 }
 
-.sessionSection h3 {
-  margin-bottom: var(--space-3);
-  font-size: var(--font-size-h3);
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
 }
 
-.sessionList {
+.semesterTables {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.semesterBlock {
+  min-width: 0;
+}
+
+.dynamics {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.dynamicsList {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.dynamicsItem {
   display: grid;
   gap: var(--space-2);
-  list-style: none;
 }
 
-.sessionItem {
+.dynamicsHeading {
   display: flex;
-  align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-3);
-  padding: var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  color: var(--color-ink);
+  font-size: var(--font-size-label);
 }
 
-.sessionItem strong {
-  font-size: var(--font-size-body-compact);
-  line-height: 20px;
+.dynamicsHeading span {
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.dynamicsTrack {
+  height: 10px;
 }
 
 .empty {
@@ -164,7 +526,7 @@
   background: var(--color-surface);
   color: var(--color-muted);
   font-size: var(--font-size-body-compact);
-  line-height: 20px;
+  line-height: 1.5;
 }
 
 .empty strong {
@@ -174,17 +536,175 @@
   font-size: var(--font-size-h3);
 }
 
-.empty code {
-  overflow-wrap: anywhere;
-}
-
-@media (max-width: 560px) {
-  .studentSummary,
-  .semester {
-    padding: var(--space-4);
+@media (max-width: 1023px) {
+  .overviewHero {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
   }
 
-  .sessionItem {
+  .averageCard {
+    min-height: 220px;
+  }
+}
+
+@media (max-width: 680px) {
+  .tabSection {
+    margin-top: var(--space-4);
+  }
+
+  .tabs {
+    width: 100%;
+  }
+
+  .tab {
+    flex: 1;
+    padding-inline: var(--space-2);
+  }
+
+  .overviewHero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .averageCard {
+    min-height: 208px;
+    padding: var(--space-4);
+    background-image:
+      linear-gradient(90deg, #dce5f0 0%, rgb(220 229 240 / 90%) 48%, rgb(220 229 240 / 34%) 100%),
+      url("/images/University%20architecture%20%C2%B7%20hero%20%C2%B7%20%D1%84%D1%80%D0%B0%D0%B3%D0%BC%D0%B5%D0%BD%D1%82%20%D1%80%D0%B5%D1%84%D0%B5%D1%80%D0%B5%D0%BD%D1%81%D0%B0.png");
+    background-position: center, right center;
+  }
+
+  .averageValue {
+    font-size: 44px;
+  }
+
+  .overviewSummary {
+    grid-template-rows: auto auto;
+  }
+
+  .periodControls {
+    align-items: stretch;
     flex-direction: column;
+  }
+
+  .periodTabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-1);
+    padding: var(--space-1);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: var(--color-subtle);
+  }
+
+  .periodTab {
+    min-width: 0;
+    min-height: var(--size-touch);
+    padding: var(--space-1) var(--space-2);
+    line-height: 1.25;
+  }
+
+  .semesterSelect {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .semesterSelect select {
+    width: 100%;
+    max-width: none;
+  }
+
+  .contentPanel {
+    padding: var(--space-3);
+  }
+
+  .subjectTable {
+    min-width: 0;
+  }
+
+  .subjectTable thead {
+    display: none;
+  }
+
+  .subjectTable,
+  .subjectTable tbody {
+    width: 100%;
+    display: block;
+  }
+
+  .subjectTable tbody {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .subjectTable tbody tr {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-1) var(--space-2);
+    padding: var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+  }
+
+  .subjectTable th:first-child,
+  .subjectTable td:first-child {
+    width: auto;
+  }
+
+  .subjectTable td {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    padding: 0;
+    border: 0;
+    text-align: left !important;
+    white-space: normal;
+  }
+
+  .subjectTable td:first-child {
+    grid-column: 1;
+  }
+
+  .subjectTable td:nth-child(2),
+  .subjectTable td:nth-child(3),
+  .subjectTable td:nth-child(4) {
+    justify-content: flex-start;
+  }
+
+  .subjectTable td:nth-child(2)::before,
+  .subjectTable td:nth-child(3)::before,
+  .subjectTable td:nth-child(4)::before {
+    color: var(--color-muted);
+    content: attr(data-label) ":";
+    font-size: var(--font-size-caption);
+  }
+
+  .subjectTable .openCell {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .openSubject {
+    width: var(--size-touch);
+    height: var(--size-touch);
+  }
+
+  .statusBadge {
+    min-height: 26px;
+    padding-inline: var(--space-2);
+  }
+
+  .semesterTables {
+    gap: var(--space-4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progressTrack span,
+  .dynamicsTrack span {
+    transition: none;
   }
 }

@@ -1,240 +1,101 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { CampusSection } from "@/components/campus-section";
-import type {
-  AcademicResultStatus,
-  AcademicSessionStatus,
-  StudyForm,
-} from "@/generated/prisma/enums";
 import { controlTypeLabels } from "@/lib/campus-labels";
-import { formatCampusDate, formatCampusTime } from "@/lib/campus-time";
 import { getAcademicRecords } from "@/lib/academic-records";
 import { computerNetworksFormula } from "@/lib/grade-formula";
 import { GradeCalculator } from "./grade-calculator";
+import {
+  GradesOverview,
+  type GradeSemesterSummary,
+} from "./grades-overview";
+import { GradesTabs } from "./grades-tabs";
 import styles from "./grades.module.css";
 
 export const instant = false;
 
-const studyFormLabels: Record<StudyForm, string> = {
-  FULL_TIME: "очная",
-  PART_TIME: "очно-заочная",
-  CORRESPONDENCE: "заочная",
+type GradesPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-const resultStatusLabels: Record<AcademicResultStatus, string> = {
-  PASSED: "Сдано",
-  ACADEMIC_DEBT: "Академическая задолженность",
-};
+type AcademicSemesterData = NonNullable<
+  Awaited<ReturnType<typeof getAcademicRecords>>["dataset"]
+>["semesters"][number];
 
-const sessionStatusLabels: Record<AcademicSessionStatus, string> = {
-  COMPLETED: "Состоялось",
-  PLANNED: "Запланировано",
-};
-
-function displayDate(date: Date) {
-  return formatCampusDate(date);
+function getNumericGrade(value: string | undefined) {
+  if (!value || !/^[2-5](?:[.,]\d+)?$/.test(value.trim())) return null;
+  const grade = Number(value.replace(",", "."));
+  return Number.isFinite(grade) && grade >= 2 && grade <= 5 ? grade : null;
 }
 
-async function GradesContent() {
-  await connection();
-  const { student, dataset } = await getAcademicRecords();
-  const hasGradeFormula = dataset?.semesters.some((semester) =>
-    semester.planItems.some(
-      (item) => item.id === computerNetworksFormula.subjectId,
-    ),
+function createSemesterSummary(
+  semester: AcademicSemesterData,
+): GradeSemesterSummary {
+  const subjects = semester.planItems.map((item) => ({
+    id: item.id,
+    name: item.name,
+    controlLabel: controlTypeLabels[item.controlType],
+    credits: item.credits,
+    resultValue: item.result?.value ?? null,
+    resultStatus: item.result?.status ?? null,
+  }));
+  const numericGrades = semester.planItems
+    .map((item) => getNumericGrade(item.result?.value))
+    .filter((grade): grade is number => grade !== null);
+  const completedCredits = semester.planItems.reduce(
+    (total, item) =>
+      item.result?.status === "PASSED" ? total + item.credits : total,
+    0,
   );
+
+  return {
+    id: String(semester.id),
+    name: semester.name,
+    number: semester.number,
+    isCurrent: semester.isCurrent,
+    average:
+      numericGrades.length > 0
+        ? numericGrades.reduce((total, grade) => total + grade, 0) /
+          numericGrades.length
+        : null,
+    completedCredits,
+    totalCredits: semester.planItems.reduce(
+      (total, item) => total + item.credits,
+      0,
+    ),
+    debtCount: semester.planItems.filter(
+      (item) => item.result?.status === "ACADEMIC_DEBT",
+    ).length,
+    subjects,
+  };
+}
+
+async function GradesContent({ searchParams }: Required<GradesPageProps>) {
+  await connection();
+  const params = await searchParams;
+  const { dataset } = await getAcademicRecords();
+  const initialTab = params.tab === "calculator" ? "calculator" : "results";
 
   return (
     <CampusSection
       eyebrow="Учебные результаты"
-      title="Учебный план и оценки"
-      description={
-        dataset
-          ? `${dataset.academicYear} учебный год · данные на ${displayDate(dataset.snapshotDate)}`
-          : "Учебный план и результаты аттестации"
-      }
+      title="Успеваемость"
+      description="Результаты обучения, оценки и академический прогресс"
     >
       {dataset?.semesters.length ? (
-        <>
-          <section className={styles.studentSummary}>
-            <h2>{student.fullName}</h2>
-            <p>
-              Зачётная книжка: {student.recordBookNumber ?? "не указана"} ·
-              группа {student.group.name} · курс {student.course}
-            </p>
-            <p>
-              {student.direction}
-              {student.studyForm
-                ? ` · ${studyFormLabels[student.studyForm]} форма обучения`
-                : ""}
-            </p>
-          </section>
-
-          {hasGradeFormula && (
-            <GradeCalculator formula={computerNetworksFormula} />
-          )}
-
-          <div className={styles.semesterList}>
-            {dataset.semesters.map((semester) => {
-              const sessions = semester.planItems
-                .flatMap((planItem) =>
-                  planItem.sessions.map((session) => ({
-                    ...session,
-                    subject: planItem.name,
-                    controlType: planItem.controlType,
-                  })),
-                )
-                .sort(
-                  (first, second) =>
-                    first.date.getTime() - second.date.getTime() ||
-                    first.startTime.getTime() - second.startTime.getTime(),
-                );
-
-              return (
-                <section
-                  aria-labelledby={`semester-${semester.id}`}
-                  className={styles.semester}
-                  key={semester.id}
-                >
-                  <div className={styles.semesterHeading}>
-                    <h2 id={`semester-${semester.id}`}>
-                      {semester.name} семестр · {semester.number}-й семестр
-                    </h2>
-                    {semester.isCurrent && (
-                      <span className={styles.currentBadge}>Текущий</span>
-                    )}
-                  </div>
-
-                  <div
-                    aria-label={`Учебный план: ${semester.name} семестр`}
-                    className={styles.tableWrap}
-                    role="region"
-                    tabIndex={0}
-                  >
-                    <table className={styles.planTable}>
-                      <thead>
-                        <tr>
-                          <th scope="col">Дисциплина</th>
-                          <th scope="col">Кафедра и преподаватель</th>
-                          <th scope="col">Часы</th>
-                          <th scope="col">ЗЕТ</th>
-                          <th scope="col">Контроль</th>
-                          <th scope="col">Результат и попытки</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {semester.planItems.map((item) => (
-                          <tr key={item.id}>
-                            <th scope="row">
-                              <span className={styles.subjectName}>
-                                {item.name}
-                              </span>
-                            </th>
-                            <td>
-                              {item.department}
-                              <span className={styles.subtext}>
-                                {item.teacher}
-                              </span>
-                            </td>
-                            <td>{item.hours}</td>
-                            <td>{item.credits}</td>
-                            <td>{controlTypeLabels[item.controlType]}</td>
-                            <td>
-                              {item.result ? (
-                                <>
-                                  <strong
-                                    className={
-                                      item.result.status === "ACADEMIC_DEBT"
-                                        ? styles.debt
-                                        : undefined
-                                    }
-                                  >
-                                    {item.result.value}
-                                  </strong>
-                                  <span className={styles.subtext}>
-                                    {resultStatusLabels[item.result.status]} ·{" "}
-                                    {displayDate(item.result.date)}
-                                  </span>
-                                  <span className={styles.subtext}>
-                                    Попыток: {item.result.attemptCount}
-                                  </span>
-                                  <ul className={styles.attemptList}>
-                                    {item.result.attempts.map((attempt) => (
-                                      <li key={attempt.id}>
-                                        {attempt.attemptNumber}-я:{" "}
-                                        {attempt.value} ·{" "}
-                                        {displayDate(attempt.date)}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </>
-                              ) : (
-                                <span className={styles.subtext}>
-                                  Ещё не сдавал(а)
-                                </span>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {semester.isCurrent && (
-                    <section
-                      aria-labelledby={`session-${semester.id}`}
-                      className={styles.sessionSection}
-                    >
-                      <h3 id={`session-${semester.id}`}>Сессия</h3>
-                      {sessions.length ? (
-                        <ul className={styles.sessionList}>
-                          {sessions.map((session) => (
-                            <li
-                              className={styles.sessionItem}
-                              key={session.id}
-                            >
-                              <div>
-                                <strong>{session.subject}</strong>
-                                <span className={styles.subtext}>
-                                  {controlTypeLabels[session.controlType]} ·{" "}
-                                  {displayDate(session.date)} ·{" "}
-                                  {formatCampusTime(session.startTime)}–
-                                  {formatCampusTime(session.endTime)} ·{" "}
-                                  {session.room}
-                                </span>
-                              </div>
-                              <span
-                                className={
-                                  session.status === "PLANNED"
-                                    ? styles.plannedBadge
-                                    : styles.completedBadge
-                                }
-                              >
-                                {sessionStatusLabels[session.status]}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className={styles.empty}>
-                          Расписание сессии пока не опубликовано.
-                        </p>
-                      )}
-                    </section>
-                  )}
-                </section>
-              );
-            })}
-          </div>
-        </>
+        <GradesTabs
+          calculator={<GradeCalculator formula={computerNetworksFormula} />}
+          initialTab={initialTab}
+        >
+          <GradesOverview
+            academicYear={dataset.academicYear}
+            semesters={dataset.semesters.map(createSemesterSummary)}
+          />
+        </GradesTabs>
       ) : (
         <div className={styles.empty}>
           <strong>Данные не найдены</strong>
-          <p>
-            Для этой учётной записи нет учебного плана. Выполните миграции и
-            загрузите демонстрационные данные командой{" "}
-            <code>npx prisma db seed</code>.
-          </p>
+          <p>Для этой учётной записи пока нет учебного плана.</p>
         </div>
       )}
     </CampusSection>
@@ -245,7 +106,7 @@ function GradesFallback() {
   return (
     <CampusSection
       eyebrow="Учебные результаты"
-      title="Учебный план и оценки"
+      title="Успеваемость"
       description="Загружаем данные текущего студента."
     >
       <p aria-busy="true">Загружаем учебный план и оценки…</p>
@@ -253,10 +114,10 @@ function GradesFallback() {
   );
 }
 
-export default function GradesPage() {
+export default function GradesPage({ searchParams }: GradesPageProps) {
   return (
     <Suspense fallback={<GradesFallback />}>
-      <GradesContent />
+      <GradesContent searchParams={searchParams ?? Promise.resolve({})} />
     </Suspense>
   );
 }
