@@ -153,10 +153,6 @@
   list-style: none;
 }
 
-.accountSummary::-webkit-details-marker {
-  display: none;
-}
-
 .avatar {
   width: 36px;
   height: 36px;

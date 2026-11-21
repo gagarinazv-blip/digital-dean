@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { logoutAction } from "@/app/profile/actions";
+import { CampusAccountMenu } from "@/components/campus-account-menu";
 import { CampusNavigation } from "@/components/campus-navigation";
 import { NotificationBell } from "@/components/notification-bell";
 import styles from "./campus-layout.module.css";
@@ -19,13 +19,6 @@ export function CampusLayout({
   student: CampusStudentMenu;
   unreadNotificationCount: number;
 }) {
-  const initials = student.fullName
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0] ?? "")
-    .join("")
-    .toLocaleUpperCase("ru-RU");
-
   return (
     <div className={styles.layout}>
       <header className={styles.header}>
@@ -84,32 +77,7 @@ export function CampusLayout({
               initialUnreadCount={unreadNotificationCount}
               studentId={student.id}
             />
-            <details className={styles.accountMenu}>
-              <summary
-                aria-label={`Меню аккаунта: ${student.fullName}`}
-                className={styles.accountSummary}
-              >
-                <span aria-hidden="true" className={styles.avatar}>
-                  {initials}
-                </span>
-                <span className={styles.accountName} title={student.fullName}>
-                  {student.fullName}
-                </span>
-                <span aria-hidden="true" className={styles.chevron}>
-                  ⌄
-                </span>
-              </summary>
-              <div className={styles.accountPopover}>
-                <Link className={styles.accountMenuLink} href="/profile">
-                  Профиль
-                </Link>
-                <form action={logoutAction}>
-                  <button className={styles.logout} type="submit">
-                    Выйти
-                  </button>
-                </form>
-              </div>
-            </details>
+            <CampusAccountMenu fullName={student.fullName} />
           </div>
         </div>
       </header>
