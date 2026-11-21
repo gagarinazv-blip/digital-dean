@@ -103,6 +103,11 @@ function SubjectTable({
                       )}
                       <strong>{subject.name}</strong>
                       <small>{subject.controlLabel}</small>
+                      <small>
+                        {subject.id === "pi31-s5-networks"
+                          ? "Прогноз по формуле доступен"
+                          : "Весовой прогноз не опубликован"}
+                      </small>
                     </span>
                   </Link>
                 </td>

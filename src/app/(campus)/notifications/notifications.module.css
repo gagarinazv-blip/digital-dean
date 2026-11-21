@@ -24,10 +24,11 @@
   font-size: var(--font-size-body-compact);
 }
 
-.segments > span {
+.segments > a {
   min-height: 40px;
   display: inline-flex;
   align-items: center;
+  gap: var(--space-2);
   padding: 0 var(--space-4);
   border-radius: var(--radius-sm);
   white-space: nowrap;
@@ -37,6 +38,16 @@
   background: var(--color-wine-900);
   color: var(--color-surface);
   font-weight: 600;
+}
+
+.segments > a > span {
+  min-width: 20px;
+  height: 20px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 18%);
+  font-size: var(--font-size-caption);
 }
 
 .notificationGrid {
@@ -304,7 +315,7 @@
     width: 100%;
   }
 
-  .segments > span {
+  .segments > a {
     flex: 1;
     justify-content: center;
     padding-inline: var(--space-2);
