@@ -162,6 +162,115 @@
   overflow-wrap: anywhere;
 }
 
+.mailSection {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-8);
+}
+
+.mailHeading h2 {
+  margin-top: var(--space-1);
+  color: var(--color-ink);
+  font-size: var(--font-size-h2);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.mailCard,
+.mailPending {
+  min-width: 0;
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.mailCard {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.mailPending {
+  color: var(--color-muted);
+  font-size: var(--font-size-body-compact);
+  line-height: 1.6;
+}
+
+.mailField {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.mailValue {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.mailLabel,
+.mailIssued {
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+}
+
+.mailText {
+  color: var(--color-ink);
+  font-size: var(--font-size-body);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.mailActions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.mailButton {
+  min-height: 40px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-wine-900);
+  font: inherit;
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mailButton:hover:not(:disabled) {
+  background: var(--color-blue-100);
+}
+
+.mailButton:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.mailButton:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.mailHint {
+  color: var(--color-ink);
+  font-size: var(--font-size-caption);
+  line-height: 1.6;
+}
+
+.mailMessage {
+  min-height: 1.25em;
+  color: var(--color-blue-700);
+  font-size: var(--font-size-caption);
+}
+
 @media (max-width: 1023px) {
   .details {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -214,6 +323,11 @@
     margin-top: var(--space-6);
   }
 
+  .mailSection {
+    gap: var(--space-3);
+    margin-top: var(--space-6);
+  }
+
   .sectionHeading {
     align-items: flex-start;
     flex-direction: column;
@@ -231,5 +345,20 @@
   .detailCard {
     min-height: 0;
     padding: var(--space-3) var(--space-4);
+  }
+
+  .mailCard,
+  .mailPending {
+    padding: var(--space-4);
+  }
+
+  .mailField {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .mailActions {
+    justify-content: flex-start;
   }
 }

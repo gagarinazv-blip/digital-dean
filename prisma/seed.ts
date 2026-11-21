@@ -10,6 +10,10 @@ import { buildTargetScheduleSeed } from "./schedule-seed-data";
 import { buildDeadlineSeedData } from "./deadline-seed-data";
 import { getDemoNotificationState } from "./notification-seed-data";
 import { getDemoNow } from "../src/lib/demo-date";
+import { encryptCorporateMailPassword } from "../src/lib/corporate-mail-credentials";
+import { getCorporateMailDomain } from "../src/lib/corporate-mail";
+
+const alphaCorporateMailPassword = "Demo-Mail-Alpha-Only-2026!";
 import { validateGradebookSeedData } from "../src/lib/gradebook-data";
 
 type SeedAccount = {
@@ -336,6 +340,10 @@ async function main() {
     ]),
   ];
   const seedNow = getDemoNow();
+  const corporateMailDomain = getCorporateMailDomain();
+  const encryptedAlphaMailPassword = encryptCorporateMailPassword(
+    alphaCorporateMailPassword,
+  );
   const seedDay = startOfMoscowDay(seedNow);
   const targetScheduleRows = buildTargetScheduleSeed(seedNow);
   const deadlineSeedRows = buildDeadlineSeedData(seedNow);
@@ -460,6 +468,16 @@ async function main() {
             groupId: getGroupId(groupIds, account.groupName),
             phone: account.phone,
             accountStatus: account.accountStatus ?? "ACTIVE",
+            corporateEmail:
+              account.login === "student.alpha"
+                ? `student.alpha@${corporateMailDomain}`
+                : null,
+            corporateMailPasswordEncrypted:
+              account.login === "student.alpha"
+                ? encryptedAlphaMailPassword
+                : null,
+            corporateMailIssuedAt:
+              account.login === "student.alpha" ? seedNow : null,
             recordBookNumber: account.recordBookNumber,
             studyForm: account.studyForm,
           },

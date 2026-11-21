@@ -57,6 +57,19 @@ Copy-Item .env.example .env
 `SEED_ALPHA_PASSWORD` и `SEED_BETA_PASSWORD`. Используйте их только для
 локального демо.
 
+Для шифрования пароля демо-почты задайте `MAIL_CREDENTIALS_KEY`. Сгенерируйте
+случайный ключ длиной 32 байта в Base64:
+
+```powershell
+node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"
+```
+
+Скопируйте результат в `MAIL_CREDENTIALS_KEY` в `.env`. Не публикуйте этот
+ключ и храните его неизменным: без прежнего ключа уже сохранённые пароли
+расшифровать нельзя. Домен для демо-адреса задаётся необязательно через
+`CORPORATE_MAIL_DOMAIN`; по умолчанию используется вымышленный
+`mail.example.test`.
+
 ### 3. Запустите PostgreSQL
 
 Убедитесь, что Docker Desktop запущен, затем выполните:
