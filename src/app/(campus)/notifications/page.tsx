@@ -60,7 +60,7 @@ function getTargetLabel(targetType: NotificationTargetType | null): string {
 }
 
 type NotificationsPageProps = {
-  searchParams?: Promise<{ filter?: string }>;
+  searchParams?: Promise<{ filter?: string | string[] }>;
 };
 
 export default async function NotificationsPage({
@@ -68,8 +68,10 @@ export default async function NotificationsPage({
 }: NotificationsPageProps) {
   const student = await requireStudent();
   const notifications = await getStudentNotifications(student.id);
-  const params = await (searchParams ?? Promise.resolve<{ filter?: string }>({}));
-  const filterUnread = params.filter === "unread";
+  const params = await searchParams;
+  const filterValue = params?.filter;
+  const filterUnread =
+    (Array.isArray(filterValue) ? filterValue[0] : filterValue) === "unread";
   const displayedNotifications = filterUnread
     ? notifications.filter((notification) => notification.readAt === null)
     : notifications;
@@ -90,7 +92,7 @@ export default async function NotificationsPage({
     >
       <div className={styles.stack}>
         <div className={styles.toolbar}>
-          <div className={styles.segments} aria-label="Фильтр уведомлений">
+          <nav className={styles.segments} aria-label="Фильтр уведомлений">
             <Link
               aria-current={!filterUnread ? "page" : undefined}
               className={!filterUnread ? styles.segmentActive : ""}
@@ -106,7 +108,7 @@ export default async function NotificationsPage({
               Непрочитанные
               {unreadCount > 0 && <span>{unreadCount}</span>}
             </Link>
-          </div>
+          </nav>
           {unreadCount > 0 && (
             <form action={markAllNotificationsReadAction}>
               <button className={styles.secondaryButton} type="submit">
