@@ -1,14 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { notFound } from "next/navigation";
+import { forbidden, notFound } from "next/navigation";
 import { assertSameSiteRequest } from "@/lib/auth";
 import { requestStatusLabels } from "@/lib/campus-labels";
 import { getPrisma } from "@/lib/prisma";
 import { validateRequestUploads } from "@/lib/request-attachments";
 import type { RequestActionState } from "@/lib/request-action-state";
 import {
-  canStaffAssignRequest,
   canStaffChangeStatus,
   canStaffManageAssignedRequest,
   canStaffRollbackRequest,
@@ -397,38 +396,80 @@ export async function assignRequestAction(
   formData: FormData,
 ): Promise<RequestActionState> {
   await assertSameSiteRequest();
-  const { staff } = await requireStaffContext();
+  const { userId, isManagerAccount } = await requireStaffContext();
+  if (!isManagerAccount) {
+    forbidden();
+  }
+
   const requestId = getRequestId(formData);
-  const request = await getActionRequest(requestId, staff);
   const rawAssigneeId = formData.get("assignedToId");
+  if (typeof rawAssigneeId !== "string") {
+    return { error: "Выберите сотрудника из списка." };
+  }
   const assignedToId =
-    typeof rawAssigneeId === "string"
-      ? parsePositiveIntegerId(rawAssigneeId)
-      : null;
-  if (
-    assignedToId === null ||
-    !canStaffAssignRequest(staff, request, assignedToId)
-  ) {
-    return {
-      error: "Можно взять только разрешённую свободную заявку и только себе.",
-    };
+    rawAssigneeId === "" ? null : parsePositiveIntegerId(rawAssigneeId);
+  if (rawAssigneeId !== "" && assignedToId === null) {
+    return { error: "Выберите сотрудника из списка." };
   }
 
-  const updated = await getPrisma().request.updateMany({
-    where: {
-      id: request.id,
-      assignedToId: null,
-      ...getStaffRequestFilter(staff),
-    },
-    data: { assignedToId: staff.id, updatedAt: new Date() },
+  const result = await getPrisma().$transaction(async (tx) => {
+    const request = await tx.request.findUnique({
+      where: { id: requestId },
+      select: { id: true, publicId: true, assignedToId: true },
+    });
+    if (!request) {
+      notFound();
+    }
+
+    if (assignedToId !== null) {
+      const assignee = await tx.staffProfile.findFirst({
+        where: {
+          id: assignedToId,
+          user: { is: { role: "STAFF" } },
+        },
+        select: { id: true },
+      });
+      if (!assignee) {
+        return { error: "Выбранный сотрудник не найден." } as const;
+      }
+    }
+
+    if (request.assignedToId === assignedToId) {
+      return { publicId: request.publicId, unchanged: true } as const;
+    }
+
+    const updated = await tx.request.updateMany({
+      where: {
+        id: request.id,
+        assignedToId: request.assignedToId,
+      },
+      data: { assignedToId, updatedAt: new Date() },
+    });
+    if (updated.count !== 1) {
+      return {
+        error: "Назначение уже изменилось. Обновите страницу и попробуйте снова.",
+      } as const;
+    }
+
+    await tx.requestAssignmentHistory.create({
+      data: {
+        requestId: request.id,
+        fromAssignedToId: request.assignedToId,
+        toAssignedToId: assignedToId,
+        changedByUserId: userId,
+      },
+    });
+    return { publicId: request.publicId, unchanged: false } as const;
   });
-  if (updated.count !== 1) {
-    await ensureRequestStillAccessible(requestId, staff);
-    return {
-      error: "Назначение уже изменилось. Обновите страницу и попробуйте снова.",
-    };
+
+  if ("error" in result) {
+    return result;
   }
 
-  revalidateStaffRequestPaths(requestId, request.publicId);
-  return { success: "Заявка взята в работу." };
+  revalidateStaffRequestPaths(requestId, result.publicId);
+  return {
+    success: result.unchanged
+      ? "Ответственный не изменился."
+      : "Ответственный по заявке обновлён.",
+  };
 }

@@ -115,6 +115,7 @@ model User {
   sessions             Session[]
   requestComments      RequestComment[]       @relation("RequestCommentAuthor")
   requestStatusHistory RequestStatusHistory[] @relation("RequestStatusHistoryAuthor")
+  requestAssignmentHistory RequestAssignmentHistory[] @relation("RequestAssignmentHistoryAuthor")
   createdAt            DateTime               @default(now())
 }
 
@@ -168,6 +169,8 @@ model StaffProfile {
   isSupervisor     Boolean   @default(false)
   user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   assignedRequests Request[] @relation("AssignedStaffRequests")
+  assignmentHistoryFrom RequestAssignmentHistory[] @relation("RequestAssignmentHistoryFrom")
+  assignmentHistoryTo   RequestAssignmentHistory[] @relation("RequestAssignmentHistoryTo")
 }
 
 model StudentGroup {
@@ -320,6 +323,7 @@ model Request {
   assignedTo      StaffProfile?          @relation("AssignedStaffRequests", fields: [assignedToId], references: [id], onDelete: SetNull)
   comments        RequestComment[]
   statusHistory   RequestStatusHistory[]
+  assignmentHistory RequestAssignmentHistory[]
   createdAt       DateTime               @default(now())
   updatedAt       DateTime               @updatedAt
 
@@ -342,6 +346,22 @@ model RequestStatusHistory {
 
   @@index([requestId, changedAt])
   @@index([authorUserId])
+}
+
+model RequestAssignmentHistory {
+  id               Int           @id @default(autoincrement())
+  requestId        Int
+  fromAssignedToId Int?
+  toAssignedToId   Int?
+  changedByUserId  Int?
+  changedAt        DateTime      @default(now())
+  request          Request       @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  fromAssignedTo   StaffProfile? @relation("RequestAssignmentHistoryFrom", fields: [fromAssignedToId], references: [id], onDelete: SetNull)
+  toAssignedTo     StaffProfile? @relation("RequestAssignmentHistoryTo", fields: [toAssignedToId], references: [id], onDelete: SetNull)
+  changedBy        User?         @relation("RequestAssignmentHistoryAuthor", fields: [changedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([requestId, changedAt])
+  @@index([changedByUserId])
 }
 
 model RequestComment {

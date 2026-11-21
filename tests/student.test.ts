@@ -89,9 +89,11 @@ describe("requireStudent", () => {
   it("redirects unauthenticated visitors without querying student data", async () => {
     getCurrentUserMock.mockResolvedValue(null);
 
-    await expect(requireStudent()).rejects.toThrow("Redirected to /login");
+    await expect(requireStudent()).rejects.toThrow(
+      "Redirected to /login?role=student",
+    );
 
-    expect(redirectMock).toHaveBeenCalledWith("/login");
+    expect(redirectMock).toHaveBeenCalledWith("/login?role=student");
     expect(findStudentMock).not.toHaveBeenCalled();
   });
 

@@ -39,6 +39,14 @@ const staffPrincipal = {
   },
 };
 
+const managerPrincipal = {
+  ...staffPrincipal,
+  staffProfile: {
+    ...staffPrincipal.staffProfile,
+    isSupervisor: true,
+  },
+};
+
 function makeRequest(path: string, token?: string) {
   const headers = new Headers();
   if (token) {
@@ -55,22 +63,22 @@ beforeEach(() => {
 });
 
 describe("role and request access proxy", () => {
-  it("redirects the old staff-login URL to the shared login", async () => {
+  it("redirects the old staff-login URL to the staff login tab", async () => {
     const response = await proxy(makeRequest("/staff/login"));
 
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe(
-      "https://digital-dean.test/login",
+      "https://digital-dean.test/login?role=staff",
     );
     expect(getSessionPrincipalForTokenMock).not.toHaveBeenCalled();
   });
 
-  it("redirects staff-area visitors without a session to the shared login", async () => {
+  it("redirects staff-area visitors without a session to the staff login tab", async () => {
     const response = await proxy(makeRequest("/staff"));
 
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe(
-      "https://digital-dean.test/login",
+      "https://digital-dean.test/login?role=staff",
     );
     expect(getSessionPrincipalForTokenMock).not.toHaveBeenCalled();
   });
@@ -80,7 +88,7 @@ describe("role and request access proxy", () => {
 
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe(
-      "https://digital-dean.test/login",
+      "https://digital-dean.test/login?role=student",
     );
     expect(getSessionPrincipalForTokenMock).not.toHaveBeenCalled();
   });
@@ -94,6 +102,19 @@ describe("role and request access proxy", () => {
     expect(await response.text()).toBe("403 — Доступ запрещён");
     expect(getSessionPrincipalForTokenMock).toHaveBeenCalledWith(
       "opaque-session-token",
+    );
+  });
+
+  it("redirects an expired staff session to the staff login tab", async () => {
+    getSessionPrincipalForTokenMock.mockResolvedValue(null);
+
+    const response = await proxy(
+      makeRequest("/staff/requests/243", "expired-session-token"),
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "https://digital-dean.test/login?role=staff",
     );
   });
 
@@ -167,6 +188,20 @@ describe("role and request access proxy", () => {
     getSessionPrincipalForTokenMock.mockResolvedValue(staffPrincipal);
     findStaffRequestMock.mockResolvedValue({
       assignedToId: null,
+      type: "CERTIFICATE",
+    });
+
+    const response = await proxy(
+      makeRequest("/staff/requests/243", "opaque-session-token"),
+    );
+
+    expect(response.status).toBe(200);
+  });
+
+  it("allows staff.manager to open another employee's request", async () => {
+    getSessionPrincipalForTokenMock.mockResolvedValue(managerPrincipal);
+    findStaffRequestMock.mockResolvedValue({
+      assignedToId: 41,
       type: "CERTIFICATE",
     });
 

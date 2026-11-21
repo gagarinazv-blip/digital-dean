@@ -30,7 +30,7 @@ vi.mock("@/lib/prisma", () => ({
   })),
 }));
 
-import { requireStaff } from "../src/lib/staff";
+import { requireStaff, requireStaffContext } from "../src/lib/staff";
 
 const staffProfile = {
   id: 40,
@@ -65,9 +65,9 @@ describe("requireStaff", () => {
     getCurrentUserMock.mockResolvedValue(null);
 
     await expect(requireStaff()).rejects.toThrow(
-      "Redirected to /login",
+      "Redirected to /login?role=staff",
     );
-    expect(redirectMock).toHaveBeenCalledWith("/login");
+    expect(redirectMock).toHaveBeenCalledWith("/login?role=staff");
     expect(findStaffProfileMock).not.toHaveBeenCalled();
   });
 
@@ -106,5 +106,34 @@ describe("requireStaff", () => {
     await expect(requireStaff()).rejects.toThrow("Not found");
 
     expect(notFoundMock).toHaveBeenCalledOnce();
+  });
+
+  it("recognizes only the staff.manager login as the assignment manager", async () => {
+    getCurrentUserMock.mockResolvedValue({
+      id: 12,
+      login: "staff.manager",
+      role: "STAFF",
+      student: null,
+    });
+    findStaffProfileMock.mockResolvedValue({
+      ...staffProfile,
+      isSupervisor: true,
+    });
+
+    await expect(requireStaffContext()).resolves.toMatchObject({
+      userId: 12,
+      isManagerAccount: true,
+    });
+
+    getCurrentUserMock.mockResolvedValue({
+      id: 13,
+      login: "staff.other",
+      role: "STAFF",
+      student: null,
+    });
+
+    await expect(requireStaffContext()).resolves.toMatchObject({
+      isManagerAccount: false,
+    });
   });
 });

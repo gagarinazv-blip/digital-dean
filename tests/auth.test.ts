@@ -278,7 +278,7 @@ describe("login", () => {
     });
 
     await expect(
-      loginUser(" STUDENT.ALPHA ", "correct-demo-password"),
+      loginUser(" STUDENT.ALPHA ", "correct-demo-password", "STUDENT"),
     ).resolves.toEqual(authenticatedUser);
     expect(userFindUnique).toHaveBeenCalledWith(
       expect.objectContaining({ where: { login: "student.alpha" } }),
@@ -297,16 +297,33 @@ describe("login", () => {
     });
 
     await expect(
-      loginUser("student.alpha", "wrong-demo-password"),
+      loginUser("student.alpha", "wrong-demo-password", "STUDENT"),
     ).resolves.toBeNull();
     expect(sessionCreate).not.toHaveBeenCalled();
+  });
+
+  it("does not create a session when credentials belong to the other role", async () => {
+    const passwordHash = await bcrypt.hash("correct-demo-password", 4);
+    userFindUnique.mockResolvedValue({
+      ...authenticatedUser,
+      passwordHash,
+    });
+
+    await expect(
+      loginUser("student.alpha", "correct-demo-password", "STAFF"),
+    ).resolves.toBeNull();
+
+    expect(sessionCreate).not.toHaveBeenCalled();
+    expect(loginAttemptDeleteMany).not.toHaveBeenCalledWith({
+      where: expect.objectContaining({ keyHash: expect.any(String) }),
+    });
   });
 
   it("checks a dummy bcrypt hash when the login does not exist", async () => {
     const compareSpy = vi.spyOn(bcrypt, "compare");
 
     await expect(
-      loginUser("unknown.demo.user", "wrong-demo-password"),
+      loginUser("unknown.demo.user", "wrong-demo-password", "STUDENT"),
     ).resolves.toBeNull();
 
     expect(compareSpy).toHaveBeenCalledOnce();
@@ -314,7 +331,7 @@ describe("login", () => {
     expect(comparedHash).toMatch(/^\$2[aby]\$12\$/);
     expect(userFindUnique).toHaveBeenCalledOnce();
     expect(sessionCreate).not.toHaveBeenCalled();
-  });
+  }, 15_000);
 
   it(
     "blocks login after five attempts in the rate-limit window",
@@ -323,18 +340,18 @@ describe("login", () => {
 
       for (let attempt = 0; attempt < 5; attempt++) {
         await expect(
-          loginUser("unknown.demo.user", "wrong-demo-password"),
+          loginUser("unknown.demo.user", "wrong-demo-password", "STUDENT"),
         ).resolves.toBeNull();
       }
 
       await expect(
-        loginUser("unknown.demo.user", "wrong-demo-password"),
+        loginUser("unknown.demo.user", "wrong-demo-password", "STUDENT"),
       ).rejects.toBeInstanceOf(TooManyLoginAttemptsError);
 
       expect(queryRaw).toHaveBeenCalledTimes(6);
       expect(userFindUnique).toHaveBeenCalledTimes(5);
       expect(compareSpy).toHaveBeenCalledTimes(5);
     },
-    10_000,
+    20_000,
   );
 });

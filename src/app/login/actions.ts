@@ -10,7 +10,7 @@ export type LoginActionState = {
   error?: string;
 };
 
-const invalidCredentialsError = { error: "Неверный логин или пароль." };
+const invalidCredentialsError = { error: "Неверные данные для входа" };
 
 export async function loginAction(
   _previousState: LoginActionState,
@@ -18,14 +18,19 @@ export async function loginAction(
 ): Promise<LoginActionState> {
   const login = formData.get("login");
   const password = formData.get("password");
+  const role = formData.get("role");
 
   if (typeof login !== "string" || typeof password !== "string") {
     return { error: "Введите логин и пароль." };
   }
+  if (role !== "student" && role !== "staff") {
+    return invalidCredentialsError;
+  }
+  const expectedRole = role === "staff" ? "STAFF" : "STUDENT";
 
   let user;
   try {
-    user = await loginUser(login, password);
+    user = await loginUser(login, password, expectedRole);
   } catch (error) {
     if (error instanceof TooManyLoginAttemptsError) {
       return {
@@ -50,7 +55,7 @@ export async function loginAction(
     };
   }
 
-  if (!user) {
+  if (!user || user.role !== expectedRole) {
     return invalidCredentialsError;
   }
 

@@ -7,7 +7,7 @@ import { getPrisma } from "@/lib/prisma";
 export async function requireStudentContext() {
   const user = await getCurrentUser();
   if (!user) {
-    redirect("/login");
+    redirect("/login?role=student");
   }
   if (user.role !== "STUDENT") {
     forbidden();

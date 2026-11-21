@@ -88,7 +88,7 @@ function getReviewHeading(status: RequestStatus): string {
 function getReviewText(status: RequestStatus): string {
   switch (status) {
     case "NEW":
-      return "Назначьте заявку себе, чтобы начать проверку и принять решение.";
+      return "Заявка ожидает назначения ответственному сотруднику.";
     case "IN_PROGRESS":
       return "Проверьте корректность данных и приложенных документов, затем примите решение.";
     case "NEEDS_INFO":
@@ -108,7 +108,8 @@ export default async function StaffRequestPage({
   params: Promise<{ requestId: string }>;
 }) {
   const { requestId } = await params;
-  const { request, staff } = await getStaffRequestDetails(requestId);
+  const { request, staff, isManagerAccount, staffMembers } =
+    await getStaffRequestDetails(requestId);
   const serviceTitle = getRequestCatalogTitle(
     request.catalogCode,
     requestTypeLabels[request.type],
@@ -320,26 +321,27 @@ export default async function StaffRequestPage({
           </div>
 
           <aside className={styles.sideColumn}>
+            <section className={styles.panel} aria-labelledby="assignee-title">
+              <h2 className={styles.panelTitle} id="assignee-title">
+                Ответственный
+              </h2>
+              <p className={styles.panelHint}>
+                {request.assignedTo?.fullName ?? "Не назначен"}
+              </p>
+              {isManagerAccount && (
+                <RequestAssignmentForm
+                  assignedToId={request.assignedToId}
+                  requestId={request.id}
+                  staffMembers={staffMembers}
+                />
+              )}
+            </section>
+
             <section className={styles.panel} aria-labelledby="decision-title">
               <h2 className={styles.panelTitle} id="decision-title">
-                {assignedToMe ? "Решение по заявке" : "Назначение заявки"}
+                Решение по заявке
               </h2>
-              {!assignedToMe && request.assignedToId === null ? (
-                <>
-                  <p className={styles.panelHint}>
-                    Возьмите заявку в работу, чтобы начать проверку.
-                  </p>
-                  <RequestAssignmentForm
-                    assignedToId={request.assignedToId}
-                    requestId={request.id}
-                    staffId={staff.id}
-                  />
-                </>
-              ) : !assignedToMe ? (
-                <p className={styles.panelHint}>
-                  Заявка уже назначена другому сотруднику.
-                </p>
-              ) : transitions.length > 0 ? (
+              {assignedToMe && transitions.length > 0 ? (
                 <>
                   <p className={styles.panelHint}>
                     После принятия решения студент получит уведомление в личном
@@ -350,10 +352,14 @@ export default async function StaffRequestPage({
                     transitions={transitions}
                   />
                 </>
-              ) : (
+              ) : assignedToMe ? (
                 <p className={styles.panelHint}>
                   Решение принято: {requestStatusLabels[request.status]}.
                   Повторно изменить статус нельзя.
+                </p>
+              ) : (
+                <p className={styles.panelHint}>
+                  Изменять статус заявки может только назначенный сотрудник.
                 </p>
               )}
             </section>
@@ -374,10 +380,17 @@ export default async function StaffRequestPage({
               </section>
             )}
 
-            <section className={styles.panel} aria-labelledby="comments-title">
+            <section
+              className={styles.panel}
+              aria-labelledby="comments-title"
+              id="request-events"
+            >
               <div className={styles.panelHeading}>
                 <h2 id="comments-title">Комментарии и история</h2>
-                {request.statusHistory.length + request.comments.length > 0 && (
+                {request.statusHistory.length +
+                  request.assignmentHistory.length +
+                  request.comments.length >
+                  0 && (
                   <a className={styles.eventsLink} href="#request-events">
                     Все события ↗
                   </a>
@@ -393,13 +406,11 @@ export default async function StaffRequestPage({
                   />
                 </div>
               ) : (
-                <p className={styles.panelHint}>
-                  Комментариев пока нет. Изменения статуса появятся в истории.
-                </p>
+                <p className={styles.panelHint}>Комментариев пока нет.</p>
               )}
 
               {request.statusHistory.length > 0 && (
-                <ol className={styles.eventList} id="request-events">
+                <ol className={styles.eventList}>
                   {request.statusHistory.map((entry, index) => {
                     const author =
                       entry.author?.staffProfile?.fullName ??
@@ -430,6 +441,36 @@ export default async function StaffRequestPage({
                               : author}
                           </span>
                           {entry.comment && <p>{entry.comment}</p>}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ol>
+              )}
+
+              {request.assignmentHistory.length > 0 && (
+                <ol className={styles.eventList}>
+                  {request.assignmentHistory.map((entry, index) => {
+                    const author =
+                      entry.changedBy?.staffProfile?.fullName ?? "Система";
+                    return (
+                      <li
+                        className={styles.event}
+                        key={`${entry.changedAt.toISOString()}-assignment-${index}`}
+                      >
+                        <span className={styles.assignmentEventIcon} aria-hidden="true">
+                          ↔
+                        </span>
+                        <div className={styles.eventCopy}>
+                          <strong>
+                            Ответственный:{" "}
+                            {entry.fromAssignedTo?.fullName ?? "Не назначен"} →{" "}
+                            {entry.toAssignedTo?.fullName ?? "Не назначен"}
+                          </strong>
+                          <time dateTime={entry.changedAt.toISOString()}>
+                            {requestDateFormatter.format(entry.changedAt)}
+                          </time>
+                          <span>{author}</span>
                         </div>
                       </li>
                     );

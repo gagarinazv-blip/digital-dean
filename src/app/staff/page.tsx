@@ -163,6 +163,7 @@ export default async function StaffHomePage({
                 <tr>
                   <th scope="col">Тип заявки</th>
                   <th scope="col">Студент</th>
+                  <th scope="col">Ответственный</th>
                   <th scope="col">Дата</th>
                   <th scope="col">Статус</th>
                   <th scope="col">Детали</th>
@@ -191,6 +192,17 @@ export default async function StaffHomePage({
                       </span>
                       <span className={styles.studentGroup}>
                         {request.student.group.name}
+                      </span>
+                    </td>
+                    <td data-label="Ответственный">
+                      <span
+                        className={
+                          request.assignedTo
+                            ? styles.assigneeName
+                            : styles.assigneeEmpty
+                        }
+                      >
+                        {request.assignedTo?.fullName ?? "Не назначен"}
                       </span>
                     </td>
                     <td data-label="Дата подачи" className={styles.dateCell}>

@@ -267,12 +267,13 @@ export async function authenticateUserForLogin(
 export async function loginUser(
   loginInput: string,
   passwordInput: string,
+  expectedRole: AuthenticatedUser["role"],
 ): Promise<AuthenticatedUser | null> {
   const { user, attemptKey } = await authenticateUserForLogin(
     loginInput,
     passwordInput,
   );
-  if (!user) {
+  if (!user || user.role !== expectedRole) {
     return null;
   }
 

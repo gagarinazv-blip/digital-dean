@@ -26,6 +26,9 @@ const requestListSelection = {
       group: { select: { name: true } },
     },
   },
+  assignedTo: {
+    select: { fullName: true },
+  },
 } satisfies Prisma.RequestSelect;
 
 const requestStatusCounts: Record<RequestStatus, number> = {
@@ -47,6 +50,9 @@ const requestDetailSelection = {
   status: true,
   comment: true,
   assignedToId: true,
+  assignedTo: {
+    select: { id: true, fullName: true },
+  },
   createdAt: true,
   updatedAt: true,
   statusHistory: {
@@ -60,6 +66,19 @@ const requestDetailSelection = {
       author: {
         select: {
           student: { select: { fullName: true } },
+          staffProfile: { select: { fullName: true } },
+        },
+      },
+    },
+  },
+  assignmentHistory: {
+    orderBy: [{ changedAt: "asc" }, { id: "asc" }],
+    select: {
+      fromAssignedTo: { select: { fullName: true } },
+      toAssignedTo: { select: { fullName: true } },
+      changedAt: true,
+      changedBy: {
+        select: {
           staffProfile: { select: { fullName: true } },
         },
       },
@@ -177,24 +196,33 @@ export async function getStaffRequest(requestId: string) {
 }
 
 export async function getStaffRequestDetails(requestId: string) {
-  const { staff } = await requireStaffContext();
+  const { staff, isManagerAccount } = await requireStaffContext();
   const id = parsePositiveIntegerId(requestId);
   if (id === null) {
     notFound();
   }
 
   const prisma = getPrisma();
-  const request = await prisma.request.findFirst({
-    where: {
-      id,
-      ...(staff.isSupervisor ? {} : getStaffRequestFilter(staff)),
-    },
-    select: requestDetailSelection,
-  });
+  const [request, staffMembers] = await Promise.all([
+    prisma.request.findFirst({
+      where: {
+        id,
+        ...(staff.isSupervisor ? {} : getStaffRequestFilter(staff)),
+      },
+      select: requestDetailSelection,
+    }),
+    isManagerAccount
+      ? prisma.staffProfile.findMany({
+          where: { user: { is: { role: "STAFF" } } },
+          orderBy: { fullName: "asc" },
+          select: { id: true, fullName: true },
+        })
+      : Promise.resolve([]),
+  ]);
 
   if (!request) {
     notFound();
   }
 
-  return { request, staff };
+  return { request, staff, isManagerAccount, staffMembers };
 }

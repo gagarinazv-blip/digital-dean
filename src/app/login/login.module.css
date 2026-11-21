@@ -125,10 +125,62 @@
   text-align: center;
 }
 
+.roleTabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin-top: var(--space-6);
+  padding: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: #f7f3f0;
+}
+
+.roleTab {
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius-md) - 2px);
+  background: transparent;
+  color: var(--color-muted);
+  font: inherit;
+  font-size: var(--font-size-body-compact);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.roleTab[aria-selected="true"] {
+  border-color: #e7d8d2;
+  background: var(--color-surface);
+  color: var(--color-wine-900);
+  box-shadow: var(--shadow-soft);
+}
+
+.roleTab:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.tabPanel {
+  min-width: 0;
+}
+
+.tabPanel:focus-visible {
+  border-radius: var(--radius-md);
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
 .form {
   display: grid;
   gap: var(--space-4);
-  margin-top: var(--space-6);
+  margin-top: var(--space-4);
 }
 
 .field {
@@ -284,6 +336,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .roleTab,
   .field input,
   .submit {
     transition: none;

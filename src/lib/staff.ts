@@ -7,7 +7,7 @@ import { getPrisma } from "@/lib/prisma";
 export async function requireStaffContext() {
   const user = await getCurrentUser();
   if (!user) {
-    redirect("/login");
+    redirect("/login?role=staff");
   }
   if (user.role !== "STAFF") {
     forbidden();
@@ -28,7 +28,11 @@ export async function requireStaffContext() {
     notFound();
   }
 
-  return { userId: user.id, staff };
+  return {
+    userId: user.id,
+    isManagerAccount: user.login === "staff.manager",
+    staff,
+  };
 }
 
 export async function requireStaff() {

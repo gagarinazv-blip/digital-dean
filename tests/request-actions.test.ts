@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
+  forbiddenMock,
   notFoundMock,
   redirectMock,
   revalidatePathMock,
@@ -12,9 +13,13 @@ const {
   createCommentMock,
   upsertRequestMock,
   createStatusHistoryMock,
+  findAssignmentRequestMock,
+  findAssigneeMock,
+  createAssignmentHistoryMock,
   createNotificationMock,
   prismaTransactionMock,
 } = vi.hoisted(() => ({
+  forbiddenMock: vi.fn(),
   notFoundMock: vi.fn(),
   redirectMock: vi.fn(),
   revalidatePathMock: vi.fn(),
@@ -26,11 +31,15 @@ const {
   createCommentMock: vi.fn(),
   upsertRequestMock: vi.fn(),
   createStatusHistoryMock: vi.fn(),
+  findAssignmentRequestMock: vi.fn(),
+  findAssigneeMock: vi.fn(),
+  createAssignmentHistoryMock: vi.fn(),
   createNotificationMock: vi.fn(),
   prismaTransactionMock: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
+  forbidden: forbiddenMock,
   notFound: notFoundMock,
   redirect: redirectMock,
 }));
@@ -55,11 +64,14 @@ vi.mock("@/lib/prisma", () => ({
   getPrisma: vi.fn(() => ({
     request: {
       findFirst: findRequestMock,
+      findUnique: findAssignmentRequestMock,
       updateMany: updateRequestManyMock,
       upsert: upsertRequestMock,
     },
+    staffProfile: { findFirst: findAssigneeMock },
     requestComment: { create: createCommentMock },
     requestStatusHistory: { create: createStatusHistoryMock },
+    requestAssignmentHistory: { create: createAssignmentHistoryMock },
     notification: { create: createNotificationMock },
     $transaction: prismaTransactionMock,
   })),
@@ -102,6 +114,7 @@ beforeEach(() => {
   });
   requireStaffContextMock.mockResolvedValue({
     userId: 11,
+    isManagerAccount: false,
     staff: {
       id: 40,
       department: "Учебный отдел",
@@ -123,6 +136,13 @@ beforeEach(() => {
     studentId: 20,
   });
   createStatusHistoryMock.mockResolvedValue({});
+  findAssignmentRequestMock.mockResolvedValue({
+    id: 123,
+    publicId: "b08f54cf-99ce-4a56-a780-8e22ce5ba0a1",
+    assignedToId: null,
+  });
+  findAssigneeMock.mockResolvedValue({ id: 41 });
+  createAssignmentHistoryMock.mockResolvedValue({});
   createNotificationMock.mockResolvedValue({});
   redirectMock.mockImplementation((path: string) => {
     throw new Error(`Redirect ${path}`);
@@ -132,16 +152,22 @@ beforeEach(() => {
       callback({
         request: {
           findFirst: findRequestMock,
+          findUnique: findAssignmentRequestMock,
           updateMany: updateRequestManyMock,
           upsert: upsertRequestMock,
         },
+        staffProfile: { findFirst: findAssigneeMock },
         requestComment: { create: createCommentMock },
         requestStatusHistory: { create: createStatusHistoryMock },
+        requestAssignmentHistory: { create: createAssignmentHistoryMock },
         notification: { create: createNotificationMock },
       }),
   );
   notFoundMock.mockImplementation(() => {
     throw new Error("Not found");
+  });
+  forbiddenMock.mockImplementation(() => {
+    throw new Error("Forbidden");
   });
 });
 
@@ -395,40 +421,161 @@ describe("request actions", () => {
     expect(createCommentMock).not.toHaveBeenCalled();
   });
 
-  it("does not let staff take an unassigned request for another employee", async () => {
+  it("does not allow regular staff to assign a request directly", async () => {
     const formData = makeFormData({
       requestId: "123",
-      assignedToId: "99",
+      assignedToId: "41",
     });
 
-    await expect(assignRequestAction({}, formData)).resolves.toEqual({
-      error: "Можно взять только разрешённую свободную заявку и только себе.",
-    });
+    await expect(assignRequestAction({}, formData)).rejects.toThrow("Forbidden");
 
+    expect(forbiddenMock).toHaveBeenCalledOnce();
+    expect(prismaTransactionMock).not.toHaveBeenCalled();
     expect(updateRequestManyMock).not.toHaveBeenCalled();
   });
 
-  it("lets staff take an allowed unassigned request for themselves", async () => {
+  it("does not allow a student to assign a request directly", async () => {
+    requireStaffContextMock.mockRejectedValue(new Error("Forbidden"));
     const formData = makeFormData({
       requestId: "123",
-      assignedToId: "40",
+      assignedToId: "41",
+    });
+
+    await expect(assignRequestAction({}, formData)).rejects.toThrow("Forbidden");
+    expect(prismaTransactionMock).not.toHaveBeenCalled();
+  });
+
+  it("lets staff.manager assign a request and records the change transactionally", async () => {
+    requireStaffContextMock.mockResolvedValue({
+      userId: 12,
+      isManagerAccount: true,
+      staff: { id: 42, department: "Учебный отдел", isSupervisor: true },
+    });
+    findAssigneeMock.mockResolvedValue({ id: 41 });
+    const formData = makeFormData({
+      requestId: "123",
+      assignedToId: "41",
     });
 
     await expect(assignRequestAction({}, formData)).resolves.toEqual({
-      success: "Заявка взята в работу.",
+      success: "Ответственный по заявке обновлён.",
+    });
+
+    expect(prismaTransactionMock).toHaveBeenCalledOnce();
+    expect(findAssignmentRequestMock).toHaveBeenCalledWith({
+      where: { id: 123 },
+      select: { id: true, publicId: true, assignedToId: true },
+    });
+    expect(findAssigneeMock).toHaveBeenCalledWith({
+      where: { id: 41, user: { is: { role: "STAFF" } } },
+      select: { id: true },
+    });
+    expect(updateRequestManyMock).toHaveBeenCalledWith({
+      where: { id: 123, assignedToId: null },
+      data: { assignedToId: 41, updatedAt: expect.any(Date) },
+    });
+    expect(createAssignmentHistoryMock).toHaveBeenCalledWith({
+      data: {
+        requestId: 123,
+        fromAssignedToId: null,
+        toAssignedToId: 41,
+        changedByUserId: 12,
+      },
+    });
+  });
+
+  it("records reassignment without erasing the previous assignment", async () => {
+    requireStaffContextMock.mockResolvedValue({
+      userId: 12,
+      isManagerAccount: true,
+      staff: { id: 42, department: "Учебный отдел", isSupervisor: true },
+    });
+    findAssignmentRequestMock.mockResolvedValue({
+      id: 123,
+      publicId: "b08f54cf-99ce-4a56-a780-8e22ce5ba0a1",
+      assignedToId: 41,
+    });
+    findAssigneeMock.mockResolvedValue({ id: 43 });
+    const formData = makeFormData({
+      requestId: "123",
+      assignedToId: "43",
+    });
+
+    await expect(assignRequestAction({}, formData)).resolves.toEqual({
+      success: "Ответственный по заявке обновлён.",
     });
 
     expect(updateRequestManyMock).toHaveBeenCalledWith({
-      where: {
-        id: 123,
-        assignedToId: null,
-        OR: [
-          { assignedToId: 40 },
-          { assignedToId: null, type: { in: ["CERTIFICATE"] } },
-        ],
-      },
-      data: { assignedToId: 40, updatedAt: expect.any(Date) },
+      where: { id: 123, assignedToId: 41 },
+      data: { assignedToId: 43, updatedAt: expect.any(Date) },
     });
+    expect(createAssignmentHistoryMock).toHaveBeenCalledWith({
+      data: {
+        requestId: 123,
+        fromAssignedToId: 41,
+        toAssignedToId: 43,
+        changedByUserId: 12,
+      },
+    });
+  });
+
+  it("rejects IDs that do not belong to an active staff account", async () => {
+    requireStaffContextMock.mockResolvedValue({
+      userId: 12,
+      isManagerAccount: true,
+      staff: { id: 42, department: "Учебный отдел", isSupervisor: true },
+    });
+    findAssigneeMock.mockResolvedValue(null);
+
+    await expect(
+      assignRequestAction(
+        {},
+        makeFormData({ requestId: "123", assignedToId: "99" }),
+      ),
+    ).resolves.toEqual({ error: "Выбранный сотрудник не найден." });
+
+    expect(updateRequestManyMock).not.toHaveBeenCalled();
+    expect(createAssignmentHistoryMock).not.toHaveBeenCalled();
+  });
+
+  it("does not write history when the selected assignee is unchanged", async () => {
+    requireStaffContextMock.mockResolvedValue({
+      userId: 12,
+      isManagerAccount: true,
+      staff: { id: 42, department: "Учебный отдел", isSupervisor: true },
+    });
+    findAssignmentRequestMock.mockResolvedValue({
+      id: 123,
+      publicId: "b08f54cf-99ce-4a56-a780-8e22ce5ba0a1",
+      assignedToId: 41,
+    });
+
+    await expect(
+      assignRequestAction(
+        {},
+        makeFormData({ requestId: "123", assignedToId: "41" }),
+      ),
+    ).resolves.toEqual({ success: "Ответственный не изменился." });
+
+    expect(updateRequestManyMock).not.toHaveBeenCalled();
+    expect(createAssignmentHistoryMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed request IDs before opening a transaction", async () => {
+    requireStaffContextMock.mockResolvedValue({
+      userId: 12,
+      isManagerAccount: true,
+      staff: { id: 42, department: "Учебный отдел", isSupervisor: true },
+    });
+
+    await expect(
+      assignRequestAction(
+        {},
+        makeFormData({ requestId: "0", assignedToId: "41" }),
+      ),
+    ).rejects.toThrow("Not found");
+
+    expect(prismaTransactionMock).not.toHaveBeenCalled();
   });
 
   it("does not let staff change the status before taking an unassigned request", async () => {
