@@ -74,6 +74,7 @@ function NotificationRow({
   onToggleChecked: () => void;
 }) {
   const unread = notification.readAt === null;
+  const menuRef = useRef<HTMLDetailsElement>(null);
   return (
     <article
       aria-current={selected ? "true" : undefined}
@@ -103,30 +104,48 @@ function NotificationRow({
             {dateFormatter.format(new Date(notification.createdAt))}
           </time>
         </span>
-        {unread && <span aria-label="Непрочитано" className={styles.unreadDot} />}
       </button>
-      <button
-        aria-label={unread ? "Отметить прочитанным" : "Отметить непрочитанным"}
-        className={styles.rowReadAction}
-        disabled={actionPending}
-        onClick={onToggleRead}
-        type="button"
+      <span
+        className={`${styles.readStatus} ${
+          unread ? styles.unreadStatus : ""
+        }`}
       >
-        {unread ? "Прочитано" : "Непрочитано"}
-      </button>
+        {unread ? "Непрочитано" : "Прочитано"}
+      </span>
+      <details className={styles.rowMenu} ref={menuRef}>
+        <summary
+          aria-label={`Действия: ${cleanStudentFacingText(notification.title)}`}
+          className={styles.rowMenuTrigger}
+        >
+          ⋯
+        </summary>
+        <div className={styles.rowMenuItems} role="menu">
+          <button
+            disabled={actionPending}
+            onClick={() => {
+              if (menuRef.current) menuRef.current.open = false;
+              onToggleRead();
+            }}
+            role="menuitem"
+            type="button"
+          >
+            {unread ? "Отметить прочитанным" : "Отметить непрочитанным"}
+          </button>
+        </div>
+      </details>
     </article>
   );
 }
 
 function NotificationDetails({
   notification,
-  onMarkUnread,
+  onToggleRead,
   onOpenTarget,
   actionPending,
   idSuffix,
 }: {
   notification: StudentNotificationItem;
-  onMarkUnread: () => void;
+  onToggleRead: () => void;
   onOpenTarget: (href: string) => void;
   actionPending: boolean;
   idSuffix: string;
@@ -230,11 +249,13 @@ function NotificationDetails({
       ) : null}
       <button
         className={styles.secondaryButton}
-        disabled={actionPending || notification.readAt === null}
-        onClick={onMarkUnread}
+        disabled={actionPending}
+        onClick={onToggleRead}
         type="button"
       >
-        Отметить непрочитанным
+        {notification.readAt === null
+          ? "Отметить прочитанным"
+          : "Отметить непрочитанным"}
       </button>
     </aside>
   );
@@ -478,7 +499,7 @@ export function NotificationCenter({
   return (
     <div className={styles.center}>
       <div className={styles.pageHeading}>
-        <p>{state.unreadCount} непрочитанных · важное об учёбе и заявках</p>
+        <p>{state.unreadCount} непрочитанных</p>
         {state.unreadCount > 0 && (
           <button
             className={styles.secondaryButton}
@@ -701,8 +722,12 @@ export function NotificationCenter({
                 actionPending={state.actionPending}
                 idSuffix="mobile"
                 notification={selectedNotification}
-                onMarkUnread={() => {
-                  void state.markUnread(selectedNotification.publicId);
+                onToggleRead={() => {
+                  void (
+                    selectedNotification.readAt === null
+                      ? markRead(selectedNotification.publicId)
+                      : state.markUnread(selectedNotification.publicId)
+                  );
                 }}
                 onOpenTarget={(href) => {
                   void markRead(selectedNotification.publicId).then(
@@ -730,8 +755,12 @@ export function NotificationCenter({
               actionPending={state.actionPending}
               idSuffix="desktop"
               notification={selectedNotification}
-              onMarkUnread={() => {
-                void state.markUnread(selectedNotification.publicId);
+              onToggleRead={() => {
+                void (
+                  selectedNotification.readAt === null
+                    ? markRead(selectedNotification.publicId)
+                    : state.markUnread(selectedNotification.publicId)
+                );
               }}
               onOpenTarget={(href) => {
                 void markRead(selectedNotification.publicId).then(

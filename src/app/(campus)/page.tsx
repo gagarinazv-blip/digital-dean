@@ -1,25 +1,37 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { connection } from "next/server";
-import type { RequestStatus } from "@/generated/prisma/enums";
+import type { ScheduleKind } from "@/generated/prisma/enums";
 import { getCampusTodayData } from "@/lib/campus-data";
 import { getStudentFacingGroupName } from "@/lib/campus-labels";
 import {
+  formatCampusDate,
   formatCampusTime,
   formatMoscowDate,
   getCampusGreeting,
 } from "@/lib/campus-time";
 import { requestStatusLabels, requestTypeLabels } from "@/lib/campus-labels";
 import { getRequestCatalogTitle } from "@/lib/request-catalog";
+import {
+  getRequestStatusTone,
+  getTodayHeroState,
+  type RequestStatusTone,
+} from "@/lib/today-view-utils";
 import styles from "./page.module.css";
 
-const requestStatusClasses: Record<RequestStatus, string> = {
-  NEW: styles.statusPending,
-  IN_PROGRESS: styles.statusInProgress,
-  NEEDS_INFO: styles.statusNeedsInfo,
-  READY: styles.statusApproved,
-  REJECTED: styles.statusRejected,
-  CANCELLED: styles.statusCancelled,
+const requestStatusClasses: Record<RequestStatusTone, string> = {
+  new: styles.statusPending,
+  inProgress: styles.statusInProgress,
+  needsInfo: styles.statusNeedsInfo,
+  ready: styles.statusApproved,
+  rejected: styles.statusRejected,
+  cancelled: styles.statusCancelled,
+};
+
+const scheduleKindLabels: Record<ScheduleKind, string> = {
+  LECTURE: "Лекция",
+  SEMINAR: "Семинар",
+  PRACTICE: "Практика",
 };
 
 const quickActionIcons = {
@@ -44,6 +56,7 @@ const welcomeDateFormatter = new Intl.DateTimeFormat("ru-RU", {
   weekday: "long",
   day: "numeric",
   month: "long",
+  timeZone: "UTC",
 });
 
 type QuickActionName = keyof typeof quickActionIcons;
@@ -86,17 +99,15 @@ async function CampusToday() {
   const data = await getCampusTodayData();
   const todayDate = new Date(`${data.week.todayKey}T00:00:00.000Z`);
   const firstName = data.student.fullName.split(" ")[0];
-  const activeLessonId = data.todaySchedule.find(
-    (lesson) =>
-      lesson.status !== "CANCELLED" &&
-      lesson.startTime.getTime() <= data.now.getTime() &&
-      lesson.endTime.getTime() > data.now.getTime(),
-  )?.occurrenceId;
-  const nextLessonId = data.todaySchedule.find(
-    (lesson) =>
-      lesson.status !== "CANCELLED" &&
-      lesson.startTime.getTime() >= data.now.getTime(),
-  )?.occurrenceId;
+  const hero = getTodayHeroState(
+    data.todaySchedule,
+    data.nextLesson,
+    data.now,
+  );
+  const activeLessonId =
+    hero.kind === "current" ? hero.lesson?.occurrenceId : undefined;
+  const nextLessonId =
+    hero.kind === "next" ? hero.lesson?.occurrenceId : undefined;
 
   return (
     <main className={styles.page}>
@@ -129,37 +140,72 @@ async function CampusToday() {
         >
           <div className={styles.heroArt} aria-hidden="true" />
           <div className={styles.heroContent}>
-            <span className={styles.heroBadge}>
-              {data.nextLesson?.isCurrent ? "Идёт сейчас" : "Ближайшая пара"}
-            </span>
-            {data.nextLesson ? (
-              <div className={styles.lesson}>
-                <h2 id="next-lesson-title">{data.nextLesson.subject.name}</h2>
-                <p className={styles.lessonTime}>
-                  {formatCampusTime(data.nextLesson.startTime)}–
-                  {formatCampusTime(data.nextLesson.endTime)} · занятие
-                </p>
-                <p>
-                  Аудитория {data.nextLesson.room} · {data.nextLesson.teacher}
-                </p>
-              </div>
-            ) : (
-              <div className={styles.emptyState}>
-                <h2 id="next-lesson-title">
-                  {data.todaySchedule.length
-                    ? "Сегодня пар больше нет"
-                    : "На сегодня занятий нет"}
-                </h2>
-                <p>
-                  {data.todaySchedule.length
-                    ? "Посмотрите расписание на другие дни."
-                    : "В расписании пока нет ближайших занятий."}
-                </p>
-              </div>
-            )}
-            <Link className={styles.heroButton} href="/schedule">
-              Открыть расписание
-            </Link>
+            <div className={styles.heroMain}>
+              <span className={styles.heroBadge}>
+                {hero.kind === "current"
+                  ? "Идёт сейчас"
+                  : hero.kind === "next"
+                    ? "Следующая пара"
+                    : "Ближайшее занятие"}
+              </span>
+              {hero.lesson ? (
+                <div className={styles.lesson}>
+                  <h2 id="next-lesson-title">
+                    {hero.kind === "upcoming"
+                      ? hero.hasTodayLessons
+                        ? "На сегодня пары закончились"
+                        : "Сегодня занятий нет"
+                      : hero.lesson.subject.name}
+                  </h2>
+                  {hero.kind === "upcoming" ? (
+                    <div className={styles.nextLessonPreview}>
+                      <p>
+                        Следующее: {formatCampusDate(hero.lesson.occurrenceDate)}
+                        {" · "}
+                        {formatCampusTime(hero.lesson.startTime)}
+                      </p>
+                      <strong>{hero.lesson.subject.name}</strong>
+                      <span>
+                        {scheduleKindLabels[hero.lesson.kind]} · ауд.{" "}
+                        {hero.lesson.room} · {hero.lesson.teacher}
+                      </span>
+                    </div>
+                  ) : (
+                    <>
+                      <p className={styles.lessonTime}>
+                        {formatCampusTime(hero.lesson.startTime)}–
+                        {formatCampusTime(hero.lesson.endTime)} ·{" "}
+                        {scheduleKindLabels[hero.lesson.kind]}
+                      </p>
+                      <p>
+                        Ауд. {hero.lesson.room} · {hero.lesson.teacher}
+                      </p>
+                    </>
+                  )}
+                  {hero.countdown && (
+                    <p className={styles.lessonCountdown}>{hero.countdown}</p>
+                  )}
+                </div>
+              ) : (
+                <div className={styles.heroEmpty}>
+                  <h2 id="next-lesson-title">
+                    {hero.hasTodayLessons
+                      ? "На сегодня пары закончились"
+                      : "На сегодня занятий нет"}
+                  </h2>
+                  <p>
+                    {hero.hasTodayLessons
+                      ? "Посмотрите расписание на другие дни."
+                      : "В расписании пока нет ближайших занятий."}
+                  </p>
+                </div>
+              )}
+            </div>
+            <div className={styles.heroActions}>
+              <Link className={styles.heroButton} href="/schedule">
+                Открыть расписание
+              </Link>
+            </div>
           </div>
         </section>
 
@@ -184,19 +230,27 @@ async function CampusToday() {
                     </span>
                     <span
                       className={`${styles.deadlineTime} ${
-                        deadline.countdown.kind === "OVERDUE"
+                        deadline.countdown.kind === "OVERDUE" ||
+                        deadline.countdown.daysRemaining <= 3
                           ? styles.deadlineOverdue
                           : ""
                       }`}
                     >
-                      {deadline.countdown.label}
+                      {deadline.countdown.kind === "UPCOMING" &&
+                      deadline.countdown.daysRemaining <= 3
+                        ? deadline.countdown.label.replace(
+                            /^Осталось /,
+                            "Через ",
+                          )
+                        : deadline.countdown.label}
                     </span>
                   </li>
                 ))}
               </ul>
             ) : (
               <div className={styles.emptyState}>
-                <p>Открытых заданий и сроков пока нет.</p>
+                <strong>Дедлайнов пока нет</strong>
+                <p>Открытых заданий и сроков нет.</p>
               </div>
             )}
             <Link className={styles.textLink} href="/deadlines">
@@ -218,12 +272,17 @@ async function CampusToday() {
                   )}
                 </strong>
                 <span
-                  className={`${styles.statusBadge} ${requestStatusClasses[data.latestRequest.status]}`}
+                  className={`${styles.statusBadge} ${
+                    requestStatusClasses[
+                      getRequestStatusTone(data.latestRequest.status)
+                    ]
+                  }`}
                 >
                   {requestStatusLabels[data.latestRequest.status]}
                 </span>
-                <p>
-                  Обновлена {formatMoscowDate(data.latestRequest.updatedAt)}
+                <p className={styles.requestMeta}>
+                  № {data.latestRequest.publicId.slice(0, 8).toUpperCase()} ·
+                  {" "}обновлена {formatMoscowDate(data.latestRequest.updatedAt)}
                 </p>
                 <Link
                   className={styles.textLink}
@@ -234,12 +293,9 @@ async function CampusToday() {
               </div>
             ) : (
               <div className={styles.emptyState}>
-                <p>
-                  У вас пока нет заявок. Здесь появится статус, когда заявка
-                  будет подана.
-                </p>
+                <strong>Заявок пока нет</strong>
                 <Link className={styles.textLink} href="/requests/new">
-                  Создать первую заявку
+                  Новая заявка
                 </Link>
               </div>
             )}
@@ -251,7 +307,12 @@ async function CampusToday() {
         <section className={styles.card} aria-labelledby="today-schedule-title">
           <div className={styles.cardHeading}>
             <p className={styles.eyebrow}>Пары и занятия</p>
-            <h2 id="today-schedule-title">Расписание на сегодня</h2>
+            <div className={styles.cardTitleRow}>
+              <h2 id="today-schedule-title">Расписание на сегодня</h2>
+              <Link className={styles.cardHeaderLink} href="/schedule">
+                Все занятия →
+              </Link>
+            </div>
           </div>
           {data.todaySchedule.length ? (
             <ol className={styles.timeline}>
@@ -262,7 +323,14 @@ async function CampusToday() {
                       ? styles.timelineCurrent
                       : lesson.occurrenceId === nextLessonId
                         ? styles.timelineNext
-                        : ""
+                        : lesson.endTime.getTime() <= data.now.getTime() &&
+                            lesson.status !== "CANCELLED"
+                          ? styles.timelinePast
+                          : ""
+                  } ${
+                    lesson.status === "CANCELLED"
+                      ? styles.timelineCancelled
+                      : ""
                   }`}
                   key={lesson.occurrenceId}
                 >
@@ -273,12 +341,22 @@ async function CampusToday() {
                   <div className={styles.timelineDetails}>
                     <strong>{lesson.subject.name}</strong>
                     <span>
-                      Занятие · ауд. {lesson.room}
+                      {scheduleKindLabels[lesson.kind]} · ауд. {lesson.room}
                       {lesson.status === "RESCHEDULED" && " · перенесено"}
                       {lesson.status === "CANCELLED" && " · отменено"}
                     </span>
                     {lesson.occurrenceId === activeLessonId && (
                       <span className={styles.timelineBadge}>Сейчас</span>
+                    )}
+                    {lesson.status === "CANCELLED" && (
+                      <span className={styles.timelineStatusCancelled}>
+                        Отменено
+                      </span>
+                    )}
+                    {lesson.status === "RESCHEDULED" && (
+                      <span className={styles.timelineStatusChanged}>
+                        Перенесено
+                      </span>
                     )}
                     {lesson.occurrenceId === nextLessonId && (
                       <span className={styles.timelineBadge}>Далее</span>
@@ -288,14 +366,37 @@ async function CampusToday() {
               ))}
             </ol>
           ) : (
-            <p className={styles.emptyState}>На сегодня занятий нет.</p>
+            <div className={styles.emptySchedule}>
+              <span aria-hidden="true" className={styles.emptyScheduleIcon}>
+                <svg
+                  fill="none"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1.7"
+                  viewBox="0 0 24 24"
+                >
+                  <rect x="3.5" y="5" width="17" height="16" rx="2" />
+                  <path d="M8 3v4m8-4v4M3.5 10h17" />
+                </svg>
+              </span>
+              <div className={styles.emptyScheduleText}>
+                <strong>На сегодня занятий нет</strong>
+                <Link href="/schedule?view=week">Показать неделю →</Link>
+              </div>
+            </div>
           )}
         </section>
 
         <section className={styles.card} aria-labelledby="announcements-title">
           <div className={styles.cardHeading}>
             <p className={styles.eyebrow}>Важное</p>
-            <h2 id="announcements-title">Объявления</h2>
+            <div className={styles.cardTitleRow}>
+              <h2 id="announcements-title">Объявления</h2>
+              <Link className={styles.cardHeaderLink} href="/notifications">
+                Все объявления →
+              </Link>
+            </div>
           </div>
           {data.changes.length ? (
             <ul className={styles.changeList}>
@@ -314,9 +415,7 @@ async function CampusToday() {
               ))}
             </ul>
           ) : (
-            <p className={styles.emptyState}>
-              Новых объявлений и изменений пока нет.
-            </p>
+            <p className={styles.emptyState}>Объявлений пока нет.</p>
           )}
         </section>
       </div>

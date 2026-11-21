@@ -48,11 +48,23 @@ describe("shared notification store", () => {
     expect(await store.refresh()).toBe(true);
     expect(store.getSnapshot().notifications).toEqual([item]);
     expect(store.getSnapshot().unreadCount).toBe(1);
+    expect(store.getSnapshot().unreadCount).toBe(
+      store
+        .getSnapshot()
+        .notifications.filter((notification) => notification.readAt === null)
+        .length,
+    );
 
     fetcher.mockResolvedValueOnce(jsonResponse({ unreadCount: 0 }));
     expect(await store.markRead(publicId)).toBe(true);
     expect(store.getSnapshot().notifications[0]?.readAt).not.toBeNull();
     expect(store.getSnapshot().unreadCount).toBe(0);
+    expect(store.getSnapshot().unreadCount).toBe(
+      store
+        .getSnapshot()
+        .notifications.filter((notification) => notification.readAt === null)
+        .length,
+    );
   });
 
   it("rolls back optimistic status when the server rejects an action", async () => {

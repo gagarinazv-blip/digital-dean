@@ -88,6 +88,7 @@ export async function getCampusTodayData(now = getDemoNow()) {
     ),
     startTime: item.startsAt,
     endTime: item.endsAt,
+    kind: item.kind,
     room: item.room,
     teacher: item.teacher,
     status: item.status,
@@ -148,6 +149,7 @@ export async function getCampusTodayData(now = getDemoNow()) {
   }
   const nextLesson = nextScheduleLesson
     ? {
+        occurrenceId: nextScheduleLesson.id,
         isCurrent:
           activeScheduleLesson?.id === nextScheduleLesson.id,
         occurrenceDate: new Date(
@@ -155,6 +157,9 @@ export async function getCampusTodayData(now = getDemoNow()) {
         ),
         startTime: nextScheduleLesson.startsAt,
         endTime: nextScheduleLesson.endsAt,
+        kind: nextScheduleLesson.kind,
+        status: nextScheduleLesson.status,
+        changeNote: nextScheduleLesson.changeNote,
         room: nextScheduleLesson.room,
         teacher: nextScheduleLesson.teacher,
         subject: { name: nextScheduleLesson.subject },
