@@ -59,23 +59,28 @@ function getTargetLabel(targetType: NotificationTargetType | null): string {
   }
 }
 
+type NotificationsPageProps = {
+  searchParams?: Promise<{ filter?: string | string[] }>;
+};
+
 export default async function NotificationsPage({
   searchParams,
-}: {
-  searchParams: Promise<{ filter?: string | string[] }>;
-}) {
-  const params = await searchParams;
-  const activeFilter = params.filter === "unread" ? "unread" : "all";
+}: NotificationsPageProps) {
   const student = await requireStudent();
   const notifications = await getStudentNotifications(student.id);
+  const params = await searchParams;
+  const filterValue = params?.filter;
+  const activeFilter =
+    (Array.isArray(filterValue) ? filterValue[0] : filterValue) === "unread"
+      ? "unread"
+      : "all";
+  const displayedNotifications = activeFilter === "unread"
+    ? notifications.filter((notification) => notification.readAt === null)
+    : notifications;
   const unreadCount = notifications.filter(
     (notification) => notification.readAt === null,
   ).length;
-  const visibleNotifications =
-    activeFilter === "unread"
-      ? notifications.filter((notification) => notification.readAt === null)
-      : notifications;
-  const selectedNotification = visibleNotifications[0];
+  const selectedNotification = displayedNotifications[0];
 
   return (
     <CampusSection
@@ -103,6 +108,7 @@ export default async function NotificationsPage({
               href="/notifications?filter=unread"
             >
               Непрочитанные
+              {unreadCount > 0 && <span>{unreadCount}</span>}
             </Link>
           </nav>
           {unreadCount > 0 && (
@@ -114,7 +120,7 @@ export default async function NotificationsPage({
           )}
         </div>
 
-        {visibleNotifications.length === 0 ? (
+        {displayedNotifications.length === 0 ? (
           <div className={styles.empty}>
             <strong>
               {activeFilter === "unread"
@@ -135,10 +141,10 @@ export default async function NotificationsPage({
             >
               <div className={styles.panelHeading}>
                 <h2 id="latest-events-title">Последние события</h2>
-                <span>{visibleNotifications.length}</span>
+                <span>{displayedNotifications.length}</span>
               </div>
               <ul className={styles.list}>
-                {visibleNotifications.map((notification) => (
+                {displayedNotifications.map((notification) => (
                   <li
                     className={`${styles.item} ${
                       notification.readAt === null ? styles.unread : ""

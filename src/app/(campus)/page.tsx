@@ -65,8 +65,17 @@ function QuickActionIcon({ name }: { name: QuickActionName }) {
 
 function CampusFallback() {
   return (
-    <main className={styles.page} aria-busy="true">
-      <p>Загружаем ваш план на день…</p>
+    <main
+      aria-busy="true"
+      aria-label="Загружаем план на день"
+      className={styles.page}
+    >
+      <span className={styles.skeletonHeading} />
+      <div className={styles.skeletonGrid} aria-hidden="true">
+        <span className={styles.skeletonHero} />
+        <span className={styles.skeletonCard} />
+        <span className={styles.skeletonCard} />
+      </div>
     </main>
   );
 }
@@ -76,15 +85,36 @@ async function CampusToday() {
   const data = await getCampusTodayData();
   const todayDate = new Date(`${data.week.todayKey}T00:00:00.000Z`);
   const firstName = data.student.fullName.split(" ")[0];
+  const activeLessonId = data.todaySchedule.find(
+    (lesson) =>
+      lesson.status !== "CANCELLED" &&
+      lesson.startTime.getTime() <= data.now.getTime() &&
+      lesson.endTime.getTime() > data.now.getTime(),
+  )?.occurrenceId;
+  const nextLessonId = data.todaySchedule.find(
+    (lesson) =>
+      lesson.status !== "CANCELLED" &&
+      lesson.startTime.getTime() >= data.now.getTime(),
+  )?.occurrenceId;
 
   return (
     <main className={styles.page}>
       <section className={styles.welcome} aria-labelledby="welcome-title">
         <div className={styles.welcomeContent}>
-          <p className={styles.eyebrow}>
-            {welcomeDateFormatter.format(todayDate)} · группа{" "}
-            {data.student.group.name}
-          </p>
+          <div className={styles.welcomeMeta}>
+            <p className={styles.eyebrow}>
+              {welcomeDateFormatter.format(todayDate)} · группа{" "}
+              {data.student.group.name}
+            </p>
+            <Link className={styles.notificationLink} href="/notifications">
+              {data.unreadNotificationCount > 0 && (
+                <span aria-hidden="true" className={styles.notificationDot} />
+              )}
+              {data.unreadNotificationCount > 0
+                ? `${data.unreadNotificationCount} новых уведомлений`
+                : "Уведомления"}
+            </Link>
+          </div>
           <h1 id="welcome-title">
             {getCampusGreeting(data.now)}, {firstName}
           </h1>
@@ -98,7 +128,9 @@ async function CampusToday() {
         >
           <div className={styles.heroArt} aria-hidden="true" />
           <div className={styles.heroContent}>
-            <span className={styles.heroBadge}>Ближайшая пара</span>
+            <span className={styles.heroBadge}>
+              {data.nextLesson?.isCurrent ? "Идёт сейчас" : "Ближайшая пара"}
+            </span>
             {data.nextLesson ? (
               <div className={styles.lesson}>
                 <h2 id="next-lesson-title">{data.nextLesson.subject.name}</h2>
@@ -118,7 +150,7 @@ async function CampusToday() {
                     : "На сегодня занятий нет"}
                 </h2>
                 <p>
-                {data.todaySchedule.length
+                  {data.todaySchedule.length
                     ? "Посмотрите расписание на другие дни."
                     : "В расписании пока нет ближайших занятий."}
                 </p>
@@ -223,8 +255,19 @@ async function CampusToday() {
           {data.todaySchedule.length ? (
             <ol className={styles.timeline}>
               {data.todaySchedule.map((lesson) => (
-                <li className={styles.timelineItem} key={lesson.occurrenceId}>
-                  <time>{formatCampusTime(lesson.startTime)}</time>
+                <li
+                  className={`${styles.timelineItem} ${
+                    lesson.occurrenceId === activeLessonId
+                      ? styles.timelineCurrent
+                      : lesson.occurrenceId === nextLessonId
+                        ? styles.timelineNext
+                        : ""
+                  }`}
+                  key={lesson.occurrenceId}
+                >
+                  <time dateTime={lesson.startTime.toISOString()}>
+                    {formatCampusTime(lesson.startTime)}
+                  </time>
                   <span className={styles.timelineDot} aria-hidden="true" />
                   <div className={styles.timelineDetails}>
                     <strong>{lesson.subject.name}</strong>
@@ -233,6 +276,12 @@ async function CampusToday() {
                       {lesson.status === "RESCHEDULED" && " · перенесено"}
                       {lesson.status === "CANCELLED" && " · отменено"}
                     </span>
+                    {lesson.occurrenceId === activeLessonId && (
+                      <span className={styles.timelineBadge}>Сейчас</span>
+                    )}
+                    {lesson.occurrenceId === nextLessonId && (
+                      <span className={styles.timelineBadge}>Далее</span>
+                    )}
                   </div>
                 </li>
               ))}

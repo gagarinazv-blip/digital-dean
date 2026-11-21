@@ -63,6 +63,210 @@
   gap: var(--space-4);
 }
 
+.formulaCard,
+.formulaUnavailable,
+.eventsCard {
+  min-width: 0;
+  padding: var(--space-6);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.formulaStatus,
+.formulaUnavailable h2,
+.eventsCard .cardHeading > span {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+}
+
+.formulaSource {
+  margin: calc(var(--space-4) * -0.25) 0 var(--space-4);
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+  line-height: 1.5;
+}
+
+.formulaGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(240px, 0.6fr);
+  align-items: start;
+  gap: var(--space-4);
+}
+
+.componentTableWrap {
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.componentTable {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.componentTable th,
+.componentTable td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--font-size-label);
+  line-height: 1.4;
+  vertical-align: middle;
+}
+
+.componentTable thead th {
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+  font-weight: 500;
+}
+
+.componentTable tbody th {
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+.componentTable td {
+  color: var(--color-muted);
+}
+
+.forecastCard {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-blue-300);
+  border-radius: var(--radius-card);
+  background: var(--color-blue-100);
+}
+
+.forecastCard > p {
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+}
+
+.forecastCard > strong {
+  color: var(--color-ink);
+  font-size: clamp(32px, 4vw, 44px);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.forecastTrack {
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 72%);
+}
+
+.forecastTrack span {
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  background: var(--color-wine-900);
+  transition: width var(--motion-page) var(--motion-ease);
+}
+
+.remainingWeight {
+  color: var(--color-ink) !important;
+  font-weight: 600;
+}
+
+.formulaUnavailable {
+  display: grid;
+  gap: var(--space-2);
+  border-style: dashed;
+  background: var(--color-surface);
+}
+
+.formulaUnavailable h2 {
+  width: fit-content;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.formulaUnavailable p,
+.eventsCard .noResult {
+  color: var(--color-muted);
+  font-size: var(--font-size-body-compact);
+  line-height: 1.55;
+}
+
+.eventsCard {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.eventsCard .cardHeading {
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+
+.eventsCard .cardHeading > span {
+  background: var(--color-subtle);
+  color: var(--color-muted);
+}
+
+.eventList {
+  display: grid;
+  gap: var(--space-2);
+  list-style: none;
+}
+
+.eventList li {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.eventList li > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.eventList strong {
+  font-size: var(--font-size-body-compact);
+}
+
+.eventList li span {
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+  overflow-wrap: anywhere;
+}
+
+.completedEvent,
+.plannedEvent {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+
+.completedEvent {
+  background: var(--color-success-bg);
+  color: var(--color-success-text) !important;
+}
+
+.plannedEvent {
+  background: var(--color-blue-100);
+  color: var(--color-blue-700) !important;
+}
+
 .detailCard {
   min-width: 0;
   display: flex;
@@ -286,6 +490,10 @@
   .detailGrid {
     grid-template-columns: minmax(0, 1fr);
   }
+
+  .formulaGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 560px) {
@@ -323,5 +531,19 @@
 
   .calculateButton {
     width: 100%;
+  }
+
+  .formulaCard,
+  .formulaUnavailable,
+  .eventsCard {
+    padding: var(--space-4);
+  }
+
+  .componentTable {
+    min-width: 560px;
+  }
+
+  .eventList li {
+    align-items: flex-start;
   }
 }

@@ -109,7 +109,11 @@ function GradesFallback() {
       title="Успеваемость"
       description="Загружаем данные текущего студента."
     >
-      <p aria-busy="true">Загружаем учебный план и оценки…</p>
+      <div aria-busy="true" className={styles.gradesSkeleton}>
+        <span />
+        <span />
+        <span />
+      </div>
     </CampusSection>
   );
 }
