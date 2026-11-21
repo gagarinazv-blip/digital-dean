@@ -14,6 +14,6 @@ export default function DocumentsPage({
 }) {
   return HelpWorkspace({
     searchParams,
-    defaultTab: "documents",
+    defaultTab: "catalog",
   });
 }

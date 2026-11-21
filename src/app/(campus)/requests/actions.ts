@@ -30,6 +30,7 @@ function revalidateStudentRequestPaths(publicId?: string): void {
   revalidatePath("/help");
   revalidatePath("/notifications");
   revalidatePath("/requests");
+  revalidatePath("/staff/requests");
   if (publicId !== undefined) {
     revalidatePath(`/requests/${publicId}`);
   }
@@ -243,13 +244,18 @@ export async function replyToRequestAction(
   }
 
   const saved = await getPrisma().$transaction(async (tx) => {
+    const nextStatus: "IN_PROGRESS" | null =
+      request.status === "NEEDS_INFO" ? "IN_PROGRESS" : null;
     const updated = await tx.request.updateMany({
       where: {
         id: request.id,
         studentId: student.id,
         status: request.status,
       },
-      data: { updatedAt: new Date() },
+      data: {
+        ...(nextStatus ? { status: nextStatus } : {}),
+        updatedAt: new Date(),
+      },
     });
     if (updated.count !== 1) {
       return false;
@@ -264,6 +270,16 @@ export async function replyToRequestAction(
         attachments: { create: uploads.files },
       },
     });
+    if (nextStatus) {
+      await tx.requestStatusHistory.create({
+        data: {
+          requestId: request.id,
+          status: nextStatus,
+          authorUserId: userId,
+          comment: "Студент отправил запрошенное уточнение.",
+        },
+      });
+    }
     return true;
   });
 
@@ -275,11 +291,12 @@ export async function replyToRequestAction(
 
   revalidateStudentRequestPaths(request.publicId);
   revalidatePath("/staff");
+  revalidatePath("/staff/requests");
   revalidatePath(`/staff/requests/${request.id}`);
   return {
     success:
       request.status === "NEEDS_INFO"
-        ? "Ответ отправлен сотруднику."
+        ? "Ответ отправлен, заявка возвращена в работу."
         : "Сообщение отправлено сотруднику.",
   };
 }
