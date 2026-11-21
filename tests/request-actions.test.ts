@@ -73,6 +73,7 @@ import {
 import {
   addStaffCommentAction,
   assignRequestAction,
+  rollbackRequestStatusAction,
   updateRequestStatusAction,
 } from "../src/app/staff/requests/actions";
 
@@ -130,6 +131,7 @@ beforeEach(() => {
     async (callback: (tx: unknown) => Promise<unknown>) =>
       callback({
         request: {
+          findFirst: findRequestMock,
           updateMany: updateRequestManyMock,
           upsert: upsertRequestMock,
         },
@@ -174,6 +176,7 @@ describe("request actions", () => {
           status: "NEW",
           statusHistory: {
             create: {
+              fromStatus: null,
               status: "NEW",
               authorUserId: 10,
               comment: "Заявка подана студентом.",
@@ -267,6 +270,7 @@ describe("request actions", () => {
     expect(createStatusHistoryMock).toHaveBeenCalledWith({
       data: {
         requestId: 123,
+        fromStatus: "NEW",
         status: "CANCELLED",
         authorUserId: 10,
         comment: "Заявка отменена студентом.",
@@ -468,6 +472,7 @@ describe("request actions", () => {
     expect(createStatusHistoryMock).toHaveBeenCalledWith({
       data: {
         requestId: 123,
+        fromStatus: "IN_PROGRESS",
         status: "READY",
         authorUserId: 11,
         comment: null,
@@ -484,6 +489,155 @@ describe("request actions", () => {
       },
     });
     expect(revalidatePathMock).toHaveBeenCalledWith("/notifications");
+  });
+
+  it("rolls a request back, appends the reversal, and notifies the student", async () => {
+    findRequestMock.mockResolvedValue({
+      id: 123,
+      publicId: "b08f54cf-99ce-4a56-a780-8e22ce5ba0a1",
+      studentId: 20,
+      status: "IN_PROGRESS",
+      assignedToId: 40,
+      statusHistory: [
+        { fromStatus: null, status: "NEW", isRollback: false },
+        { fromStatus: "NEW", status: "IN_PROGRESS", isRollback: false },
+      ],
+    });
+
+    await expect(
+      rollbackRequestStatusAction({}, makeFormData({ requestId: "123" })),
+    ).resolves.toEqual({
+      success: "Статус заявки возвращён на предыдущий шаг.",
+    });
+
+    expect(findRequestMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: 123,
+          OR: [
+            { assignedToId: 40 },
+            { assignedToId: null, type: { in: ["CERTIFICATE"] } },
+          ],
+        },
+      }),
+    );
+    expect(updateRequestManyMock).toHaveBeenCalledWith({
+      where: { id: 123, status: "IN_PROGRESS", assignedToId: 40 },
+      data: { status: "NEW", updatedAt: expect.any(Date) },
+    });
+    expect(createStatusHistoryMock).toHaveBeenCalledWith({
+      data: {
+        requestId: 123,
+        fromStatus: "IN_PROGRESS",
+        status: "NEW",
+        isRollback: true,
+        authorUserId: 11,
+        comment: "Откат статуса: В работе → Новая.",
+      },
+    });
+    expect(createNotificationMock).toHaveBeenCalledWith({
+      data: {
+        studentId: 20,
+        type: "REQUEST_STATUS",
+        title: "Статус заявки изменён",
+        text: "Статус заявки возвращён: Новая.",
+        targetType: "REQUEST",
+        targetId: "b08f54cf-99ce-4a56-a780-8e22ce5ba0a1",
+      },
+    });
+    expect(revalidatePathMock).toHaveBeenCalledWith(
+      "/requests/b08f54cf-99ce-4a56-a780-8e22ce5ba0a1",
+    );
+  });
+
+  it("allows staff.manager to roll back another employee's request", async () => {
+    requireStaffContextMock.mockResolvedValue({
+      userId: 12,
+      staff: {
+        id: 42,
+        department: "Учебный отдел",
+        isSupervisor: true,
+      },
+    });
+    findRequestMock.mockResolvedValue({
+      id: 123,
+      publicId: "b08f54cf-99ce-4a56-a780-8e22ce5ba0a1",
+      studentId: 20,
+      status: "READY",
+      assignedToId: 41,
+      statusHistory: [
+        { fromStatus: null, status: "NEW", isRollback: false },
+        { fromStatus: "NEW", status: "IN_PROGRESS", isRollback: false },
+        { fromStatus: "IN_PROGRESS", status: "READY", isRollback: false },
+      ],
+    });
+
+    await expect(
+      rollbackRequestStatusAction({}, makeFormData({ requestId: "123" })),
+    ).resolves.toEqual({
+      success: "Статус заявки возвращён на предыдущий шаг.",
+    });
+
+    expect(findRequestMock).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 123 } }),
+    );
+    expect(updateRequestManyMock).toHaveBeenCalledWith({
+      where: { id: 123, status: "READY", assignedToId: 41 },
+      data: { status: "IN_PROGRESS", updatedAt: expect.any(Date) },
+    });
+  });
+
+  it("does not allow regular staff to roll back another employee's request", async () => {
+    findRequestMock.mockResolvedValue({
+      id: 123,
+      publicId: "b08f54cf-99ce-4a56-a780-8e22ce5ba0a1",
+      studentId: 20,
+      status: "READY",
+      assignedToId: 41,
+      statusHistory: [
+        { fromStatus: null, status: "NEW", isRollback: false },
+        { fromStatus: "NEW", status: "IN_PROGRESS", isRollback: false },
+        { fromStatus: "IN_PROGRESS", status: "READY", isRollback: false },
+      ],
+    });
+
+    await expect(
+      rollbackRequestStatusAction({}, makeFormData({ requestId: "123" })),
+    ).resolves.toEqual({
+      error: "Откат доступен только назначенному сотруднику или руководителю.",
+    });
+
+    expect(updateRequestManyMock).not.toHaveBeenCalled();
+    expect(createStatusHistoryMock).not.toHaveBeenCalled();
+  });
+
+  it("does not roll back a request that has only its initial status", async () => {
+    findRequestMock.mockResolvedValue({
+      id: 123,
+      publicId: "b08f54cf-99ce-4a56-a780-8e22ce5ba0a1",
+      status: "NEW",
+      assignedToId: 40,
+      statusHistory: [{ fromStatus: null, status: "NEW", isRollback: false }],
+    });
+
+    await expect(
+      rollbackRequestStatusAction({}, makeFormData({ requestId: "123" })),
+    ).resolves.toEqual({
+      error: "У заявки нет допустимого предыдущего статуса для отката.",
+    });
+
+    expect(updateRequestManyMock).not.toHaveBeenCalled();
+    expect(createStatusHistoryMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects a direct rollback call from a student session", async () => {
+    requireStaffContextMock.mockRejectedValueOnce(new Error("Forbidden"));
+
+    await expect(
+      rollbackRequestStatusAction({}, makeFormData({ requestId: "123" })),
+    ).rejects.toThrow("Forbidden");
+
+    expect(prismaTransactionMock).not.toHaveBeenCalled();
   });
 
   it("saves a real result file and notifies the owner in one transaction", async () => {

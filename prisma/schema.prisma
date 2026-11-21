@@ -331,7 +331,9 @@ model Request {
 model RequestStatusHistory {
   id           Int           @id @default(autoincrement())
   requestId    Int
+  fromStatus   RequestStatus?
   status       RequestStatus
+  isRollback   Boolean       @default(false)
   changedAt    DateTime      @default(now())
   authorUserId Int?
   comment      String?       @db.Text

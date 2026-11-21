@@ -11,8 +11,11 @@ import {
   canStaffAssignRequest,
   canStaffChangeStatus,
   canStaffManageAssignedRequest,
+  canStaffRollbackRequest,
 } from "@/lib/permissions";
 import {
+  canTransitionRequestStatus,
+  getPreviousRequestStatus,
   getStaffRequestFilter,
   isRequestStatus,
   parsePositiveIntegerId,
@@ -156,6 +159,7 @@ export async function updateRequestStatusAction(
     await tx.requestStatusHistory.create({
       data: {
         requestId: request.id,
+        fromStatus: request.status,
         status: rawStatus,
         authorUserId: userId,
         comment: content || null,
@@ -183,6 +187,103 @@ export async function updateRequestStatusAction(
 
   revalidateStaffRequestPaths(requestId, request.publicId);
   return { success: "Статус заявки обновлён." };
+}
+
+export async function rollbackRequestStatusAction(
+  _previousState: RequestActionState,
+  formData: FormData,
+): Promise<RequestActionState> {
+  await assertSameSiteRequest();
+  const { userId, staff } = await requireStaffContext();
+  const requestId = getRequestId(formData);
+
+  const result = await getPrisma().$transaction(async (tx) => {
+    const request = await tx.request.findFirst({
+      where: {
+        id: requestId,
+        ...(staff.isSupervisor ? {} : getStaffRequestFilter(staff)),
+      },
+      select: {
+        id: true,
+        publicId: true,
+        studentId: true,
+        type: true,
+        status: true,
+        assignedToId: true,
+        statusHistory: {
+          orderBy: [{ changedAt: "asc" }, { id: "asc" }],
+          select: {
+            fromStatus: true,
+            status: true,
+            isRollback: true,
+          },
+        },
+      },
+    });
+    if (!request) {
+      notFound();
+    }
+    if (!canStaffRollbackRequest(staff, request)) {
+      return {
+        error: "Откат доступен только назначенному сотруднику или руководителю.",
+      };
+    }
+
+    const previousStatus = getPreviousRequestStatus(
+      request.statusHistory,
+      request.status,
+    );
+    if (
+      previousStatus === null ||
+      !canTransitionRequestStatus(previousStatus, request.status)
+    ) {
+      return { error: "У заявки нет допустимого предыдущего статуса для отката." };
+    }
+
+    const updated = await tx.request.updateMany({
+      where: {
+        id: request.id,
+        status: request.status,
+        assignedToId: request.assignedToId,
+      },
+      data: { status: previousStatus, updatedAt: new Date() },
+    });
+    if (updated.count !== 1) {
+      return {
+        error: "Заявка уже изменилась. Обновите страницу и попробуйте снова.",
+      };
+    }
+
+    await tx.requestStatusHistory.create({
+      data: {
+        requestId: request.id,
+        fromStatus: request.status,
+        status: previousStatus,
+        isRollback: true,
+        authorUserId: userId,
+        comment: `Откат статуса: ${requestStatusLabels[request.status]} → ${requestStatusLabels[previousStatus]}.`,
+      },
+    });
+    await tx.notification.create({
+      data: {
+        studentId: request.studentId,
+        type: "REQUEST_STATUS",
+        title: "Статус заявки изменён",
+        text: `Статус заявки возвращён: ${requestStatusLabels[previousStatus]}.`,
+        targetType: "REQUEST",
+        targetId: request.publicId,
+      },
+    });
+
+    return { publicId: request.publicId };
+  });
+
+  if ("error" in result) {
+    return result;
+  }
+
+  revalidateStaffRequestPaths(requestId, result.publicId);
+  return { success: "Статус заявки возвращён на предыдущий шаг." };
 }
 
 export async function addStaffCommentAction(

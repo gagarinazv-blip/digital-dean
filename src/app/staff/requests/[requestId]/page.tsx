@@ -2,15 +2,20 @@ import Link from "next/link";
 import { CampusSection } from "@/components/campus-section";
 import { RequestConversation } from "@/components/request-conversation";
 import { requestStatusLabels, requestTypeLabels } from "@/lib/campus-labels";
+import { canStaffRollbackRequest } from "@/lib/permissions";
 import {
   getRequestCatalogTitle,
   getRequestFieldEntries,
   getRequestProfileEntries,
 } from "@/lib/request-catalog";
-import { getAllowedStaffRequestTransitions } from "@/lib/request-workflow";
+import {
+  getAllowedStaffRequestTransitions,
+  getPreviousRequestStatus,
+} from "@/lib/request-workflow";
 import { getStaffRequestDetails } from "@/lib/staff-data";
 import {
   RequestAssignmentForm,
+  RequestRollbackForm,
   RequestStatusForm,
   StaffCommentForm,
 } from "@/app/staff/requests/request-forms";
@@ -121,6 +126,13 @@ export default async function StaffRequestPage({
     (count, comment) => count + comment.attachments.length,
     0,
   );
+  const rollbackTargetStatus = getPreviousRequestStatus(
+    request.statusHistory,
+    request.status,
+  );
+  const canRollback =
+    rollbackTargetStatus !== null &&
+    canStaffRollbackRequest(staff, request);
 
   return (
     <CampusSection
@@ -346,6 +358,22 @@ export default async function StaffRequestPage({
               )}
             </section>
 
+            {canRollback && rollbackTargetStatus && (
+              <section className={styles.panel} aria-labelledby="rollback-title">
+                <h2 className={styles.panelTitle} id="rollback-title">
+                  Откат статуса
+                </h2>
+                <p className={styles.panelHint}>
+                  Вернуть «{requestStatusLabels[request.status]}» на
+                  «{requestStatusLabels[rollbackTargetStatus]}».
+                </p>
+                <RequestRollbackForm
+                  requestId={request.id}
+                  targetStatus={rollbackTargetStatus}
+                />
+              </section>
+            )}
+
             <section className={styles.panel} aria-labelledby="comments-title">
               <div className={styles.panelHeading}>
                 <h2 id="comments-title">Комментарии и история</h2>
@@ -386,12 +414,18 @@ export default async function StaffRequestPage({
                           {requestStatusIcons[entry.status]}
                         </span>
                         <div className={styles.eventCopy}>
-                          <strong>{requestStatusLabels[entry.status]}</strong>
+                          <strong>
+                            {entry.fromStatus === null
+                              ? `Начальный статус: ${requestStatusLabels[entry.status]}`
+                              : `${requestStatusLabels[entry.fromStatus]} → ${requestStatusLabels[entry.status]}${entry.isRollback ? " · откат" : ""}`}
+                          </strong>
                           <time dateTime={entry.changedAt.toISOString()}>
                             {requestDateFormatter.format(entry.changedAt)}
                           </time>
                           <span>
-                            {isLatest && entry.status === "IN_PROGRESS"
+                            {isLatest &&
+                            entry.status === "IN_PROGRESS" &&
+                            !entry.isRollback
                               ? `Ответственный: ${author}`
                               : author}
                           </span>

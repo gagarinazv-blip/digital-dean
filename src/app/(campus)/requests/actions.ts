@@ -99,6 +99,7 @@ export async function createRequestAction(
           status: "NEW",
           statusHistory: {
             create: {
+              fromStatus: null,
               status: "NEW",
               authorUserId: userId,
               comment: "Заявка подана студентом.",
@@ -179,6 +180,7 @@ export async function cancelRequestAction(
     await tx.requestStatusHistory.create({
       data: {
         requestId: request.id,
+        fromStatus: request.status,
         status: "CANCELLED",
         authorUserId: userId,
         comment: "Заявка отменена студентом.",

@@ -675,6 +675,7 @@ async function main() {
           statusHistory: {
             create: [
               {
+                fromStatus: null,
                 status: "NEW",
                 authorUserId: alphaUserId,
                 comment: "Заявка подана студентом.",
@@ -697,11 +698,13 @@ async function main() {
           statusHistory: {
             create: [
               {
+                fromStatus: null,
                 status: "NEW",
                 authorUserId: betaUserId,
                 comment: "Заявка подана студентом.",
               },
               {
+                fromStatus: "NEW",
                 status: "IN_PROGRESS",
                 authorUserId: demoStaffUserId,
                 comment: "Заявка принята в работу.",
@@ -721,16 +724,19 @@ async function main() {
           statusHistory: {
             create: [
               {
+                fromStatus: null,
                 status: "NEW",
                 authorUserId: alphaUserId,
                 comment: "Заявка подана студентом.",
               },
               {
+                fromStatus: "NEW",
                 status: "IN_PROGRESS",
                 authorUserId: otherStaffUserId,
                 comment: "Заявка принята в работу.",
               },
               {
+                fromStatus: "IN_PROGRESS",
                 status: "READY",
                 authorUserId: otherStaffUserId,
                 comment: "Справка подготовлена.",
@@ -753,16 +759,19 @@ async function main() {
           statusHistory: {
             create: [
               {
+                fromStatus: null,
                 status: "NEW",
                 authorUserId: betaUserId,
                 comment: "Заявка подана студентом.",
               },
               {
+                fromStatus: "NEW",
                 status: "IN_PROGRESS",
                 authorUserId: otherStaffUserId,
                 comment: "Заявка проверена сотрудником.",
               },
               {
+                fromStatus: "IN_PROGRESS",
                 status: "REJECTED",
                 authorUserId: otherStaffUserId,
                 comment: "Тип не разрешён staff.demo.",

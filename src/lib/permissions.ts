@@ -7,6 +7,7 @@ export type StudentPermissionScope = {
 export type StaffPermissionScope = {
   id: number;
   department: string;
+  isSupervisor?: boolean;
 };
 
 export type RequestPermissionData = {
@@ -136,6 +137,16 @@ export function canStaffChangeStatus(
     request.status !== undefined &&
     canStaffManageAssignedRequest(staff, request) &&
     requestTransitions[request.status].includes(nextStatus)
+  );
+}
+
+export function canStaffRollbackRequest(
+  staff: StaffPermissionScope,
+  request: RequestPermissionData,
+): boolean {
+  return (
+    request.status !== undefined &&
+    (staff.isSupervisor === true || canStaffManageAssignedRequest(staff, request))
   );
 }
 

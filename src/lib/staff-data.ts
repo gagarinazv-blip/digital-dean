@@ -52,7 +52,9 @@ const requestDetailSelection = {
   statusHistory: {
     orderBy: [{ changedAt: "asc" }, { id: "asc" }],
     select: {
+      fromStatus: true,
       status: true,
+      isRollback: true,
       changedAt: true,
       comment: true,
       author: {
@@ -131,7 +133,7 @@ export async function getStaffRequestList(
     ...(searchTerm ? { search: searchTerm } : {}),
     ...(createdAtGte ? { createdAtGte } : {}),
   });
-  const accessFilter = getStaffRequestFilter(staff);
+  const accessFilter = staff.isSupervisor ? {} : getStaffRequestFilter(staff);
   const [requests, groupedCounts] = await Promise.all([
     prisma.request.findMany({
       where,
@@ -185,7 +187,7 @@ export async function getStaffRequestDetails(requestId: string) {
   const request = await prisma.request.findFirst({
     where: {
       id,
-      ...getStaffRequestFilter(staff),
+      ...(staff.isSupervisor ? {} : getStaffRequestFilter(staff)),
     },
     select: requestDetailSelection,
   });
