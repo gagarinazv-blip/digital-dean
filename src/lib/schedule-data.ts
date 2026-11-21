@@ -2,6 +2,7 @@ import "server-only";
 
 import { getPrisma } from "@/lib/prisma";
 import { requireStudent } from "@/lib/student";
+import { cleanStudentFacingText } from "@/lib/campus-labels";
 import {
   getMoscowDateKey,
   getMoscowDayRange,
@@ -181,13 +182,17 @@ export async function getScheduleForGroup(
           record.endsAt ?? getMoscowDateTime(date, record.endTime),
         originalStartsAt: record.originalStartsAt,
         originalEndsAt: record.originalEndsAt,
-        originalRoom: record.originalRoom,
+        originalRoom: record.originalRoom
+          ? cleanStudentFacingText(record.originalRoom)
+          : null,
         kind: record.kind,
         status: record.status,
-        room: record.room,
-        teacher: record.teacher,
-        changeNote: record.changeNote,
-        subject: record.subject.name,
+        room: cleanStudentFacingText(record.room),
+        teacher: cleanStudentFacingText(record.teacher),
+        changeNote: record.changeNote
+          ? cleanStudentFacingText(record.changeNote)
+          : null,
+        subject: cleanStudentFacingText(record.subject.name),
       });
       continue;
     }
@@ -200,13 +205,17 @@ export async function getScheduleForGroup(
         endsAt: getMoscowDateTime(date, record.endTime),
         originalStartsAt: record.originalStartsAt,
         originalEndsAt: record.originalEndsAt,
-        originalRoom: record.originalRoom,
+        originalRoom: record.originalRoom
+          ? cleanStudentFacingText(record.originalRoom)
+          : null,
         kind: record.kind,
         status: record.status,
-        room: record.room,
-        teacher: record.teacher,
-        changeNote: record.changeNote,
-        subject: record.subject.name,
+        room: cleanStudentFacingText(record.room),
+        teacher: cleanStudentFacingText(record.teacher),
+        changeNote: record.changeNote
+          ? cleanStudentFacingText(record.changeNote)
+          : null,
+        subject: cleanStudentFacingText(record.subject.name),
       });
     };
 

@@ -40,3 +40,20 @@ export const controlTypeLabels: Record<ControlType, string> = {
   COURSEWORK: "Курсовая работа",
   OTHER: "Другое",
 };
+
+const studentFacingGroupNames: Record<string, string> = {
+  "TEST-ACADEMIC-31A": "ИС-21",
+  "TEST-ACADEMIC-31B": "ИС-22",
+  "TEST-ACADEMIC-31": "ИС-20",
+};
+
+export function cleanStudentFacingText(value: string): string {
+  return value
+    .replace(/\[TEST SEED\][ \t]*/gi, "")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+}
+
+export function getStudentFacingGroupName(name: string): string {
+  return studentFacingGroupNames[name] ?? cleanStudentFacingText(name);
+}

@@ -3,6 +3,7 @@ import { CampusSection } from "@/components/campus-section";
 import { markAllNotificationsReadAction } from "@/app/(campus)/notifications/actions";
 import type { NotificationTargetType, NotificationType } from "@/generated/prisma/enums";
 import { notificationTypeLabels } from "@/lib/notification-workflow";
+import { cleanStudentFacingText } from "@/lib/campus-labels";
 import { getStudentNotifications } from "@/lib/notification-data";
 import { requireStudent } from "@/lib/student";
 import styles from "./notifications.module.css";
@@ -152,7 +153,7 @@ export default async function NotificationsPage({
                     key={notification.publicId}
                   >
                     <Link
-                      aria-label={`${notification.readAt === null ? "Новое уведомление. " : ""}${notification.title}`}
+                      aria-label={`${notification.readAt === null ? "Новое уведомление. " : ""}${cleanStudentFacingText(notification.title)}`}
                       className={styles.itemLink}
                       href={`/notifications/${notification.publicId}`}
                     >
@@ -171,7 +172,7 @@ export default async function NotificationsPage({
                           )}
                         </span>
                         <strong className={styles.itemTitle}>
-                          {notification.title}
+                          {cleanStudentFacingText(notification.title)}
                         </strong>
                         <span className={styles.context}>
                           {notificationDateFormatter.format(
@@ -200,14 +201,16 @@ export default async function NotificationsPage({
                     : "Уведомление"}
                 </p>
                 <h2 id="selected-notification-title">
-                  {selectedNotification.title}
+                  {cleanStudentFacingText(selectedNotification.title)}
                 </h2>
                 <time dateTime={selectedNotification.createdAt.toISOString()}>
                   {notificationDateFormatter.format(
                     selectedNotification.createdAt,
                   )}
                 </time>
-                <p className={styles.detailText}>{selectedNotification.text}</p>
+                <p className={styles.detailText}>
+                  {cleanStudentFacingText(selectedNotification.text)}
+                </p>
                 <Link
                   className={styles.primaryButton}
                   href={`/notifications/${selectedNotification.publicId}`}

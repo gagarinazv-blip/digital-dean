@@ -40,9 +40,9 @@
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
+  --space-5: 20px;
   --space-6: 24px;
   --space-8: 32px;
-  --space-12: 48px;
 
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -51,8 +51,8 @@
   --radius-pill: 999px;
 
   --size-touch: 44px;
-  --size-button-large: 48px;
-  --size-field: 56px;
+  --size-button-large: 44px;
+  --size-field: 44px;
   --size-header-desktop: 76px;
   --size-header-mobile: 78px;
   --size-bottom-nav: 72px;

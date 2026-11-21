@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   buildScheduleHref,
   calculateLessonLayout,
+  filterScheduleDayLessons,
   getMonthCalendarDays,
+  parseScheduleDay,
   parseScheduleView,
   shiftScheduleDate,
 } from "../src/lib/schedule-view-utils";
@@ -33,6 +35,105 @@ describe("schedule view helpers", () => {
     );
   });
 
+  it("parses a selected day only for week and month views", () => {
+    expect(parseScheduleDay("2026-11-16", "month")).toBe("2026-11-16");
+    expect(parseScheduleDay("2026-11-16", "week")).toBe("2026-11-16");
+    expect(parseScheduleDay("2026-02-30", "month")).toBeNull();
+    expect(parseScheduleDay(["2026-11-16"], "week")).toBeNull();
+    expect(parseScheduleDay("2026-11-16", "today")).toBeNull();
+  });
+
+  it("adds a day to the URL and removes it when the panel closes", () => {
+    const openHref = buildScheduleHref(
+      "month",
+      "2026-11-16",
+      { kind: "LECTURE", changed: true },
+      undefined,
+      "2026-11-16",
+    );
+    expect(new URL(openHref, "http://localhost").searchParams.get("day")).toBe(
+      "2026-11-16",
+    );
+    expect(new URL(openHref, "http://localhost").searchParams.get("view")).toBe(
+      "month",
+    );
+
+    const closedHref = buildScheduleHref(
+      "month",
+      "2026-11-16",
+      { kind: "LECTURE", changed: true },
+    );
+    expect(new URL(closedHref, "http://localhost").searchParams.has("day")).toBe(
+      false,
+    );
+    expect(closedHref).toContain("kind=LECTURE");
+    expect(closedHref).toContain("changed=1");
+  });
+
+  it("switches the open day across week boundaries without changing views", () => {
+    const nextDay = shiftScheduleDate("2026-11-22", 1, "day");
+    const href = buildScheduleHref(
+      "week",
+      nextDay,
+      { subject: "Компьютерные сети", q: "Иванов" },
+      undefined,
+      nextDay,
+    );
+    const params = new URL(href, "http://localhost").searchParams;
+
+    expect(params.get("view")).toBe("week");
+    expect(params.get("date")).toBe("2026-11-23");
+    expect(params.get("day")).toBe("2026-11-23");
+    expect(params.get("subject")).toBe("Компьютерные сети");
+    expect(params.get("q")).toBe("Иванов");
+  });
+
+  it("filters and sorts only the selected day's lessons", () => {
+    const lessons = [
+      {
+        id: "late",
+        dateKey: "2026-11-16",
+        startsAtIso: "2026-11-16T11:00:00.000Z",
+        subject: "Сети",
+        teacher: "Петров",
+        kind: "PRACTICE",
+        status: "PLANNED",
+      },
+      {
+        id: "early",
+        dateKey: "2026-11-16",
+        startsAtIso: "2026-11-16T08:00:00.000Z",
+        subject: "Сети",
+        teacher: "Иванов",
+        kind: "LECTURE",
+        status: "RESCHEDULED",
+      },
+      {
+        id: "other-day",
+        dateKey: "2026-11-17",
+        startsAtIso: "2026-11-17T08:00:00.000Z",
+        subject: "Сети",
+        teacher: "Иванов",
+        kind: "LECTURE",
+        status: "RESCHEDULED",
+      },
+    ];
+    const result = filterScheduleDayLessons("2026-11-16", lessons, {
+      kind: "LECTURE",
+      q: "иванов",
+      changed: true,
+    });
+
+    expect(result.lessons.map(({ id }) => id)).toEqual(["early"]);
+    expect(result.hiddenCount).toBe(1);
+  });
+
+  it("returns an explicit empty result for a day with no lessons", () => {
+    expect(
+      filterScheduleDayLessons("2026-11-16", [], {}),
+    ).toEqual({ lessons: [], hiddenCount: 0 });
+  });
+
   it("builds a Monday-first 42-day month grid across year boundaries", () => {
     const december = getMonthCalendarDays("2026-12-15");
     expect(december).toHaveLength(42);
@@ -42,6 +143,8 @@ describe("schedule view helpers", () => {
     const january = getMonthCalendarDays("2027-01-01");
     expect(january[0]).toBe("2026-12-28");
     expect(january[41]).toBe("2027-02-07");
+    expect(parseScheduleDay(january[0], "month")).toBe("2026-12-28");
+    expect(parseScheduleDay(january[41], "month")).toBe("2027-02-07");
   });
 
   it("shifts dates safely across month and year boundaries", () => {

@@ -1,6 +1,6 @@
 .page {
   min-width: 0;
-  padding: var(--space-6) 0 var(--space-12);
+  padding: var(--space-6) 0 var(--space-8);
 }
 
 .content {
@@ -118,7 +118,7 @@
 }
 
 .readOnly {
-  min-height: 28px;
+  min-height: 26px;
   display: inline-flex;
   align-items: center;
   padding: var(--space-1) var(--space-3);
@@ -126,6 +126,7 @@
   background: var(--color-blue-100);
   color: var(--color-blue-700);
   font-size: var(--font-size-caption);
+  line-height: 18px;
   white-space: nowrap;
 }
 

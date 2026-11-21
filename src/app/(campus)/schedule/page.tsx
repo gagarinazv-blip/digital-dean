@@ -10,13 +10,16 @@ import {
   getMoscowDateKey,
   getMoscowTimeMinutes,
 } from "@/lib/campus-time";
-import { scheduleKindLabels } from "@/lib/campus-labels";
+import {
+  getStudentFacingGroupName,
+  scheduleKindLabels,
+} from "@/lib/campus-labels";
 import {
   getNextScheduleLesson,
   getScheduleForGroup,
   type ScheduleLesson,
 } from "@/lib/schedule-data";
-import { parseScheduleView } from "@/lib/schedule-view-utils";
+import { parseScheduleDay, parseScheduleView } from "@/lib/schedule-view-utils";
 import { requireStudent } from "@/lib/student";
 import {
   ScheduleView,
@@ -106,17 +109,21 @@ async function ScheduleContent({
   const targetDate = targetLesson?.startsAt
     ? getMoscowDateKey(targetLesson.startsAt)
     : targetLesson?.date?.toISOString().slice(0, 10);
+  const view = parseScheduleView(getSingleParam(params.view));
+  const openDayKey = parseScheduleDay(params.day, view);
   const requestedDate = isDateKey(params.date) ? params.date : undefined;
   const selectedDate =
-    targetDate ?? requestedDate ?? getMoscowDateKey(getDemoNow());
-  const view = parseScheduleView(getSingleParam(params.view));
+    targetDate ??
+    requestedDate ??
+    openDayKey ??
+    getMoscowDateKey(getDemoNow());
   const data = await getScheduleForGroup(
     student.group.id,
     view === "month" ? "month" : "week",
     {
-      date: targetDate ?? requestedDate,
+      date: targetDate ?? requestedDate ?? openDayKey ?? undefined,
       now: getDemoNow(),
-      allowDateOverride: Boolean(targetLesson || requestedDate),
+      allowDateOverride: Boolean(targetLesson || requestedDate || openDayKey),
     },
   );
 
@@ -192,8 +199,8 @@ async function ScheduleContent({
   lastDate.setUTCDate(lastDate.getUTCDate() - 1);
   const description =
     view === "month"
-      ? `Группа ${student.group.name} · ${monthLabel}`
-      : `Группа ${student.group.name} · ${formatMoscowWeekdayDate(data.startDate)} — ${formatMoscowWeekdayDate(lastDate)}`;
+      ? `Группа ${getStudentFacingGroupName(student.group.name)} · ${monthLabel}`
+      : `Группа ${getStudentFacingGroupName(student.group.name)} · ${formatMoscowWeekdayDate(data.startDate)} — ${formatMoscowWeekdayDate(lastDate)}`;
 
   return (
     <CampusSection
@@ -202,7 +209,7 @@ async function ScheduleContent({
       description={description}
     >
       <ScheduleView
-        key={`${view}:${selectedDate}:${filters.kind}:${filters.subject}:${filters.q}:${filters.changed}`}
+        key={`${view}:${filters.kind}:${filters.subject}:${filters.q}:${filters.changed}`}
         days={days}
         todayKey={todayKey}
         view={view}
@@ -210,9 +217,10 @@ async function ScheduleContent({
         selectedDate={selectedDate}
         selectedLesson={selectedLesson}
         nextLesson={nextLesson ? toLessonView(nextLesson) : null}
-        groupName={student.group.name}
+        groupName={getStudentFacingGroupName(student.group.name)}
         filters={filters}
         isDemoTime={Boolean(DEMO_NOW)}
+        openDayKey={openDayKey}
       />
     </CampusSection>
   );

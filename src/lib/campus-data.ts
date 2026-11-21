@@ -6,6 +6,7 @@ import { countUnreadStudentNotifications } from "@/lib/notification-data";
 import { getPrisma } from "@/lib/prisma";
 import { requireStudent } from "@/lib/student";
 import { getMoscowDateKey, getMoscowWeek } from "@/lib/campus-time";
+import { cleanStudentFacingText } from "@/lib/campus-labels";
 import {
   getNextScheduleLesson,
   getScheduleForGroup,
@@ -76,6 +77,8 @@ export async function getCampusTodayData(now = getDemoNow()) {
 
   const deadlines = getNearestDeadlines(deadlineRecords, 5).map((deadline) => ({
     ...deadline,
+    subject: cleanStudentFacingText(deadline.subject),
+    title: cleanStudentFacingText(deadline.title),
     countdown: getDeadlineCountdown(deadline.dueAt, now),
   }));
   const schedule = scheduleData.lessons.map((item) => ({
@@ -112,8 +115,8 @@ export async function getCampusTodayData(now = getDemoNow()) {
     ...announcements.map((announcement) => ({
       id: `announcement-${announcement.id}`,
       kind: "Объявление" as const,
-      title: announcement.title,
-      text: announcement.text,
+      title: cleanStudentFacingText(announcement.title),
+      text: cleanStudentFacingText(announcement.text),
       date: announcement.date,
     })),
   ]

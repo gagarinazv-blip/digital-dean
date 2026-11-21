@@ -3,6 +3,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import type { RequestStatus } from "@/generated/prisma/enums";
 import { getCampusTodayData } from "@/lib/campus-data";
+import { getStudentFacingGroupName } from "@/lib/campus-labels";
 import {
   formatCampusTime,
   formatMoscowDate,
@@ -104,7 +105,7 @@ async function CampusToday() {
           <div className={styles.welcomeMeta}>
             <p className={styles.eyebrow}>
               {welcomeDateFormatter.format(todayDate)} · группа{" "}
-              {data.student.group.name}
+              {getStudentFacingGroupName(data.student.group.name)}
             </p>
             <Link className={styles.notificationLink} href="/notifications">
               {data.unreadNotificationCount > 0 && (

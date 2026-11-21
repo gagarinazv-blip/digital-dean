@@ -13,6 +13,10 @@ import {
 import { validateRequestForm } from "@/lib/request-validation";
 import type { RequestActionState } from "@/lib/request-action-state";
 import {
+  cleanStudentFacingText,
+  getStudentFacingGroupName,
+} from "@/lib/campus-labels";
+import {
   cancelRequestAction,
   createRequestAction,
   replyToRequestAction,
@@ -160,7 +164,11 @@ export function NewRequestForm({
           {profileEntries.map((entry) => (
             <div key={entry.label}>
               <dt>{entry.label}</dt>
-              <dd>{entry.value}</dd>
+              <dd>
+                {entry.label === "Группа"
+                  ? getStudentFacingGroupName(entry.value)
+                  : cleanStudentFacingText(entry.value)}
+              </dd>
             </div>
           ))}
         </dl>

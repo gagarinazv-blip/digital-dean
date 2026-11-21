@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { buildNotificationTargetHref } from "@/lib/notification-workflow";
 import { notificationTypeLabels } from "@/lib/notification-workflow";
+import { cleanStudentFacingText } from "@/lib/campus-labels";
 import type {
   NotificationTargetType,
   NotificationType,
@@ -304,7 +305,7 @@ export function NotificationBell({
                               ? notificationTypeLabels[notification.type]
                               : "Уведомление"}
                           </span>
-                          <strong>{notification.title}</strong>
+                          <strong>{cleanStudentFacingText(notification.title)}</strong>
                           <time dateTime={notification.createdAt}>
                             {dateFormatter.format(
                               new Date(notification.createdAt),

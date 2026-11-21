@@ -8,6 +8,20 @@ export type ScheduleFilterState = {
   changed?: boolean;
 };
 
+export type ScheduleDayFilterLesson = {
+  dateKey: string;
+  subject: string;
+  teacher: string;
+  kind: string;
+  status: string;
+  startsAtIso: string;
+};
+
+export type FilteredScheduleDay<T> = {
+  lessons: T[];
+  hiddenCount: number;
+};
+
 export type ScheduleLayoutInput = {
   id: string;
   startMinutes: number;
@@ -25,6 +39,22 @@ export type ScheduleLayoutEntry = {
 export function parseScheduleView(value: unknown): ScheduleViewMode {
   if (value === "week" || value === "month") return value;
   return "today";
+}
+
+export function parseScheduleDay(
+  value: unknown,
+  view: ScheduleViewMode,
+): string | null {
+  if ((view !== "week" && view !== "month") || typeof value !== "string") {
+    return null;
+  }
+  try {
+    parseDateKey(value);
+    return value;
+  } catch (error) {
+    if (error instanceof RangeError) return null;
+    throw error;
+  }
 }
 
 function parseDateKey(dateKey: string): Date {
@@ -95,6 +125,7 @@ export function buildScheduleHref(
   date: string,
   filters: ScheduleFilterState = {},
   lessonId?: string,
+  day?: string,
 ): string {
   const params = new URLSearchParams({ view, date });
   if (filters.kind) params.set("kind", filters.kind);
@@ -102,7 +133,41 @@ export function buildScheduleHref(
   if (filters.q) params.set("q", filters.q);
   if (filters.changed) params.set("changed", "1");
   if (lessonId) params.set("lesson", lessonId);
+  if (day) params.set("day", day);
   return `/schedule?${params.toString()}`;
+}
+
+export function filterScheduleDayLessons<T extends ScheduleDayFilterLesson>(
+  dateKey: string,
+  lessons: readonly T[],
+  filters: ScheduleFilterState,
+): FilteredScheduleDay<T> {
+  const dayLessons = lessons
+    .filter((lesson) => lesson.dateKey === dateKey)
+    .slice()
+    .sort((first, second) =>
+      first.startsAtIso.localeCompare(second.startsAtIso),
+    );
+  const search = filters.q?.trim().toLocaleLowerCase("ru") ?? "";
+  const visibleLessons = dayLessons.filter((lesson) => {
+    if (filters.kind && lesson.kind !== filters.kind) return false;
+    if (filters.subject && lesson.subject !== filters.subject) return false;
+    if (filters.changed && lesson.status === "PLANNED") return false;
+    if (
+      search &&
+      !`${lesson.subject} ${lesson.teacher}`
+        .toLocaleLowerCase("ru")
+        .includes(search)
+    ) {
+      return false;
+    }
+    return true;
+  });
+
+  return {
+    lessons: visibleLessons,
+    hiddenCount: dayLessons.length - visibleLessons.length,
+  };
 }
 
 export function calculateLessonLayout(
