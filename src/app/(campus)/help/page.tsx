@@ -1,5 +1,6 @@
+import { Suspense } from "react";
 import Link from "next/link";
-import { CampusSection } from "@/components/campus-section";
+import { CampusLoading, CampusSection } from "@/components/campus-section";
 import type { RequestStatus } from "@/generated/prisma/enums";
 import { requestStatusLabels, requestTypeLabels } from "@/lib/campus-labels";
 import {
@@ -13,8 +14,6 @@ import {
 } from "@/lib/student-request-data";
 import { RequestSearchForm } from "./request-search-form";
 import styles from "./help.module.css";
-
-export const instant = false;
 
 const requestDateFormatter = new Intl.DateTimeFormat("ru-RU", {
   dateStyle: "medium",
@@ -688,5 +687,9 @@ export async function HelpWorkspace({
 export default function HelpPage({
   searchParams,
 }: Pick<HelpWorkspaceProps, "searchParams">) {
-  return HelpWorkspace({ searchParams });
+  return (
+    <Suspense fallback={<CampusLoading label="справку и поддержку" />}>
+      <HelpWorkspace searchParams={searchParams} />
+    </Suspense>
+  );
 }

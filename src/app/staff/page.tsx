@@ -1,12 +1,12 @@
+import { Suspense } from "react";
 import Link from "next/link";
+import { CampusLoading } from "@/components/campus-section";
 import { requestStatusLabels, requestTypeLabels } from "@/lib/campus-labels";
 import { getRequestCatalogTitle } from "@/lib/request-catalog";
 import { getStaffRequestList } from "@/lib/staff-data";
 import styles from "./staff.module.css";
 import workflowStyles from "@/app/request-workflow.module.css";
 import type { RequestStatus } from "@/generated/prisma/enums";
-
-export const instant = false;
 
 const requestDateFormatter = new Intl.DateTimeFormat("ru-RU", {
   dateStyle: "medium",
@@ -35,15 +35,25 @@ const requestStatusClasses: Record<RequestStatus, string> = {
   CANCELLED: workflowStyles.statusCancelled,
 };
 
-export default async function StaffHomePage({
-  searchParams,
-}: {
+type StaffHomePageProps = {
   searchParams: Promise<{
     status?: string | string[];
     q?: string | string[];
     date?: string | string[];
   }>;
-}) {
+};
+
+export default function StaffHomePage({
+  searchParams,
+}: StaffHomePageProps) {
+  return (
+    <Suspense fallback={<CampusLoading label="очередь заявок" />}>
+      <StaffHomeContent searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+async function StaffHomeContent({ searchParams }: StaffHomePageProps) {
   const { status: rawStatus, q: rawSearch, date: rawDateFilter } =
     await searchParams;
   const { requests, counts, selectedStatus, searchTerm, dateFilter } =

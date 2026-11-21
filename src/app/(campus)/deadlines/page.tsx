@@ -1,18 +1,25 @@
-import { CampusSection } from "@/components/campus-section";
+import { Suspense } from "react";
+import { CampusLoading, CampusSection } from "@/components/campus-section";
 import { getDeadlineCountdown } from "@/lib/deadline-utils";
 import { getStudentDeadlines } from "@/lib/deadline-data";
 import { getDemoNow } from "@/lib/demo-date";
 import { requireStudent } from "@/lib/student";
 import styles from "./deadlines.module.css";
 
-export const instant = false;
-
 const deadlineDateFormatter = new Intl.DateTimeFormat("ru-RU", {
   dateStyle: "long",
   timeZone: "Europe/Moscow",
 });
 
-export default async function DeadlinesPage() {
+export default function DeadlinesPage() {
+  return (
+    <Suspense fallback={<CampusLoading label="задания и сроки" />}>
+      <DeadlinesContent />
+    </Suspense>
+  );
+}
+
+async function DeadlinesContent() {
   const student = await requireStudent();
   const now = getDemoNow();
   const deadlines = await getStudentDeadlines(student.id);

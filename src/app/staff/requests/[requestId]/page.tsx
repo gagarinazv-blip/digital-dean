@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import Link from "next/link";
+import { CampusLoading } from "@/components/campus-section";
 import { CampusSection } from "@/components/campus-section";
 import { RequestConversation } from "@/components/request-conversation";
 import { requestStatusLabels, requestTypeLabels } from "@/lib/campus-labels";
@@ -22,8 +24,6 @@ import {
 import workflowStyles from "@/app/request-workflow.module.css";
 import styles from "./request-detail.module.css";
 import type { RequestStatus } from "@/generated/prisma/enums";
-
-export const instant = false;
 
 const requestDateFormatter = new Intl.DateTimeFormat("ru-RU", {
   dateStyle: "long",
@@ -102,11 +102,21 @@ function getReviewText(status: RequestStatus): string {
   }
 }
 
-export default async function StaffRequestPage({
-  params,
-}: {
+type StaffRequestPageProps = {
   params: Promise<{ requestId: string }>;
-}) {
+};
+
+export default function StaffRequestPage({
+  params,
+}: StaffRequestPageProps) {
+  return (
+    <Suspense fallback={<CampusLoading label="заявку" />}>
+      <StaffRequestContent params={params} />
+    </Suspense>
+  );
+}
+
+async function StaffRequestContent({ params }: StaffRequestPageProps) {
   const { requestId } = await params;
   const { request, staff, isManagerAccount, staffMembers } =
     await getStaffRequestDetails(requestId);

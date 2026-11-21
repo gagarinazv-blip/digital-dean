@@ -1,10 +1,20 @@
+import { Suspense } from "react";
 import Link from "next/link";
+import { CampusLoading } from "@/components/campus-section";
 import { getPrisma } from "@/lib/prisma";
 import { requireStaffContext } from "@/lib/staff";
 import { CreateStudentForm } from "../student-forms";
 import styles from "../students.module.css";
 
-export default async function NewStaffStudentPage() {
+export default function NewStaffStudentPage() {
+  return (
+    <Suspense fallback={<CampusLoading label="форму нового студента" />}>
+      <NewStaffStudentContent />
+    </Suspense>
+  );
+}
+
+async function NewStaffStudentContent() {
   await requireStaffContext();
   const groups = await getPrisma().studentGroup.findMany({
     orderBy: { name: "asc" },

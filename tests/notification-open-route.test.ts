@@ -34,7 +34,7 @@ vi.mock("@/lib/notification-presentation", () => ({
   presentStudentNotifications: presentStudentNotificationsMock,
 }));
 
-import OpenNotificationPage from "../src/app/(campus)/notifications/[notificationId]/page";
+import { OpenNotificationContent } from "../src/app/(campus)/notifications/[notificationId]/open-notification";
 
 const notificationId = "b08f54cf-99ce-4a56-a780-8e22ce5ba0a1";
 
@@ -69,7 +69,7 @@ beforeEach(() => {
 describe("open notification route", () => {
   it("marks the owned notification read before opening its schedule context", async () => {
     await expect(
-      OpenNotificationPage({
+      OpenNotificationContent({
         params: Promise.resolve({ notificationId }),
       }),
     ).rejects.toThrow(
@@ -110,7 +110,7 @@ describe("open notification route", () => {
       ]);
 
       await expect(
-        OpenNotificationPage({
+        OpenNotificationContent({
           params: Promise.resolve({ notificationId }),
         }),
       ).rejects.toThrow(`Redirect ${destination}`);
@@ -127,7 +127,7 @@ describe("open notification route", () => {
     ]);
 
     await expect(
-      OpenNotificationPage({
+      OpenNotificationContent({
         params: Promise.resolve({ notificationId }),
       }),
     ).rejects.toThrow(`Redirect /notifications?open=${notificationId}`);
@@ -149,7 +149,7 @@ describe("open notification route", () => {
     ]);
 
     await expect(
-      OpenNotificationPage({
+      OpenNotificationContent({
         params: Promise.resolve({ notificationId }),
       }),
     ).rejects.toThrow(`Redirect /notifications?open=${notificationId}`);
@@ -159,7 +159,7 @@ describe("open notification route", () => {
     getStudentNotificationMock.mockResolvedValue(null);
 
     await expect(
-      OpenNotificationPage({
+      OpenNotificationContent({
         params: Promise.resolve({ notificationId }),
       }),
     ).rejects.toThrow("Not found");

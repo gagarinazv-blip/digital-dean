@@ -3,7 +3,6 @@ import type { StudyForm } from "@/generated/prisma/enums";
 import { getPrisma } from "@/lib/prisma";
 import { requireStudentContext } from "@/lib/student";
 import { CorporateMailCard } from "./corporate-mail-card";
-import { requireStudent } from "@/lib/student";
 import { getStudentFacingGroupName } from "@/lib/campus-labels";
 import styles from "./profile.module.css";
 

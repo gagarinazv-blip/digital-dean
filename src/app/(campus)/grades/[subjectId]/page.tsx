@@ -1,6 +1,8 @@
+import { Suspense } from "react";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { CampusLoading } from "@/components/campus-section";
 import type { AcademicResultStatus } from "@/generated/prisma/enums";
 import { controlTypeLabels } from "@/lib/campus-labels";
 import { formatCampusDate, formatCampusTime } from "@/lib/campus-time";
@@ -25,7 +27,15 @@ function formatGradePoints(value: number) {
   }).format(value);
 }
 
-export default async function SubjectPage({ params }: SubjectPageProps) {
+export default function SubjectPage({ params }: SubjectPageProps) {
+  return (
+    <Suspense fallback={<CampusLoading label="успеваемость" />}>
+      <SubjectContent params={params} />
+    </Suspense>
+  );
+}
+
+async function SubjectContent({ params }: SubjectPageProps) {
   await connection();
   const { subjectId } = await params;
   const { dataset, login } = await getAcademicRecords();

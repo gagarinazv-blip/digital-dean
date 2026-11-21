@@ -1,5 +1,6 @@
+import { Suspense } from "react";
 import Link from "next/link";
-import { CampusSection } from "@/components/campus-section";
+import { CampusLoading, CampusSection } from "@/components/campus-section";
 import { RequestConversation } from "@/components/request-conversation";
 import {
   StudentCancelForm,
@@ -21,8 +22,6 @@ import { getStudentRequest } from "@/lib/student-request-data";
 import type { RequestStatus, RequestType } from "@/generated/prisma/enums";
 import workflowStyles from "@/app/request-workflow.module.css";
 import styles from "./request-detail.module.css";
-
-export const instant = false;
 
 const requestDateFormatter = new Intl.DateTimeFormat("ru-RU", {
   dateStyle: "long",
@@ -140,13 +139,26 @@ function getStatusPresentation(
   }
 }
 
-export default async function StudentRequestPage({
-  params,
-  searchParams,
-}: {
+type StudentRequestPageProps = {
   params: Promise<{ requestId: string }>;
   searchParams: Promise<{ created?: string; cancelled?: string }>;
-}) {
+};
+
+export default function StudentRequestPage({
+  params,
+  searchParams,
+}: StudentRequestPageProps) {
+  return (
+    <Suspense fallback={<CampusLoading label="заявку" />}>
+      <StudentRequestContent params={params} searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+async function StudentRequestContent({
+  params,
+  searchParams,
+}: StudentRequestPageProps) {
   const [{ requestId }, query] = await Promise.all([params, searchParams]);
   const request = await getStudentRequest(requestId);
   const serviceTitle = getRequestCatalogTitle(

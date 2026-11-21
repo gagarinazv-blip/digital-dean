@@ -1,43 +1,17 @@
-import "server-only";
+import { Suspense } from "react";
+import { CampusLoading } from "@/components/campus-section";
+import { OpenNotificationContent } from "./open-notification";
 
-import { notFound, redirect } from "next/navigation";
-import { isNotificationPublicId } from "@/lib/notification-workflow";
-import {
-  getStudentNotification,
-  markStudentNotificationRead,
-} from "@/lib/notification-data";
-import { presentStudentNotifications } from "@/lib/notification-presentation";
-import { requireStudentContext } from "@/lib/student";
-
-export const instant = false;
-
-export default async function OpenNotificationPage({
-  params,
-}: {
+type OpenNotificationPageProps = {
   params: Promise<{ notificationId: string }>;
-}) {
-  const [{ notificationId }, { student }] = await Promise.all([
-    params,
-    requireStudentContext(),
-  ]);
-  if (!isNotificationPublicId(notificationId)) notFound();
+};
 
-  const notification = await getStudentNotification(
-    notificationId,
-    student.id,
-  );
-  if (!notification?.type) notFound();
-  const [presented] = await presentStudentNotifications(
-    [notification],
-    student.id,
-    student.group.id,
-  );
-  if (!presented) notFound();
-
-  await markStudentNotificationRead(notification.publicId, student.id);
-  redirect(
-    presented.targetAvailable === false || !presented.href
-      ? `/notifications?open=${encodeURIComponent(notification.publicId)}`
-      : presented.href,
+export default function OpenNotificationPage({
+  params,
+}: OpenNotificationPageProps) {
+  return (
+    <Suspense fallback={<CampusLoading label="уведомление" />}>
+      <OpenNotificationContent params={params} />
+    </Suspense>
   );
 }

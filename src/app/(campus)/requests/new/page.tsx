@@ -1,7 +1,8 @@
+import { Suspense } from "react";
 import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CampusSection } from "@/components/campus-section";
+import { CampusLoading, CampusSection } from "@/components/campus-section";
 import { NewRequestForm } from "@/app/(campus)/requests/request-forms";
 import { requireStudentContext } from "@/lib/student";
 import {
@@ -16,16 +17,24 @@ import { getStudentRequest } from "@/lib/student-request-data";
 import workflowStyles from "@/app/request-workflow.module.css";
 import styles from "./request-page.module.css";
 
-export const instant = false;
-
-export default async function NewRequestPage({
-  searchParams,
-}: {
+type NewRequestPageProps = {
   searchParams: Promise<{
     copy?: string | string[];
     service?: string | string[];
   }>;
-}) {
+};
+
+export default function NewRequestPage({
+  searchParams,
+}: NewRequestPageProps) {
+  return (
+    <Suspense fallback={<CampusLoading label="новую заявку" />}>
+      <NewRequestContent searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+async function NewRequestContent({ searchParams }: NewRequestPageProps) {
   const { student } = await requireStudentContext();
   const query = await searchParams;
   const copyPublicId = typeof query.copy === "string" ? query.copy : null;
