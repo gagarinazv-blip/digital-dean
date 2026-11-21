@@ -1,5 +1,4 @@
 import "dotenv/config";
-import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
@@ -12,80 +11,20 @@ import { getDemoNotificationState } from "./notification-seed-data";
 import { getDemoNow } from "../src/lib/demo-date";
 import { encryptCorporateMailPassword } from "../src/lib/corporate-mail-credentials";
 import { getCorporateMailDomain } from "../src/lib/corporate-mail";
+import { validateGradebookSeedData } from "../src/lib/gradebook-data";
+import {
+  demoAcademicStudentCredentials,
+  demoStaffAccounts,
+  testSeedStudentAccounts,
+  type DemoStudentSeedAccount,
+} from "./demo-account-data";
 
 const alphaCorporateMailPassword = "Demo-Mail-Alpha-Only-2026!";
-import { validateGradebookSeedData } from "../src/lib/gradebook-data";
 
-type SeedAccount = {
-  login: string;
-  password: string | null;
-  phone?: string;
+type SeedAccount = Omit<DemoStudentSeedAccount, "passwordVariable"> & {
+  password: string;
   accountStatus?: "INVITED" | "ACTIVE";
-  fullName: string;
-  faculty: string;
-  direction: string;
-  groupName: string;
-  course: number;
-  recordBookNumber?: string;
-  studyForm?: "FULL_TIME" | "PART_TIME" | "CORRESPONDENCE";
 };
-
-const originalAccounts: SeedAccount[] = [
-  {
-    login: "test.seed.01",
-    password: "TestOnly-01!",
-    fullName: "Аэлитта Ветрова-Даль",
-    faculty: "Факультет вымышленных исследований",
-    direction: "Межмировые коммуникации",
-    groupName: "TEST-SEED-01",
-    course: 1,
-  },
-  {
-    login: "test.seed.02",
-    password: "TestOnly-02!",
-    fullName: "Яромир Листогоров",
-    faculty: "Факультет вымышленных исследований",
-    direction: "Межмировые коммуникации",
-    groupName: "TEST-SEED-01",
-    course: 1,
-  },
-  {
-    login: "test.seed.03",
-    password: "TestOnly-03!",
-    fullName: "Мирелла Камышова",
-    faculty: "Факультет вымышленных исследований",
-    direction: "Межмировые коммуникации",
-    groupName: "TEST-SEED-02",
-    course: 2,
-  },
-  {
-    login: "test.seed.04",
-    password: "TestOnly-04!",
-    fullName: "Терентий Облаков",
-    faculty: "Факультет вымышленных исследований",
-    direction: "Межмировые коммуникации",
-    groupName: "TEST-SEED-02",
-    course: 2,
-  },
-  {
-    login: "test.seed.05",
-    password: "TestOnly-05!",
-    fullName: "Лиора Звездолётова",
-    faculty: "Факультет вымышленных исследований",
-    direction: "Межмировые коммуникации",
-    groupName: "TEST-SEED-03",
-    course: 3,
-  },
-  {
-    login: "test.seed.06",
-    password: "TestOnly-06!",
-    fullName: "Феликс Кленоветер",
-    faculty: "Факультет вымышленных исследований",
-    direction: "Межмировые коммуникации",
-    groupName: "TEST-SEED-03",
-    course: 3,
-  },
-];
 
 const studyFormValues = {
   очная: "FULL_TIME",
@@ -112,46 +51,10 @@ function academicAccountData(login: string) {
   };
 }
 
-const environmentAccounts = [
-  {
-    login: "student.alpha",
-    passwordVariable: "SEED_ALPHA_PASSWORD",
-    phone: "+79000000001",
-    accountStatus: "ACTIVE",
-    ...academicAccountData("student.alpha"),
-  },
-  {
-    login: "student.beta",
-    passwordVariable: "SEED_BETA_PASSWORD",
-    phone: "+79000000002",
-    accountStatus: "ACTIVE",
-    ...academicAccountData("student.beta"),
-  },
-] as const;
-
-const staffAccounts = [
-  {
-    login: "staff.demo",
-    fullName: "Мирослава Лунная",
-    position: "специалист учебного отдела",
-    department: "Учебный отдел",
-    isSupervisor: false,
-  },
-  {
-    login: "staff.other",
-    fullName: "Тихон Северозвёздный",
-    position: "специалист по работе со студентами",
-    department: "Отдел по работе со студентами",
-    isSupervisor: false,
-  },
-  {
-    login: "staff.manager",
-    fullName: "Лада Меридиан",
-    position: "старший специалист учебного отдела",
-    department: "Учебный отдел",
-    isSupervisor: true,
-  },
-] as const;
+const environmentAccounts = demoAcademicStudentCredentials.map((account) => ({
+  ...account,
+  ...academicAccountData(account.login),
+}));
 
 const subjects = [
   {
@@ -302,11 +205,19 @@ async function main() {
   }
 
   const accounts: SeedAccount[] = [
-    ...originalAccounts,
-    ...environmentAccounts.map(({ passwordVariable, ...account }) => {
-      if (passwordVariable === null) {
-        return { ...account, password: null };
-      }
+    ...testSeedStudentAccounts,
+    ...environmentAccounts,
+  ].map(({ passwordVariable, ...account }) => {
+    const password = process.env[passwordVariable];
+    if (!password) {
+      throw new Error(
+        `${passwordVariable} must be set in .env to seed ${account.login}.`,
+      );
+    }
+    return { ...account, password };
+  });
+  const staffAccounts = demoStaffAccounts.map(
+    ({ passwordVariable, ...account }) => {
       const password = process.env[passwordVariable];
       if (!password) {
         throw new Error(
@@ -314,14 +225,8 @@ async function main() {
         );
       }
       return { ...account, password };
-    }),
-  ];
-  const staffDemoPassword = process.env.SEED_STAFF_PASSWORD;
-  if (!staffDemoPassword) {
-    throw new Error(
-      "SEED_STAFF_PASSWORD must be set in .env to seed staff.demo.",
-    );
-  }
+    },
+  );
   const managedLogins = [
     ...accounts.map((account) => account.login),
     ...staffAccounts.map((account) => account.login),
@@ -353,16 +258,14 @@ async function main() {
   });
 
   try {
-    const [passwordHashes, staffDemoPasswordHash, staffOtherPasswordHash] =
-      await Promise.all([
-        Promise.all(
-          accounts.map((account) =>
-            account.password ? bcrypt.hash(account.password, 12) : null,
-          ),
-        ),
-        bcrypt.hash(staffDemoPassword, 12),
-        bcrypt.hash(randomBytes(32).toString("hex"), 12),
-      ]);
+    const [passwordHashes, staffPasswordHashes] = await Promise.all([
+      Promise.all(
+        accounts.map((account) => bcrypt.hash(account.password, 12)),
+      ),
+      Promise.all(
+        staffAccounts.map((account) => bcrypt.hash(account.password, 12)),
+      ),
+    ]);
 
     await prisma.$transaction(async (tx) => {
       const users = await tx.user.findMany({
@@ -633,20 +536,18 @@ async function main() {
 
       const staffProfileIds = new Map<string, number>();
       const staffUserIds = new Map<string, number>();
-      for (const account of staffAccounts) {
+      for (const [index, account] of staffAccounts.entries()) {
         const user = await tx.user.create({
           data: {
             login: account.login,
-            passwordHash:
-              account.login === "staff.other"
-                ? staffOtherPasswordHash
-                : staffDemoPasswordHash,
+            passwordHash: staffPasswordHashes[index],
             role: "STAFF",
             staffProfile: {
               create: {
                 fullName: account.fullName,
                 position: account.position,
                 department: account.department,
+                phone: account.phone,
                 isSupervisor: account.isSupervisor,
               },
             },

@@ -28,6 +28,9 @@ type StudentLoginStep = "password" | "request-code" | "verify-code";
 
 function formatPhoneInput(value: string): string {
   const trimmed = value.trim();
+  if (/[a-zа-я]/i.test(trimmed)) {
+    return value;
+  }
   const digits = trimmed.replace(/\D/g, "");
   if (trimmed.startsWith("+") && !digits.startsWith("7")) {
     return `+${digits.slice(0, 15)}`;
@@ -59,12 +62,14 @@ function formatPhoneInput(value: string): string {
 function PhoneField({
   describedBy,
   error,
+  errorMessage,
   id,
   onChange,
   value,
 }: {
   describedBy?: string;
   error: boolean;
+  errorMessage?: string;
   id: string;
   onChange: (value: string) => void;
   value: string;
@@ -73,6 +78,10 @@ function PhoneField({
 
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
     const rawValue = event.currentTarget.value;
+    if (/[a-zа-я]/i.test(rawValue)) {
+      onChange(rawValue);
+      return;
+    }
     const selection = event.currentTarget.selectionStart ?? rawValue.length;
     const digitsBeforeCaret = rawValue.slice(0, selection).replace(/\D/g, "")
       .length;
@@ -104,20 +113,26 @@ function PhoneField({
   }
 
   return (
-    <input
-      aria-describedby={describedBy}
-      aria-invalid={error || undefined}
-      autoComplete="tel"
-      id={id}
-      inputMode="tel"
-      maxLength={24}
-      onChange={handleChange}
-      placeholder="+7 (900) 000-00-01"
-      ref={inputRef}
-      required
-      type="tel"
-      value={value}
-    />
+    <>
+      <input
+        aria-describedby={describedBy}
+        aria-invalid={error || undefined}
+        autoComplete="username"
+        id={id}
+        maxLength={24}
+        onChange={handleChange}
+        placeholder="+7 (900) 000-00-01"
+        ref={inputRef}
+        required
+        type="text"
+        value={value}
+      />
+      {errorMessage && (
+        <span className={styles.fieldError} id={describedBy} role="alert">
+          {errorMessage}
+        </span>
+      )}
+    </>
   );
 }
 
@@ -146,17 +161,37 @@ function StaffCredentialsForm() {
     <form action={formAction} aria-busy={pending} className={styles.form}>
       <input name="role" type="hidden" value="staff" />
       <div className={styles.field}>
-        <label htmlFor="login-staff-username">Служебный логин</label>
+        <label htmlFor="login-staff-username">
+          Телефон или служебный логин
+        </label>
         <input
-          aria-describedby={state.error ? "login-staff-error" : undefined}
-          aria-invalid={state.error ? true : undefined}
-          autoCapitalize="none"
+          aria-describedby={
+            state.phoneError
+              ? "login-staff-phone-error"
+              : state.error
+                ? "login-staff-error"
+                : undefined
+          }
+          aria-invalid={state.phoneError ? true : undefined}
           autoComplete="username"
           id="login-staff-username"
           maxLength={128}
           name="login"
+          placeholder="+7 (900) 000-00-00 или staff.demo"
           required
         />
+        {state.phoneError && (
+          <span
+            className={styles.fieldError}
+            id="login-staff-phone-error"
+            role="alert"
+          >
+            {state.phoneError}
+          </span>
+        )}
+        <p className={styles.fieldHint}>
+          Для старых аккаунтов по-прежнему подходит служебный логин.
+        </p>
       </div>
       <div className={styles.field}>
         <label htmlFor="login-staff-password">Пароль сотрудника</label>
@@ -195,14 +230,22 @@ function StudentPasswordLogin({
   return (
     <form action={formAction} aria-busy={pending} className={styles.form}>
       <div className={styles.field}>
-        <label htmlFor="login-student-phone">Номер телефона</label>
+        <label htmlFor="login-student-phone">
+          Телефон или прежний логин
+        </label>
         <PhoneField
-          describedBy={state.error ? "login-student-password-error" : undefined}
-          error={Boolean(state.error)}
+          describedBy={
+            state.phoneError ? "login-student-phone-error" : undefined
+          }
+          error={Boolean(state.phoneError)}
+          errorMessage={state.phoneError}
           id="login-student-phone"
           onChange={onPhoneChange}
           value={phone}
         />
+        <p className={styles.fieldHint}>
+          Аккаунты без привязанного телефона могут войти по прежнему логину.
+        </p>
       </div>
       <div className={styles.field}>
         <label htmlFor="login-student-password">Пароль студента</label>

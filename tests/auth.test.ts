@@ -22,6 +22,7 @@ import {
   getCurrentUser,
   getSessionPrincipalForToken,
   loginUser,
+  loginStaffWithPhone,
   loginStudentWithPhone,
   TooManyLoginAttemptsError,
   verifyPassword,
@@ -370,6 +371,50 @@ describe("login", () => {
       loginStudentWithPhone("79000000001", "correct-demo-password"),
     ).resolves.toBeNull();
     expect(userFindFirst).not.toHaveBeenCalled();
+  });
+
+  it("authenticates staff by phone", async () => {
+    const staffUser = {
+      ...authenticatedUser,
+      login: "staff.demo",
+      role: "STAFF" as const,
+      student: null,
+    };
+    const passwordHash = await bcrypt.hash("correct-demo-password", 4);
+    userFindFirst.mockResolvedValue({
+      ...staffUser,
+      passwordHash,
+    });
+
+    await expect(
+      loginStaffWithPhone("+79000002001", "correct-demo-password"),
+    ).resolves.toEqual(staffUser);
+    expect(userFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          role: "STAFF",
+          staffProfile: { is: { phone: "+79000002001" } },
+        },
+      }),
+    );
+    expect(sessionCreate).toHaveBeenCalledOnce();
+  });
+
+  it("uses the same credential result for an unknown phone and a wrong password", async () => {
+    const passwordHash = await bcrypt.hash("correct-demo-password", 4);
+    userFindFirst.mockResolvedValue({
+      ...authenticatedUser,
+      passwordHash,
+    });
+
+    await expect(
+      loginStudentWithPhone("+79000000001", "wrong-demo-password"),
+    ).resolves.toBeNull();
+    userFindFirst.mockResolvedValue(null);
+    await expect(
+      loginStudentWithPhone("+79000000009", "wrong-demo-password"),
+    ).resolves.toBeNull();
+    expect(sessionCreate).not.toHaveBeenCalled();
   });
 
   it("resets the password and invalidates all existing sessions", async () => {

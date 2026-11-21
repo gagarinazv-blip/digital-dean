@@ -208,6 +208,7 @@ model StaffProfile {
   fullName         String
   position         String
   department       String
+  phone            String?   @unique
   isSupervisor     Boolean   @default(false)
   user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   assignedRequests Request[] @relation("AssignedStaffRequests")

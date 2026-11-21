@@ -382,9 +382,10 @@ export async function loginUser(
   return user;
 }
 
-export async function loginStudentWithPhone(
+async function loginWithPhone(
   phone: string,
   passwordInput: string,
+  role: AuthenticatedUser["role"],
 ): Promise<AuthenticatedUser | null> {
   if (!/^\+[1-9]\d{7,14}$/.test(phone)) {
     return null;
@@ -401,13 +402,15 @@ export async function loginStudentWithPhone(
     throw new TooManyLoginAttemptsError();
   }
 
+  const where =
+    role === "STUDENT"
+      ? {
+          role,
+          student: { is: { phone, accountStatus: "ACTIVE" as const } },
+        }
+      : { role, staffProfile: { is: { phone } } };
   const user = await getPrisma().user.findFirst({
-    where: {
-      role: "STUDENT",
-      student: {
-        is: { phone, accountStatus: "ACTIVE" },
-      },
-    },
+    where,
     select: {
       ...authenticatedUserSelect,
       passwordHash: true,
@@ -428,6 +431,20 @@ export async function loginStudentWithPhone(
     role: user.role,
     student: user.student,
   };
+}
+
+export async function loginStudentWithPhone(
+  phone: string,
+  passwordInput: string,
+): Promise<AuthenticatedUser | null> {
+  return loginWithPhone(phone, passwordInput, "STUDENT");
+}
+
+export async function loginStaffWithPhone(
+  phone: string,
+  passwordInput: string,
+): Promise<AuthenticatedUser | null> {
+  return loginWithPhone(phone, passwordInput, "STAFF");
 }
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {

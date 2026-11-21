@@ -285,6 +285,12 @@
   line-height: 16px;
 }
 
+.fieldError {
+  color: var(--color-danger-text);
+  font-size: var(--font-size-caption);
+  line-height: 18px;
+}
+
 .passwordStrength {
   display: flex;
   align-items: center;

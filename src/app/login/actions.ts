@@ -6,6 +6,7 @@ import {
   completeStudentPasswordReset,
   getCurrentUser,
   hashPassword,
+  loginStaffWithPhone,
   loginStudentWithPhone,
   loginUser,
   TooManyLoginAttemptsError,
@@ -18,9 +19,14 @@ import {
   verifyStudentPasswordResetCode,
 } from "@/lib/student-login";
 import { getPrisma } from "@/lib/prisma";
+import {
+  looksLikePhoneInput,
+  normalizeStudentPhone as normalizePhone,
+} from "@/lib/phone-utils";
 
 export type LoginActionState = {
   error?: string;
+  phoneError?: string;
 };
 
 export type StudentCodeRequestState = {
@@ -29,10 +35,35 @@ export type StudentCodeRequestState = {
   sent?: boolean;
 };
 
-const invalidCredentialsError = { error: "Неверные данные для входа" };
+const invalidStudentCredentialsError = {
+  error: "Неверный номер телефона или пароль",
+};
+const invalidStaffCredentialsError = {
+  error: "Неверный номер телефона, логин или пароль",
+};
+const invalidPhoneError =
+  "Введите корректный номер: +7 900 000-00-00 или 8 900 000-00-00.";
 const invalidCodeError = { error: invalidCodeMessage };
 
+function redactSensitiveErrorText(value: string): string {
+  return value
+    .replace(
+      /(postgres(?:ql)?:\/\/[^:/\s]+:)[^@\s/]+@/gi,
+      "$1[REDACTED]@",
+    )
+    .replace(
+      /((?:password(?:hash)?|passwd|secret|token)\s*[:=]\s*)[^\s,;]+/gi,
+      "$1[REDACTED]",
+    )
+    .replace(
+      /((?:SEED_[A-Z0-9_]*PASSWORD|DATABASE_URL)\s*=\s*)[^\s,;]+/gi,
+      "$1[REDACTED]",
+    );
+}
+
 function logActionFailure(action: string, error: unknown): void {
+  const message =
+    error instanceof Error ? error.message : String(error);
   const errorCode =
     typeof error === "object" &&
     error !== null &&
@@ -43,6 +74,10 @@ function logActionFailure(action: string, error: unknown): void {
       : undefined;
   console.error(`${action} failed.`, {
     name: error instanceof Error ? error.name : "UnknownError",
+    message: redactSensitiveErrorText(message),
+    ...(error instanceof Error && error.stack
+      ? { stack: redactSensitiveErrorText(error.stack) }
+      : {}),
     ...(errorCode ? { code: errorCode } : {}),
   });
 }
@@ -51,22 +86,29 @@ export async function loginAction(
   _previousState: LoginActionState,
   formData: FormData,
 ): Promise<LoginActionState> {
-  const login = formData.get("login");
+  const loginValue = formData.get("login");
   const password = formData.get("password");
   const role = formData.get("role");
 
   if (
     role !== "staff" ||
-    typeof login !== "string" ||
+    typeof loginValue !== "string" ||
     typeof password !== "string"
   ) {
-    return { error: "Введите логин и пароль." };
+    return { error: "Введите номер телефона или служебный логин и пароль." };
+  }
+  const phoneInput = looksLikePhoneInput(loginValue);
+  const phone = phoneInput ? normalizePhone(loginValue) : null;
+  if (phoneInput && !phone) {
+    return { phoneError: invalidPhoneError };
   }
 
   let user;
   try {
     await assertSameSiteRequest();
-    user = await loginUser(login, password, "STAFF");
+    user = phone
+      ? await loginStaffWithPhone(phone, password)
+      : await loginUser(loginValue, password, "STAFF");
   } catch (error) {
     if (error instanceof TooManyLoginAttemptsError) {
       return {
@@ -81,7 +123,7 @@ export async function loginAction(
   }
 
   if (!user || user.role !== "STAFF") {
-    return invalidCredentialsError;
+    return invalidStaffCredentialsError;
   }
 
   redirect("/staff");
@@ -93,18 +135,24 @@ export async function studentPhoneLoginAction(
 ): Promise<LoginActionState> {
   const phoneValue = formData.get("phone");
   const password = formData.get("password");
-  const phone =
-    typeof phoneValue === "string"
-      ? normalizeStudentPhone(phoneValue)
-      : null;
-  if (!phone || typeof password !== "string") {
-    return invalidCredentialsError;
+  if (typeof phoneValue !== "string" || !phoneValue.trim()) {
+    return { phoneError: invalidPhoneError };
+  }
+  const phoneInput = looksLikePhoneInput(phoneValue);
+  const phone = phoneInput ? normalizePhone(phoneValue) : null;
+  if (phoneInput && !phone) {
+    return { phoneError: invalidPhoneError };
+  }
+  if (typeof password !== "string") {
+    return invalidStudentCredentialsError;
   }
 
   let user;
   try {
     await assertSameSiteRequest();
-    user = await loginStudentWithPhone(phone, password);
+    user = phone
+      ? await loginStudentWithPhone(phone, password)
+      : await loginUser(phoneValue, password, "STUDENT");
   } catch (error) {
     if (error instanceof TooManyLoginAttemptsError) {
       return {
@@ -118,7 +166,7 @@ export async function studentPhoneLoginAction(
   }
 
   if (!user || user.role !== "STUDENT") {
-    return invalidCredentialsError;
+    return invalidStudentCredentialsError;
   }
   redirect("/");
 }
