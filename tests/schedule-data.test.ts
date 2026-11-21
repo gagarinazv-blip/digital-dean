@@ -175,6 +175,33 @@ describe("getScheduleForStudent", () => {
     );
   });
 
+  it("loads the full Moscow month grid without widening the student's group scope", async () => {
+    scheduleFindManyMock.mockResolvedValue([]);
+
+    const data = await getScheduleForStudent("month", {
+      date: "2026-11-16",
+      now: new Date("2026-11-14T18:00:00.000Z"),
+    });
+
+    expect(data.startDate.toISOString()).toBe("2026-10-26T00:00:00.000Z");
+    expect(data.endDate.toISOString()).toBe("2026-12-07T00:00:00.000Z");
+    expect(scheduleFindManyMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          groupId: student.group.id,
+          OR: expect.arrayContaining([
+            {
+              startsAt: {
+                gte: new Date("2026-10-25T21:00:00.000Z"),
+                lt: new Date("2026-12-06T21:00:00.000Z"),
+              },
+            },
+          ]),
+        }),
+      }),
+    );
+  });
+
   it("uses each session's current student group instead of a shared group", async () => {
     scheduleFindManyMock.mockResolvedValue([]);
     requireStudentMock

@@ -5,6 +5,7 @@ import { requireStudent } from "@/lib/student";
 import {
   getMoscowDateKey,
   getMoscowDayRange,
+  getMoscowMonthRange,
   getMoscowDateTimeOnDate,
   getMoscowWeekRange,
   getMoscowDateTime,
@@ -14,7 +15,7 @@ import type {
   ScheduleStatus,
 } from "@/generated/prisma/enums";
 
-export type ScheduleRange = "today" | "week";
+export type ScheduleRange = "today" | "week" | "month";
 
 export type ScheduleLesson = {
   id: string;
@@ -127,7 +128,9 @@ export async function getScheduleForGroup(
   const period =
     range === "today"
       ? getMoscowDayRange(referenceDate)
-      : getMoscowWeekRange(referenceDate);
+      : range === "month"
+        ? getMoscowMonthRange(referenceDate)
+        : getMoscowWeekRange(referenceDate);
   const records = await getPrisma().scheduleItem.findMany({
     where: {
       groupId,

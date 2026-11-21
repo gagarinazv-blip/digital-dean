@@ -4,17 +4,27 @@ import { buildTargetScheduleSeed } from "../prisma/schedule-seed-data";
 describe("target group schedule seed", () => {
   const now = new Date("2026-11-14T18:00:00.000Z");
 
-  it("creates two weekdays of schedules for the current and following weeks", () => {
+  it("creates distinct schedules for two weeks before and after the current week", () => {
     const rows = buildTargetScheduleSeed(now);
     const alphaRows = rows.filter((row) => row.login === "student.alpha");
     const betaRows = rows.filter((row) => row.login === "student.beta");
 
-    expect(alphaRows).toHaveLength(28);
-    expect(betaRows).toHaveLength(24);
+    expect(alphaRows).toHaveLength(70);
+    expect(betaRows).toHaveLength(60);
     expect(
       new Set(rows.map((row) => row.date.toISOString().slice(0, 10))),
     ).toEqual(
       new Set([
+        "2026-10-26",
+        "2026-10-27",
+        "2026-10-28",
+        "2026-10-29",
+        "2026-10-30",
+        "2026-11-02",
+        "2026-11-03",
+        "2026-11-04",
+        "2026-11-05",
+        "2026-11-06",
         "2026-11-09",
         "2026-11-10",
         "2026-11-11",
@@ -25,6 +35,11 @@ describe("target group schedule seed", () => {
         "2026-11-18",
         "2026-11-19",
         "2026-11-20",
+        "2026-11-23",
+        "2026-11-24",
+        "2026-11-25",
+        "2026-11-26",
+        "2026-11-27",
       ]),
     );
 
@@ -42,7 +57,13 @@ describe("target group schedule seed", () => {
       expect(new Set(scheduleKeys).size).toBe(scheduleKeys.length);
     }
 
-    for (const weekStart of ["2026-11-09", "2026-11-16"]) {
+    for (const weekStart of [
+      "2026-10-26",
+      "2026-11-02",
+      "2026-11-09",
+      "2026-11-16",
+      "2026-11-23",
+    ]) {
       for (let weekday = 0; weekday < 5; weekday += 1) {
         const date = new Date(`${weekStart}T00:00:00.000Z`);
         date.setUTCDate(date.getUTCDate() + weekday);
@@ -113,6 +134,27 @@ describe("target group schedule seed", () => {
     expect([...alphaSubjects].some((index) => betaSubjects.has(index))).toBe(
       false,
     );
-    expect(buildTargetScheduleSeed(now)).toEqual(rows);
+
+    const seedKeys = rows.map(
+      (row) =>
+        `${row.login}:${row.date.toISOString().slice(0, 10)}:${row.startTime}:${row.subjectIndex}`,
+    );
+    expect(new Set(seedKeys).size).toBe(seedKeys.length);
+  });
+
+  it("generates the same rows on repeated seed runs for the same demo date", () => {
+    expect(buildTargetScheduleSeed(now)).toEqual(buildTargetScheduleSeed(now));
+  });
+
+  it("keeps schedule text free of the retired seed marker", () => {
+    const visibleText = buildTargetScheduleSeed(now)
+      .flatMap((row) =>
+        Object.values(row).filter(
+          (value): value is string => typeof value === "string",
+        ),
+      )
+      .join(" ");
+
+    expect(visibleText).not.toContain("[seed-test]");
   });
 });
