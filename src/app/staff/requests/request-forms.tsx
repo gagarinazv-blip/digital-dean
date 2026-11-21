@@ -1,12 +1,14 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useCallback, useState } from "react";
+import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import type { RequestStatus } from "@/generated/prisma/enums";
 import { requestStatusLabels } from "@/lib/campus-labels";
 import type { RequestActionState } from "@/lib/request-action-state";
 import {
   addStaffCommentAction,
   assignRequestAction,
+  rollbackRequestStatusAction,
   updateRequestStatusAction,
 } from "@/app/staff/requests/actions";
 import styles from "@/app/request-workflow.module.css";
@@ -103,6 +105,61 @@ export function RequestStatusForm({
   );
 }
 
+export function RequestRollbackForm({
+  requestId,
+  targetStatus,
+}: {
+  requestId: number;
+  targetStatus: RequestStatus;
+}) {
+  const [open, setOpen] = useState(false);
+  const rollbackAction = useCallback(
+    async (previousState: RequestActionState, formData: FormData) => {
+      const result = await rollbackRequestStatusAction(previousState, formData);
+      if (result.success) {
+        setOpen(false);
+      }
+      return result;
+    },
+    [],
+  );
+  const [state, formAction, pending] = useActionState(
+    rollbackAction,
+    initialState,
+  );
+
+  return (
+    <ConfirmationDialog
+      buttonClassName={styles.secondaryButton}
+      buttonLabel="Вернуть предыдущий статус"
+      onOpenChange={setOpen}
+      open={open}
+      title={`Вернуть статус заявки на "${requestStatusLabels[targetStatus]}"?`}
+    >
+      <p className={styles.hint}>
+        Откат сохранится в истории отдельным событием, а студент получит
+        уведомление.
+      </p>
+      <form action={formAction} className={styles.form}>
+        <input name="requestId" type="hidden" value={requestId} />
+        <ActionFeedback state={state} />
+        <div className={styles.formActions}>
+          <button
+            className={styles.secondaryButton}
+            onClick={() => setOpen(false)}
+            type="button"
+          >
+            Отмена
+          </button>
+          <button className={styles.button} disabled={pending} type="submit">
+            {pending ? "Возвращаем…" : "Подтвердить"}
+          </button>
+        </div>
+      </form>
+    </ConfirmationDialog>
+  );
+}
+
 export function StaffCommentForm({
   requestId,
   requestStatus,
@@ -181,32 +238,46 @@ export function StaffCommentForm({
 
 export function RequestAssignmentForm({
   requestId,
-  staffId,
   assignedToId,
+  staffMembers,
 }: {
   requestId: number;
-  staffId: number;
   assignedToId: number | null;
+  staffMembers: { id: number; fullName: string }[];
 }) {
   const [state, formAction, pending] = useActionState(
     assignRequestAction,
     initialState,
   );
 
-  if (assignedToId !== null) {
-    return <p className={styles.hint}>Заявка назначена вам.</p>;
-  }
-
   return (
     <form action={formAction} className={styles.form}>
       <input name="requestId" type="hidden" value={requestId} />
-      <input name="assignedToId" type="hidden" value={staffId} />
-      <p className={styles.hint}>
-        Разрешённую свободную заявку можно взять только себе.
-      </p>
+      <div className={styles.field}>
+        <label htmlFor={`request-assignee-${requestId}`}>
+          Ответственный сотрудник
+        </label>
+        <select
+          className={styles.select}
+          defaultValue={assignedToId?.toString() ?? ""}
+          id={`request-assignee-${requestId}`}
+          name="assignedToId"
+        >
+          <option value="">Не назначен</option>
+          {staffMembers.map((member) => (
+            <option key={member.id} value={member.id}>
+              {member.fullName}
+            </option>
+          ))}
+        </select>
+      </div>
       <ActionFeedback state={state} />
       <button className={styles.secondaryButton} disabled={pending} type="submit">
-        {pending ? "Сохраняем…" : "Забрать заявку себе"}
+        {pending
+          ? "Сохраняем…"
+          : assignedToId === null
+            ? "Назначить"
+            : "Сохранить назначение"}
       </button>
     </form>
   );

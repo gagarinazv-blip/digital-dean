@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   canStaffChangeStatus,
   canStaffAccessRequest,
+  canStaffRollbackRequest,
   canTransitionRequestStatus,
   getAllowedStaffRequestTransitions,
+  getPreviousRequestStatus,
   getStaffRequestFilter,
+  getStaffRequestListFilter,
 } from "../src/lib/request-workflow";
 
 describe("request status workflow", () => {
@@ -29,6 +32,35 @@ describe("request status workflow", () => {
         "CANCELLED",
       ),
     ).toBe(false);
+  });
+
+  it("finds the previous active status after one or more rollbacks", () => {
+    const history = [
+      { fromStatus: null, status: "NEW" as const, isRollback: false },
+      { fromStatus: "NEW" as const, status: "IN_PROGRESS" as const, isRollback: false },
+      { fromStatus: "IN_PROGRESS" as const, status: "READY" as const, isRollback: false },
+      { fromStatus: "READY" as const, status: "IN_PROGRESS" as const, isRollback: true },
+    ];
+
+    expect(getPreviousRequestStatus(history, "IN_PROGRESS")).toBe("NEW");
+    expect(
+      getPreviousRequestStatus(
+        [{ fromStatus: null, status: "NEW", isRollback: false }],
+        "NEW",
+      ),
+    ).toBeNull();
+  });
+
+  it("does not offer rollback for inconsistent or invalid history", () => {
+    expect(
+      getPreviousRequestStatus(
+        [
+          { fromStatus: null, status: "NEW", isRollback: false },
+          { fromStatus: "NEW", status: "READY", isRollback: false },
+        ],
+        "READY",
+      ),
+    ).toBeNull();
   });
 });
 
@@ -66,7 +98,7 @@ describe("staff request scope", () => {
     ).toBe(false);
   });
 
-  it("does not grant supervisors access outside the regular request scope", () => {
+  it("keeps ordinary permissions scoped while listing all requests for supervisors", () => {
     const supervisor = { ...regularStaff, isSupervisor: true };
 
     expect(getStaffRequestFilter(supervisor)).toEqual({
@@ -75,10 +107,25 @@ describe("staff request scope", () => {
         { assignedToId: null, type: { in: ["CERTIFICATE"] } },
       ],
     });
+    expect(getStaffRequestListFilter(supervisor, undefined).where).toEqual({});
     expect(
       canStaffAccessRequest(supervisor, {
         assignedToId: 41,
         type: "APPLICATION",
+      }),
+    ).toBe(false);
+    expect(
+      canStaffRollbackRequest(supervisor, {
+        assignedToId: 41,
+        type: "APPLICATION",
+        status: "READY",
+      }),
+    ).toBe(true);
+    expect(
+      canStaffRollbackRequest(regularStaff, {
+        assignedToId: 41,
+        type: "APPLICATION",
+        status: "READY",
       }),
     ).toBe(false);
   });

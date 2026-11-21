@@ -7,6 +7,7 @@ const {
   findManyMock,
   findFirstMock,
   groupByMock,
+  staffProfileFindManyMock,
 } = vi.hoisted(() => ({
   notFoundMock: vi.fn(),
   requireStaffMock: vi.fn(),
@@ -14,6 +15,7 @@ const {
   findManyMock: vi.fn(),
   findFirstMock: vi.fn(),
   groupByMock: vi.fn(),
+  staffProfileFindManyMock: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -32,6 +34,7 @@ vi.mock("@/lib/prisma", () => ({
       findFirst: findFirstMock,
       groupBy: groupByMock,
     },
+    staffProfile: { findMany: staffProfileFindManyMock },
   })),
 }));
 
@@ -42,6 +45,7 @@ vi.mock("@/lib/demo-date", () => ({
 import {
   getStaffRequest,
   getStaffRequestList,
+  getStaffRequestDetails,
   getStaffRequests,
 } from "../src/lib/staff-data";
 
@@ -57,6 +61,7 @@ beforeEach(() => {
   findManyMock.mockResolvedValue([]);
   findFirstMock.mockResolvedValue(null);
   groupByMock.mockResolvedValue([]);
+  staffProfileFindManyMock.mockResolvedValue([]);
   notFoundMock.mockImplementation(() => {
     throw new Error("Not found");
   });
@@ -135,6 +140,7 @@ describe("staff request access", () => {
               group: { select: { name: true } },
             },
           },
+          assignedTo: { select: { fullName: true } },
         },
       }),
     );
@@ -189,6 +195,43 @@ describe("staff request access", () => {
             { assignedToId: null, type: { in: ["CERTIFICATE"] } },
           ],
         },
+      }),
+    );
+  });
+
+  it("loads assignment history and staff-only choices for staff.manager", async () => {
+    const request = { id: 123, assignmentHistory: [] };
+    const staffMembers = [{ id: 40, fullName: "Сотрудник" }];
+    requireStaffContextMock.mockResolvedValue({
+      staff: { id: 42, department: "Учебный отдел", isSupervisor: true },
+      isManagerAccount: true,
+    });
+    findFirstMock.mockResolvedValue(request);
+    staffProfileFindManyMock.mockResolvedValue(staffMembers);
+
+    await expect(getStaffRequestDetails("123")).resolves.toMatchObject({
+      request,
+      isManagerAccount: true,
+      staffMembers,
+    });
+
+    expect(staffProfileFindManyMock).toHaveBeenCalledWith({
+      where: { user: { is: { role: "STAFF" } } },
+      orderBy: { fullName: "asc" },
+      select: { id: true, fullName: true },
+    });
+    expect(findFirstMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 123 },
+        select: expect.objectContaining({
+          assignedTo: { select: { id: true, fullName: true } },
+          assignmentHistory: expect.objectContaining({
+            select: expect.objectContaining({
+              fromAssignedTo: { select: { fullName: true } },
+              toAssignedTo: { select: { fullName: true } },
+            }),
+          }),
+        }),
       }),
     );
   });

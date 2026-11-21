@@ -17,25 +17,31 @@ function notFoundResponse(): Response {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const isStaffArea = pathname === "/staff" || pathname.startsWith("/staff/");
+  const loginUrl = isStaffArea
+    ? "/login?role=staff"
+    : "/login?role=student";
   if (pathname === "/staff/login") {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(new URL("/login?role=staff", request.url));
   }
 
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   if (!token) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(new URL(loginUrl, request.url));
   }
 
   const principal = await getSessionPrincipalForToken(token);
   if (!principal) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(new URL(loginUrl, request.url));
   }
 
-  const requiredRole =
-    pathname === "/staff" ||
-    pathname.startsWith("/staff/")
-      ? "STAFF"
-      : "STUDENT";
+  if (principal.requiresPasswordSetup) {
+    return NextResponse.redirect(
+      new URL("/login?role=student&step=password", request.url),
+    );
+  }
+
+  const requiredRole = isStaffArea ? "STAFF" : "STUDENT";
   if (principal.role !== requiredRole) {
     return new Response("403 — Доступ запрещён", {
       status: 403,
@@ -58,7 +64,10 @@ export async function proxy(request: NextRequest) {
       where: { id: requestId },
       select: { assignedToId: true, type: true },
     });
-    if (!staffRequest || !canStaffAccessRequest(staff, staffRequest)) {
+    if (
+      !staffRequest ||
+      (!staff.isSupervisor && !canStaffAccessRequest(staff, staffRequest))
+    ) {
       return notFoundResponse();
     }
   }

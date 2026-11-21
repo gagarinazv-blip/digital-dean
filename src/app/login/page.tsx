@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { LoginForm } from "./login-form";
+import { LoginForm, StudentPasswordSetupForm } from "./login-form";
 import styles from "./login.module.css";
 
 function LoginFallback() {
@@ -14,11 +14,18 @@ function LoginFallback() {
   );
 }
 
-async function LoginContent() {
+async function LoginContent({
+  searchParams,
+}: {
+  searchParams: Promise<{ role?: string | string[] }>;
+}) {
   const user = await getCurrentUser();
-  if (user) {
+  if (user && !user.requiresPasswordSetup) {
     redirect(user.role === "STAFF" ? "/staff" : "/");
   }
+  const { role } = await searchParams;
+  const roleValue = typeof role === "string" ? role : null;
+  const initialRole = roleValue === "staff" ? "staff" : "student";
 
   return (
     <>
@@ -40,7 +47,7 @@ async function LoginContent() {
             </span>
             <strong>Campus OS</strong>
           </div>
-          <span className={styles.topbarDescriptor}>Студенческий кабинет</span>
+          <span className={styles.topbarDescriptor}>Сервисы университета</span>
           <div className={styles.topbarSearch} aria-hidden="true">
             <svg
               fill="none"
@@ -85,9 +92,19 @@ async function LoginContent() {
       </header>
       <main className={styles.page}>
         <section className={styles.card} aria-labelledby="login-title">
-          <h1 id="login-title">Вход для студентов</h1>
-          <p className={styles.description}>Единый кабинет университета</p>
-          <LoginForm />
+          <h1 id="login-title">
+            {user?.requiresPasswordSetup ? "Создайте пароль" : "Вход"}
+          </h1>
+          <p className={styles.description}>
+            {user?.requiresPasswordSetup
+              ? "Это последний шаг для доступа к личному кабинету."
+              : "Единый кабинет университета"}
+          </p>
+          {user?.requiresPasswordSetup ? (
+            <StudentPasswordSetupForm />
+          ) : (
+            <LoginForm initialRole={initialRole} />
+          )}
         </section>
         <p className={styles.footer}>
           Демонстрационный проект. Все данные вымышлены.
@@ -97,10 +114,14 @@ async function LoginContent() {
   );
 }
 
-export default function LoginPage() {
+export default function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ role?: string | string[] }>;
+}) {
   return (
     <Suspense fallback={<LoginFallback />}>
-      <LoginContent />
+      <LoginContent searchParams={searchParams} />
     </Suspense>
   );
 }
