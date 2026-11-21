@@ -8,6 +8,7 @@ import { getPrisma } from "@/lib/prisma";
 const SESSION_COOKIE = "digital-dean-session";
 const BCRYPT_ROUNDS = 12;
 const MAX_PASSWORD_BYTES = 72;
+const PASSWORD_SETUP_TTL_SECONDS = 15 * 60;
 const LOGIN_ATTEMPT_LIMIT = 5;
 const LOGIN_ATTEMPT_WINDOW_MINUTES = 15;
 const DUMMY_PASSWORD_HASH =
@@ -51,8 +52,13 @@ export type AuthenticatedUser = {
   } | null;
 };
 
+export type CurrentUser = AuthenticatedUser & {
+  requiresPasswordSetup: boolean;
+};
+
 export type SessionPrincipal = {
   role: AuthenticatedUser["role"];
+  requiresPasswordSetup: boolean;
   studentId: number | null;
   staffProfile: {
     id: number;
@@ -150,13 +156,17 @@ async function setSessionCookie(token: string, expiresAt: Date): Promise<void> {
 async function persistSession(
   userId: number,
   loginAttemptKey?: string,
+  options: { requiresPasswordSetup?: boolean; ttlSeconds?: number } = {},
 ): Promise<void> {
   if (!Number.isSafeInteger(userId) || userId < 1) {
     throw new Error("A valid user id is required to create a session.");
   }
 
   const token = randomBytes(32).toString("base64url");
-  const expiresAt = new Date(Date.now() + getSessionTtlSeconds() * 1000);
+  const expiresAt = new Date(
+    Date.now() +
+      (options.ttlSeconds ?? getSessionTtlSeconds()) * 1000,
+  );
   const prisma = getPrisma();
 
   await prisma.$transaction(async (tx) => {
@@ -164,6 +174,7 @@ async function persistSession(
       data: {
         tokenHash: sha256(token),
         userId,
+        requiresPasswordSetup: options.requiresPasswordSetup ?? false,
         expiresAt,
       },
     });
@@ -179,6 +190,98 @@ async function persistSession(
 
 export async function createSession(userId: number): Promise<void> {
   await persistSession(userId);
+}
+
+export async function createPasswordSetupSession(userId: number): Promise<void> {
+  await persistSession(userId, undefined, {
+    requiresPasswordSetup: true,
+    ttlSeconds: PASSWORD_SETUP_TTL_SECONDS,
+  });
+}
+
+export async function completeStudentPasswordSetup(
+  userId: number,
+  passwordHash: string,
+): Promise<boolean> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
+  if (!token) {
+    return false;
+  }
+
+  const prisma = getPrisma();
+  const tokenHash = sha256(token);
+  const session = await prisma.session.findUnique({
+    where: { tokenHash },
+    select: {
+      id: true,
+      userId: true,
+      requiresPasswordSetup: true,
+      expiresAt: true,
+    },
+  });
+  if (
+    !session ||
+    session.userId !== userId ||
+    !session.requiresPasswordSetup ||
+    session.expiresAt.getTime() <= Date.now()
+  ) {
+    return false;
+  }
+
+  const student = await prisma.student.findUnique({
+    where: { userId },
+    select: { phone: true, user: { select: { role: true } } },
+  });
+  if (!student?.phone || student.user.role !== "STUDENT") {
+    return false;
+  }
+
+  const nextToken = randomBytes(32).toString("base64url");
+  const expiresAt = new Date(Date.now() + getSessionTtlSeconds() * 1000);
+  const now = new Date();
+  const completed = await prisma.$transaction(async (tx) => {
+    const claimedSession = await tx.session.updateMany({
+      where: {
+        id: session.id,
+        userId,
+        requiresPasswordSetup: true,
+        expiresAt: { gt: now },
+      },
+      data: { requiresPasswordSetup: false },
+    });
+    if (claimedSession.count !== 1) {
+      return false;
+    }
+
+    await tx.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
+    await tx.student.update({
+      where: { userId },
+      data: { accountStatus: "ACTIVE" },
+    });
+    await tx.session.deleteMany({
+      where: { userId, id: { not: session.id } },
+    });
+    await tx.session.update({
+      where: { id: session.id },
+      data: {
+        tokenHash: sha256(nextToken),
+        requiresPasswordSetup: false,
+        expiresAt,
+      },
+    });
+    return true;
+  });
+
+  if (!completed) {
+    return false;
+  }
+
+  await setSessionCookie(nextToken, expiresAt);
+  return true;
 }
 
 async function registerLoginAttempt(keyHash: string): Promise<boolean> {
@@ -267,12 +370,13 @@ export async function authenticateUserForLogin(
 export async function loginUser(
   loginInput: string,
   passwordInput: string,
+  expectedRole: AuthenticatedUser["role"],
 ): Promise<AuthenticatedUser | null> {
   const { user, attemptKey } = await authenticateUserForLogin(
     loginInput,
     passwordInput,
   );
-  if (!user) {
+  if (!user || user.role !== expectedRole) {
     return null;
   }
 
@@ -280,7 +384,55 @@ export async function loginUser(
   return user;
 }
 
-export async function getCurrentUser(): Promise<AuthenticatedUser | null> {
+export async function loginStudentWithPhone(
+  phone: string,
+  passwordInput: string,
+): Promise<AuthenticatedUser | null> {
+  if (!/^\+[1-9]\d{7,14}$/.test(phone)) {
+    return null;
+  }
+  const password = typeof passwordInput === "string" ? passwordInput : "";
+  const requestHeaders = await headers();
+  const clientAddress =
+    requestHeaders.get("x-real-ip")?.trim() ||
+    requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    "unknown";
+  const attemptKey = sha256(`${clientAddress}\0${phone}`);
+
+  if (!(await registerLoginAttempt(attemptKey))) {
+    throw new TooManyLoginAttemptsError();
+  }
+
+  const user = await getPrisma().user.findFirst({
+    where: {
+      role: "STUDENT",
+      student: {
+        is: { phone, accountStatus: "ACTIVE" },
+      },
+    },
+    select: {
+      ...authenticatedUserSelect,
+      passwordHash: true,
+    },
+  });
+  const passwordMatches = await verifyPassword(
+    password,
+    user?.passwordHash ?? DUMMY_PASSWORD_HASH,
+  );
+  if (!user || !passwordMatches) {
+    return null;
+  }
+
+  await persistSession(user.id, attemptKey);
+  return {
+    id: user.id,
+    login: user.login,
+    role: user.role,
+    student: user.student,
+  };
+}
+
+export async function getCurrentUser(): Promise<CurrentUser | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) {
@@ -292,6 +444,7 @@ export async function getCurrentUser(): Promise<AuthenticatedUser | null> {
     where: { tokenHash: sha256(token) },
     select: {
       id: true,
+      requiresPasswordSetup: true,
       expiresAt: true,
       user: {
         select: authenticatedUserSelect,
@@ -306,7 +459,10 @@ export async function getCurrentUser(): Promise<AuthenticatedUser | null> {
     return null;
   }
 
-  return session.user;
+  return {
+    ...session.user,
+    requiresPasswordSetup: session.requiresPasswordSetup,
+  };
 }
 
 export async function getSessionPrincipalForToken(
@@ -316,6 +472,7 @@ export async function getSessionPrincipalForToken(
     where: { tokenHash: sha256(token) },
     select: {
       expiresAt: true,
+      requiresPasswordSetup: true,
       user: {
         select: {
           role: true,
@@ -334,6 +491,7 @@ export async function getSessionPrincipalForToken(
 
   return {
     role: session.user.role,
+    requiresPasswordSetup: session.requiresPasswordSetup,
     studentId: session.user.student?.id ?? null,
     staffProfile: session.user.staffProfile,
   };

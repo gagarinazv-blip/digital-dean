@@ -300,6 +300,21 @@
   font-size: 10px;
 }
 
+.assigneeName,
+.assigneeEmpty {
+  display: block;
+  max-width: 190px;
+  overflow-wrap: anywhere;
+}
+
+.assigneeName {
+  font-weight: 600;
+}
+
+.assigneeEmpty {
+  color: var(--color-muted);
+}
+
 .serviceCell {
   display: flex;
   min-width: 0;

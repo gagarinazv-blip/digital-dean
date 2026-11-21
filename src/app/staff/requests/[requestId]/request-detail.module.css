@@ -503,6 +503,20 @@
   font-weight: 700;
 }
 
+.assignmentEventIcon {
+  z-index: 1;
+  width: 23px;
+  height: 23px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #eadbd6;
+  border-radius: 7px;
+  background: #fbf4f0;
+  color: var(--color-wine-900);
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .eventCopy {
   display: grid;
   min-width: 0;

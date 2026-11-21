@@ -125,10 +125,97 @@
   text-align: center;
 }
 
+.roleTabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin-top: var(--space-6);
+  padding: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: #f7f3f0;
+}
+
+.roleTab {
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius-md) - 2px);
+  background: transparent;
+  color: var(--color-muted);
+  font: inherit;
+  font-size: var(--font-size-body-compact);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.roleTab[aria-selected="true"] {
+  border-color: #e7d8d2;
+  background: var(--color-surface);
+  color: var(--color-wine-900);
+  box-shadow: var(--shadow-soft);
+}
+
+.roleTab:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.tabPanel {
+  min-width: 0;
+}
+
+.tabPanel:focus-visible {
+  border-radius: var(--radius-md);
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
 .form {
   display: grid;
   gap: var(--space-4);
-  margin-top: var(--space-6);
+  margin-top: var(--space-4);
+}
+
+.stepDescription {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--font-size-body-compact);
+  line-height: 20px;
+}
+
+.loginLinks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+}
+
+.textButton {
+  min-height: 44px;
+  padding: 8px 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-blue-700);
+  font: inherit;
+  font-size: var(--font-size-body-compact);
+  font-weight: 500;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.textButton:focus-visible {
+  border-radius: var(--radius-sm);
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 .field {
@@ -160,6 +247,56 @@
   outline: 3px solid var(--color-focus);
   outline-offset: 1px;
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-focus) 35%, transparent);
+}
+
+.passwordInput {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.passwordInput input {
+  padding-right: 88px;
+}
+
+.passwordToggle {
+  position: absolute;
+  right: 8px;
+  min-height: 36px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-subtle);
+  color: var(--color-wine-900);
+  font: inherit;
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.passwordToggle:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.fieldHint {
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+  line-height: 16px;
+}
+
+.passwordStrength {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+}
+
+.strengthMeter {
+  width: 96px;
+  height: 8px;
+  accent-color: var(--color-wine-900);
 }
 
 .messageSlot {
@@ -284,8 +421,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .roleTab,
   .field input,
-  .submit {
+  .submit,
+  .textButton,
+  .passwordToggle {
     transition: none;
   }
 }

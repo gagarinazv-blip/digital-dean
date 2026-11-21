@@ -1,18 +1,20 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { notFound } from "next/navigation";
+import { forbidden, notFound } from "next/navigation";
 import { assertSameSiteRequest } from "@/lib/auth";
 import { requestStatusLabels } from "@/lib/campus-labels";
 import { getPrisma } from "@/lib/prisma";
 import { validateRequestUploads } from "@/lib/request-attachments";
 import type { RequestActionState } from "@/lib/request-action-state";
 import {
-  canStaffAssignRequest,
   canStaffChangeStatus,
   canStaffManageAssignedRequest,
+  canStaffRollbackRequest,
 } from "@/lib/permissions";
 import {
+  canTransitionRequestStatus,
+  getPreviousRequestStatus,
   getStaffRequestFilter,
   isRequestStatus,
   parsePositiveIntegerId,
@@ -157,6 +159,7 @@ export async function updateRequestStatusAction(
     await tx.requestStatusHistory.create({
       data: {
         requestId: request.id,
+        fromStatus: request.status,
         status: rawStatus,
         authorUserId: userId,
         comment: content || null,
@@ -184,6 +187,103 @@ export async function updateRequestStatusAction(
 
   revalidateStaffRequestPaths(requestId, request.publicId);
   return { success: "Статус заявки обновлён." };
+}
+
+export async function rollbackRequestStatusAction(
+  _previousState: RequestActionState,
+  formData: FormData,
+): Promise<RequestActionState> {
+  await assertSameSiteRequest();
+  const { userId, staff } = await requireStaffContext();
+  const requestId = getRequestId(formData);
+
+  const result = await getPrisma().$transaction(async (tx) => {
+    const request = await tx.request.findFirst({
+      where: {
+        id: requestId,
+        ...(staff.isSupervisor ? {} : getStaffRequestFilter(staff)),
+      },
+      select: {
+        id: true,
+        publicId: true,
+        studentId: true,
+        type: true,
+        status: true,
+        assignedToId: true,
+        statusHistory: {
+          orderBy: [{ changedAt: "asc" }, { id: "asc" }],
+          select: {
+            fromStatus: true,
+            status: true,
+            isRollback: true,
+          },
+        },
+      },
+    });
+    if (!request) {
+      notFound();
+    }
+    if (!canStaffRollbackRequest(staff, request)) {
+      return {
+        error: "Откат доступен только назначенному сотруднику или руководителю.",
+      };
+    }
+
+    const previousStatus = getPreviousRequestStatus(
+      request.statusHistory,
+      request.status,
+    );
+    if (
+      previousStatus === null ||
+      !canTransitionRequestStatus(previousStatus, request.status)
+    ) {
+      return { error: "У заявки нет допустимого предыдущего статуса для отката." };
+    }
+
+    const updated = await tx.request.updateMany({
+      where: {
+        id: request.id,
+        status: request.status,
+        assignedToId: request.assignedToId,
+      },
+      data: { status: previousStatus, updatedAt: new Date() },
+    });
+    if (updated.count !== 1) {
+      return {
+        error: "Заявка уже изменилась. Обновите страницу и попробуйте снова.",
+      };
+    }
+
+    await tx.requestStatusHistory.create({
+      data: {
+        requestId: request.id,
+        fromStatus: request.status,
+        status: previousStatus,
+        isRollback: true,
+        authorUserId: userId,
+        comment: `Откат статуса: ${requestStatusLabels[request.status]} → ${requestStatusLabels[previousStatus]}.`,
+      },
+    });
+    await tx.notification.create({
+      data: {
+        studentId: request.studentId,
+        type: "REQUEST_STATUS",
+        title: "Статус заявки изменён",
+        text: `Статус заявки возвращён: ${requestStatusLabels[previousStatus]}.`,
+        targetType: "REQUEST",
+        targetId: request.publicId,
+      },
+    });
+
+    return { publicId: request.publicId };
+  });
+
+  if ("error" in result) {
+    return result;
+  }
+
+  revalidateStaffRequestPaths(requestId, result.publicId);
+  return { success: "Статус заявки возвращён на предыдущий шаг." };
 }
 
 export async function addStaffCommentAction(
@@ -297,38 +397,80 @@ export async function assignRequestAction(
   formData: FormData,
 ): Promise<RequestActionState> {
   await assertSameSiteRequest();
-  const { staff } = await requireStaffContext();
+  const { userId, isManagerAccount } = await requireStaffContext();
+  if (!isManagerAccount) {
+    forbidden();
+  }
+
   const requestId = getRequestId(formData);
-  const request = await getActionRequest(requestId, staff);
   const rawAssigneeId = formData.get("assignedToId");
+  if (typeof rawAssigneeId !== "string") {
+    return { error: "Выберите сотрудника из списка." };
+  }
   const assignedToId =
-    typeof rawAssigneeId === "string"
-      ? parsePositiveIntegerId(rawAssigneeId)
-      : null;
-  if (
-    assignedToId === null ||
-    !canStaffAssignRequest(staff, request, assignedToId)
-  ) {
-    return {
-      error: "Можно взять только разрешённую свободную заявку и только себе.",
-    };
+    rawAssigneeId === "" ? null : parsePositiveIntegerId(rawAssigneeId);
+  if (rawAssigneeId !== "" && assignedToId === null) {
+    return { error: "Выберите сотрудника из списка." };
   }
 
-  const updated = await getPrisma().request.updateMany({
-    where: {
-      id: request.id,
-      assignedToId: null,
-      ...getStaffRequestFilter(staff),
-    },
-    data: { assignedToId: staff.id, updatedAt: new Date() },
+  const result = await getPrisma().$transaction(async (tx) => {
+    const request = await tx.request.findUnique({
+      where: { id: requestId },
+      select: { id: true, publicId: true, assignedToId: true },
+    });
+    if (!request) {
+      notFound();
+    }
+
+    if (assignedToId !== null) {
+      const assignee = await tx.staffProfile.findFirst({
+        where: {
+          id: assignedToId,
+          user: { is: { role: "STAFF" } },
+        },
+        select: { id: true },
+      });
+      if (!assignee) {
+        return { error: "Выбранный сотрудник не найден." } as const;
+      }
+    }
+
+    if (request.assignedToId === assignedToId) {
+      return { publicId: request.publicId, unchanged: true } as const;
+    }
+
+    const updated = await tx.request.updateMany({
+      where: {
+        id: request.id,
+        assignedToId: request.assignedToId,
+      },
+      data: { assignedToId, updatedAt: new Date() },
+    });
+    if (updated.count !== 1) {
+      return {
+        error: "Назначение уже изменилось. Обновите страницу и попробуйте снова.",
+      } as const;
+    }
+
+    await tx.requestAssignmentHistory.create({
+      data: {
+        requestId: request.id,
+        fromAssignedToId: request.assignedToId,
+        toAssignedToId: assignedToId,
+        changedByUserId: userId,
+      },
+    });
+    return { publicId: request.publicId, unchanged: false } as const;
   });
-  if (updated.count !== 1) {
-    await ensureRequestStillAccessible(requestId, staff);
-    return {
-      error: "Назначение уже изменилось. Обновите страницу и попробуйте снова.",
-    };
+
+  if ("error" in result) {
+    return result;
   }
 
-  revalidateStaffRequestPaths(requestId, request.publicId);
-  return { success: "Заявка взята в работу." };
+  revalidateStaffRequestPaths(requestId, result.publicId);
+  return {
+    success: result.unchanged
+      ? "Ответственный не изменился."
+      : "Ответственный по заявке обновлён.",
+  };
 }

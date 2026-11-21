@@ -2,6 +2,7 @@ import type { RequestStatus, RequestType } from "@/generated/prisma/enums";
 import type { Prisma } from "@/generated/prisma/client";
 import {
   canStaffChangeStatus,
+  canStaffRollbackRequest,
   canStaffReadRequest,
   canStudentCancelRequest,
   canTransitionRequestStatus,
@@ -11,6 +12,7 @@ import {
 
 export {
   canStaffChangeStatus,
+  canStaffRollbackRequest,
   canTransitionRequestStatus,
   canStudentCancelRequest,
   getAllowedRequestTransitions,
@@ -21,6 +23,7 @@ export const canStaffAccessRequest = canStaffReadRequest;
 export type StaffRequestAccess = {
   id: number;
   department: string;
+  isSupervisor?: boolean;
 };
 
 export function isRequestType(value: string): value is RequestType {
@@ -45,7 +48,7 @@ export function getStaffRequestListFilter(
   rawStatus: unknown,
   filters: { search?: string; createdAtGte?: Date } = {},
 ) {
-  const accessFilter = getStaffRequestFilter(staff);
+  const accessFilter = staff.isSupervisor ? {} : getStaffRequestFilter(staff);
   const status =
     typeof rawStatus === "string" && isRequestStatus(rawStatus)
       ? rawStatus
@@ -98,5 +101,60 @@ export function getAllowedStaffRequestTransitions(
   return getAllowedRequestTransitions(status).filter(
     (nextStatus) => nextStatus !== "CANCELLED",
   );
+}
+
+export type RequestStatusHistoryEntry = {
+  fromStatus: RequestStatus | null;
+  status: RequestStatus;
+  isRollback: boolean;
+};
+
+export function getPreviousRequestStatus(
+  history: readonly RequestStatusHistoryEntry[],
+  currentStatus: RequestStatus,
+): RequestStatus | null {
+  const previousStatuses: RequestStatus[] = [];
+  let replayedStatus: RequestStatus | null = null;
+
+  for (const entry of history) {
+    if (entry.fromStatus === null) {
+      if (replayedStatus !== null) {
+        return null;
+      }
+      replayedStatus = entry.status;
+      continue;
+    }
+
+    if (replayedStatus !== entry.fromStatus) {
+      return null;
+    }
+
+    if (entry.isRollback) {
+      const previousStatus = previousStatuses.pop();
+      if (
+        previousStatus !== entry.status ||
+        !canTransitionRequestStatus(entry.status, entry.fromStatus)
+      ) {
+        return null;
+      }
+    } else {
+      if (!canTransitionRequestStatus(entry.fromStatus, entry.status)) {
+        return null;
+      }
+      previousStatuses.push(entry.fromStatus);
+    }
+
+    replayedStatus = entry.status;
+  }
+
+  if (replayedStatus !== currentStatus) {
+    return null;
+  }
+
+  const previousStatus = previousStatuses.at(-1) ?? null;
+  return previousStatus !== null &&
+    canTransitionRequestStatus(previousStatus, currentStatus)
+    ? previousStatus
+    : null;
 }
 

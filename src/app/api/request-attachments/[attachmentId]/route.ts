@@ -27,7 +27,7 @@ export async function GET(
   { params }: { params: Promise<{ attachmentId: string }> },
 ): Promise<Response> {
   const user = await getCurrentUser();
-  if (!user) {
+  if (!user || user.requiresPasswordSetup) {
     return Response.json(
       { error: "Authentication required." },
       { status: 401, headers: privateHeaders },

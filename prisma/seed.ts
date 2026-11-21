@@ -13,7 +13,9 @@ import { validateGradebookSeedData } from "../src/lib/gradebook-data";
 
 type SeedAccount = {
   login: string;
-  password: string;
+  password: string | null;
+  phone?: string;
+  accountStatus?: "INVITED" | "ACTIVE";
   fullName: string;
   faculty: string;
   direction: string;
@@ -109,11 +111,15 @@ const environmentAccounts = [
   {
     login: "student.alpha",
     passwordVariable: "SEED_ALPHA_PASSWORD",
+    phone: "+79000000001",
+    accountStatus: "ACTIVE",
     ...academicAccountData("student.alpha"),
   },
   {
     login: "student.beta",
-    passwordVariable: "SEED_BETA_PASSWORD",
+    passwordVariable: null,
+    phone: "+79000000002",
+    accountStatus: "INVITED",
     ...academicAccountData("student.beta"),
   },
 ] as const;
@@ -293,6 +299,9 @@ async function main() {
   const accounts: SeedAccount[] = [
     ...originalAccounts,
     ...environmentAccounts.map(({ passwordVariable, ...account }) => {
+      if (passwordVariable === null) {
+        return { ...account, password: null };
+      }
       const password = process.env[passwordVariable];
       if (!password) {
         throw new Error(
@@ -338,7 +347,9 @@ async function main() {
     const [passwordHashes, staffDemoPasswordHash, staffOtherPasswordHash] =
       await Promise.all([
         Promise.all(
-          accounts.map((account) => bcrypt.hash(account.password, 12)),
+          accounts.map((account) =>
+            account.password ? bcrypt.hash(account.password, 12) : null,
+          ),
         ),
         bcrypt.hash(staffDemoPassword, 12),
         bcrypt.hash(randomBytes(32).toString("hex"), 12),
@@ -446,6 +457,8 @@ async function main() {
             direction: account.direction,
             course: account.course,
             groupId: getGroupId(groupIds, account.groupName),
+            phone: account.phone,
+            accountStatus: account.accountStatus ?? "ACTIVE",
             recordBookNumber: account.recordBookNumber,
             studyForm: account.studyForm,
           },
@@ -678,6 +691,7 @@ async function main() {
           statusHistory: {
             create: [
               {
+                fromStatus: null,
                 status: "NEW",
                 authorUserId: alphaUserId,
                 comment: "Заявка подана студентом.",
@@ -700,11 +714,13 @@ async function main() {
           statusHistory: {
             create: [
               {
+                fromStatus: null,
                 status: "NEW",
                 authorUserId: betaUserId,
                 comment: "Заявка подана студентом.",
               },
               {
+                fromStatus: "NEW",
                 status: "IN_PROGRESS",
                 authorUserId: demoStaffUserId,
                 comment: "Заявка принята в работу.",
@@ -724,16 +740,19 @@ async function main() {
           statusHistory: {
             create: [
               {
+                fromStatus: null,
                 status: "NEW",
                 authorUserId: alphaUserId,
                 comment: "Заявка подана студентом.",
               },
               {
+                fromStatus: "NEW",
                 status: "IN_PROGRESS",
                 authorUserId: otherStaffUserId,
                 comment: "Заявка принята в работу.",
               },
               {
+                fromStatus: "IN_PROGRESS",
                 status: "READY",
                 authorUserId: otherStaffUserId,
                 comment: "Справка подготовлена.",
@@ -756,16 +775,19 @@ async function main() {
           statusHistory: {
             create: [
               {
+                fromStatus: null,
                 status: "NEW",
                 authorUserId: betaUserId,
                 comment: "Заявка подана студентом.",
               },
               {
+                fromStatus: "NEW",
                 status: "IN_PROGRESS",
                 authorUserId: otherStaffUserId,
                 comment: "Заявка проверена сотрудником.",
               },
               {
+                fromStatus: "IN_PROGRESS",
                 status: "REJECTED",
                 authorUserId: otherStaffUserId,
                 comment: "Тип не разрешён staff.demo.",
