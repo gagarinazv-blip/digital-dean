@@ -15,6 +15,36 @@
   gap: var(--space-2);
 }
 
+.welcomeMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+.notificationLink {
+  min-height: var(--size-touch);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-blue-700);
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+}
+
+.notificationLink:hover {
+  color: var(--color-wine-900);
+}
+
+.notificationDot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-pill);
+  background: var(--color-danger-text);
+}
+
 .welcome h1 {
   color: var(--color-ink);
   font-size: var(--font-size-h1);
@@ -148,11 +178,21 @@
   color: var(--color-surface);
   font-size: var(--font-size-body-compact);
   font-weight: 600;
-  transition: background-color 150ms ease;
+  transition:
+    background-color var(--motion-fast) var(--motion-ease),
+    transform var(--motion-fast) var(--motion-ease),
+    box-shadow var(--motion-fast) var(--motion-ease);
 }
 
 .heroButton:hover {
   background: var(--color-wine-700);
+  box-shadow: var(--shadow-soft);
+  transform: translateY(-1px);
+}
+
+.heroButton:active,
+.actionTile:active {
+  transform: scale(0.985);
 }
 
 .heroButton:focus-visible,
@@ -375,6 +415,38 @@
   box-shadow: 0 0 0 1px var(--color-wine-900);
 }
 
+.timelineCurrent .timelineDot {
+  background: var(--color-wine-900);
+  box-shadow: 0 0 0 4px var(--color-wine-100);
+}
+
+.timelineCurrent .timelineDetails strong {
+  color: var(--color-wine-900);
+}
+
+.timelineNext .timelineDot {
+  background: var(--color-blue-700);
+  box-shadow: 0 0 0 4px var(--color-blue-100);
+}
+
+.timelineBadge {
+  width: fit-content;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-wine-100);
+  color: var(--color-wine-900) !important;
+  font-size: var(--font-size-caption) !important;
+  font-weight: 600;
+}
+
+.timelineNext .timelineBadge {
+  background: var(--color-blue-100);
+  color: var(--color-blue-700) !important;
+}
+
 .timelineDetails {
   min-width: 0;
   display: grid;
@@ -449,12 +521,18 @@
   border-radius: var(--radius-card);
   background: var(--color-subtle);
   color: var(--color-ink);
-  transition: border-color 150ms ease, background-color 150ms ease;
+  transition:
+    border-color var(--motion-fast) var(--motion-ease),
+    background-color var(--motion-fast) var(--motion-ease),
+    transform var(--motion-fast) var(--motion-ease),
+    box-shadow var(--motion-fast) var(--motion-ease);
 }
 
 .actionTile:hover {
   border-color: var(--color-border);
   background: var(--color-wine-100);
+  box-shadow: var(--shadow-soft);
+  transform: translateY(-2px);
 }
 
 .actionIcon {
@@ -481,6 +559,47 @@
   overflow-wrap: anywhere;
 }
 
+.skeletonHeading,
+.skeletonHero,
+.skeletonCard {
+  display: block;
+  border-radius: var(--radius-card);
+  background: linear-gradient(
+    100deg,
+    var(--color-subtle) 25%,
+    var(--color-surface) 45%,
+    var(--color-subtle) 65%
+  );
+  background-size: 220% 100%;
+  animation: student-shimmer 1.6s ease-in-out infinite;
+}
+
+.skeletonHeading {
+  width: min(420px, 72%);
+  height: 68px;
+}
+
+.skeletonGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+  gap: var(--space-4);
+}
+
+.skeletonHero {
+  min-height: 300px;
+}
+
+.skeletonCard {
+  min-height: 136px;
+  margin-bottom: var(--space-3);
+}
+
+@keyframes student-shimmer {
+  to {
+    background-position-x: -220%;
+  }
+}
+
 @media (max-width: 1023px) {
   .dashboardGrid {
     grid-template-columns: minmax(0, 1fr) minmax(250px, 0.9fr);
@@ -501,6 +620,10 @@
     padding: 0 var(--space-1);
   }
 
+  .welcomeMeta {
+    align-items: flex-start;
+  }
+
   .welcome h1 {
     font-size: var(--font-size-h1-mobile);
     line-height: 32px;
@@ -509,6 +632,10 @@
   .dashboardGrid {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--space-3);
+  }
+
+  .skeletonGrid {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .nextLesson {
@@ -553,7 +680,11 @@
 
 @media (prefers-reduced-motion: reduce) {
   .heroButton,
-  .actionTile {
+  .actionTile,
+  .skeletonHeading,
+  .skeletonHero,
+  .skeletonCard {
     transition: none;
+    animation: none;
   }
 }

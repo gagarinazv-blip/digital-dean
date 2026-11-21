@@ -189,6 +189,58 @@ describe("getCampusTodayData", () => {
     );
   });
 
+  it("keeps an in-progress lesson as the featured lesson", async () => {
+    prismaMock.scheduleItem.findMany.mockResolvedValue([
+      {
+        id: 40,
+        date: new Date("2026-11-14T00:00:00.000Z"),
+        weekday: null,
+        startTime: new Date("1970-01-01T14:00:00.000Z"),
+        endTime: new Date("1970-01-01T16:00:00.000Z"),
+        startsAt: new Date("2026-11-14T11:00:00.000Z"),
+        endsAt: new Date("2026-11-14T13:00:00.000Z"),
+        originalStartsAt: null,
+        originalEndsAt: null,
+        originalRoom: null,
+        kind: "LECTURE",
+        room: "101",
+        teacher: "Преподаватель 1",
+        status: "PLANNED",
+        changeNote: null,
+        subject: { name: "Пара сейчас" },
+      },
+      {
+        id: 41,
+        date: new Date("2026-11-14T00:00:00.000Z"),
+        weekday: null,
+        startTime: new Date("1970-01-01T17:00:00.000Z"),
+        endTime: new Date("1970-01-01T19:00:00.000Z"),
+        startsAt: new Date("2026-11-14T14:00:00.000Z"),
+        endsAt: new Date("2026-11-14T16:00:00.000Z"),
+        originalStartsAt: null,
+        originalEndsAt: null,
+        originalRoom: null,
+        kind: "SEMINAR",
+        room: "202",
+        teacher: "Преподаватель 2",
+        status: "PLANNED",
+        changeNote: null,
+        subject: { name: "Следующая пара" },
+      },
+    ]);
+
+    const data = await getCampusTodayData(
+      new Date("2026-11-14T12:00:00.000Z"),
+    );
+
+    expect(data.nextLesson).toEqual(
+      expect.objectContaining({
+        isCurrent: true,
+        subject: { name: "Пара сейчас" },
+      }),
+    );
+  });
+
   it("uses the current UTC time for the next pair and includes cancellations in changes", async () => {
     prismaMock.scheduleItem.findMany.mockResolvedValue([
       {

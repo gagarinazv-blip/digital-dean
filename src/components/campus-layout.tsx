@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { logoutAction } from "@/app/profile/actions";
 import { CampusNavigation } from "@/components/campus-navigation";
+import { NotificationBell } from "@/components/notification-bell";
 import styles from "./campus-layout.module.css";
 
 type CampusStudentMenu = {
@@ -28,24 +29,6 @@ export function CampusLayout({
     <div className={styles.layout}>
       <header className={styles.header}>
         <div className={styles.headerInner}>
-          <Link
-            aria-label="Открыть расписание"
-            className={styles.mobileSchedule}
-            href="/schedule"
-          >
-            <svg
-              aria-hidden="true"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="1.8"
-              viewBox="0 0 24 24"
-            >
-              <rect x="3" y="5" width="18" height="16" rx="2" />
-              <path d="M16 3v4M8 3v4M3 10h18" />
-            </svg>
-          </Link>
           <Link
             aria-label="Кампус ОЭС — главная"
             className={styles.brand}
@@ -85,35 +68,7 @@ export function CampusLayout({
             <span>Поиск по сервисам</span>
           </div>
           <div className={styles.headerActions}>
-            <Link
-              aria-label={
-                unreadNotificationCount > 0
-                  ? `Уведомления, непрочитанных: ${unreadNotificationCount}`
-                  : "Уведомления"
-              }
-              className={styles.mobileNotifications}
-              href="/notifications"
-            >
-              <svg
-                aria-hidden="true"
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="1.8"
-                viewBox="0 0 24 24"
-              >
-                <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
-                <path d="M10 21h4" />
-              </svg>
-              {unreadNotificationCount > 0 && (
-                <span aria-hidden="true" className={styles.headerUnreadBadge}>
-                  {unreadNotificationCount > 99
-                    ? "99+"
-                    : unreadNotificationCount}
-                </span>
-              )}
-            </Link>
+            <NotificationBell initialUnreadCount={unreadNotificationCount} />
             <details className={styles.accountMenu}>
               <summary
                 aria-label={`Меню аккаунта: ${student.fullName}`}
@@ -142,9 +97,11 @@ export function CampusLayout({
             </details>
           </div>
         </div>
-        <CampusNavigation unreadNotificationCount={unreadNotificationCount} />
       </header>
-      <div className={styles.content}>{children}</div>
+      <div className={styles.shellBody}>
+        <CampusNavigation unreadNotificationCount={unreadNotificationCount} />
+        <div className={styles.content}>{children}</div>
+      </div>
     </div>
   );
 }

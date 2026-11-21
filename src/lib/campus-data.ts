@@ -123,10 +123,16 @@ export async function getCampusTodayData(now = getDemoNow()) {
   const todaySchedule = schedule.filter(
     (item) => getMoscowDateKey(item.startTime) === week.todayKey,
   );
-  let nextScheduleLesson = getNextScheduleLesson(
-    scheduleData.lessons,
-    now,
-  );
+  const activeScheduleLesson =
+    scheduleData.lessons.find(
+      (lesson) =>
+        lesson.status !== "CANCELLED" &&
+        lesson.startsAt.getTime() <= now.getTime() &&
+        lesson.endsAt.getTime() > now.getTime(),
+    ) ?? null;
+  let nextScheduleLesson =
+    activeScheduleLesson ??
+    getNextScheduleLesson(scheduleData.lessons, now);
   if (!nextScheduleLesson) {
     const nextWeekAnchor = new Date(scheduleData.endDate);
     nextWeekAnchor.setUTCHours(12, 0, 0, 0);
@@ -139,6 +145,8 @@ export async function getCampusTodayData(now = getDemoNow()) {
   }
   const nextLesson = nextScheduleLesson
     ? {
+        isCurrent:
+          activeScheduleLesson?.id === nextScheduleLesson.id,
         occurrenceDate: new Date(
           `${getMoscowDateKey(nextScheduleLesson.startsAt)}T00:00:00.000Z`,
         ),
