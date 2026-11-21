@@ -102,14 +102,9 @@ function CampusAccountMenuState({ fullName }: { fullName: string }) {
           >
             Профиль
           </Link>
-          <form
-            action={logoutAction}
-            onSubmit={() => setIsOpen(false)}
-            role="none"
-          >
+          <form action={logoutAction} role="none">
             <button
               className={styles.logout}
-              onClick={() => setIsOpen(false)}
               role="menuitem"
               type="submit"
             >
