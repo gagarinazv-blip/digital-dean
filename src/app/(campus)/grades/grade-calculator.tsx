@@ -83,7 +83,7 @@ export function GradeCalculator({ formula }: { formula: GradeFormula }) {
           </svg>
         </span>
         <span>
-          <strong>Только гипотетический расчёт</strong>
+          <strong>Это прогноз, а не официальная оценка</strong>
           <small>
             Фактические оценки доступны только для чтения. Значения прогноза не
             сохраняются в журнал.

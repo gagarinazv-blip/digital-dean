@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import styles from "./campus-navigation.module.css";
 
 const navigation = [
@@ -58,6 +58,8 @@ const iconPaths: Record<(typeof navigation)[number]["icon"], ReactNode> = {
   ),
 };
 
+const unreadCountEvent = "campus:unread-notification-count";
+
 function NavigationIcon({
   name,
 }: {
@@ -85,52 +87,123 @@ export function CampusNavigation({
   unreadNotificationCount: number;
 }) {
   const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(unreadNotificationCount);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const handleUnreadCount = (event: Event) => {
+      const count = (event as CustomEvent<unknown>).detail;
+      if (
+        typeof count === "number" &&
+        Number.isSafeInteger(count) &&
+        count >= 0
+      ) {
+        setUnreadCount(count);
+      }
+    };
+    window.addEventListener(unreadCountEvent, handleUnreadCount);
+    return () => window.removeEventListener(unreadCountEvent, handleUnreadCount);
+  }, []);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMobileOpen(false);
+        menuButtonRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [mobileOpen]);
 
   return (
-    <nav className={styles.navigation} aria-label="Разделы кабинета">
-      {navigation.map((item) => {
+    <>
+      <button
+        aria-controls="campus-mobile-navigation"
+        aria-expanded={mobileOpen}
+        aria-label={mobileOpen ? "Закрыть меню" : "Открыть меню"}
+        className={styles.mobileMenuButton}
+        onClick={() => setMobileOpen((open) => !open)}
+        ref={menuButtonRef}
+        type="button"
+      >
+        <svg
+          aria-hidden="true"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeWidth="1.8"
+          viewBox="0 0 24 24"
+        >
+          {mobileOpen ? (
+            <path d="m6 6 12 12M18 6 6 18" />
+          ) : (
+            <path d="M4 7h16M4 12h16M4 17h16" />
+          )}
+        </svg>
+      </button>
+      {mobileOpen && (
+        <button
+          aria-label="Закрыть меню"
+          className={styles.mobileBackdrop}
+          onClick={() => setMobileOpen(false)}
+          type="button"
+        />
+      )}
+      <nav
+        className={`${styles.navigation} ${
+          mobileOpen ? styles.mobileOpen : ""
+        }`}
+        id="campus-mobile-navigation"
+        aria-label="Разделы кабинета"
+      >
+        {navigation.map((item) => {
         const isCurrent =
           pathname === item.href ||
           (item.href !== "/" && pathname.startsWith(`${item.href}/`)) ||
           (item.href === "/documents" && pathname.startsWith("/help"));
 
-        return (
-          <Link
+          return (
+            <Link
             aria-label={
               item.href === "/notifications" &&
-              unreadNotificationCount > 0
-                ? `Уведомления, непрочитанных: ${unreadNotificationCount}`
+              unreadCount > 0
+                ? `Уведомления, непрочитанных: ${unreadCount}`
                 : item.label
             }
             aria-current={isCurrent ? "page" : undefined}
             className={`${styles.navigationLink} ${isCurrent ? styles.active : ""}`}
             href={item.href}
             key={item.href}
-            title={item.label}
-          >
+              onClick={() => setMobileOpen(false)}
+              title={item.label}
+            >
             <span className={styles.icon}>
               <NavigationIcon name={item.icon} />
               {item.href === "/notifications" &&
-                unreadNotificationCount > 0 && (
+                unreadCount > 0 && (
                   <span aria-hidden="true" className={styles.unreadBadge}>
-                    {unreadNotificationCount > 99
+                    {unreadCount > 99
                       ? "99+"
-                      : unreadNotificationCount}
+                      : unreadCount}
                   </span>
                 )}
             </span>
             <span className={styles.navigationLabel}>{item.label}</span>
             {item.href === "/notifications" &&
-              unreadNotificationCount > 0 && (
+              unreadCount > 0 && (
                 <span aria-hidden="true" className={styles.desktopUnreadBadge}>
-                  {unreadNotificationCount > 99
+                  {unreadCount > 99
                     ? "99+"
-                    : unreadNotificationCount}
+                    : unreadCount}
                 </span>
               )}
-          </Link>
-        );
-      })}
-    </nav>
+            </Link>
+          );
+        })}
+      </nav>
+    </>
   );
 }

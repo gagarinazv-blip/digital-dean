@@ -8,6 +8,7 @@ export type ScheduleLessonView = {
   kindLabel: string;
   status: ScheduleStatus;
   startsAtIso: string;
+  endsAtIso: string;
   timeLabel: string;
   originalTimeLabel: string | null;
   originalRoom: string | null;
@@ -38,11 +39,40 @@ const statusPresentation: Record<
   CANCELLED: { icon: "×", label: "Отменено", className: styles.cancelled },
 };
 
-function LessonCards({ lessons }: { lessons: ScheduleLessonView[] }) {
+function LessonCards({
+  lessons,
+  now,
+  dayKey,
+  todayKey,
+}: {
+  lessons: ScheduleLessonView[];
+  now: Date;
+  dayKey: string;
+  todayKey: string;
+}) {
+  const isToday = dayKey === todayKey;
+  const currentLesson = isToday
+    ? lessons.find(
+        (lesson) =>
+          lesson.status !== "CANCELLED" &&
+          new Date(lesson.startsAtIso).getTime() <= now.getTime() &&
+          new Date(lesson.endsAtIso).getTime() > now.getTime(),
+      )
+    : undefined;
+  const nextLesson = isToday
+    ? lessons.find(
+        (lesson) =>
+          lesson.status !== "CANCELLED" &&
+          new Date(lesson.startsAtIso).getTime() >= now.getTime(),
+      )
+    : undefined;
+
   return (
     <ul className={styles.lessonList}>
       {lessons.map((lesson) => {
         const status = statusPresentation[lesson.status];
+        const isCurrent = currentLesson?.id === lesson.id;
+        const isNext = nextLesson?.id === lesson.id;
         const timeChanged = Boolean(
           lesson.originalTimeLabel &&
             lesson.originalTimeLabel !== lesson.timeLabel,
@@ -66,77 +96,95 @@ function LessonCards({ lessons }: { lessons: ScheduleLessonView[] }) {
         const cancelledRoom = lesson.originalRoom ?? lesson.room;
 
         return (
-          <li
-            className={`${styles.lessonCard} ${
-              lesson.status === "RESCHEDULED" ? styles.rescheduledCard : ""
-            } ${lesson.status === "CANCELLED" ? styles.cancelledCard : ""}`}
-            id={`lesson-${lesson.id.split("-")[0]}`}
-            key={lesson.id}
-          >
-            <div className={styles.lessonTimeColumn}>
-              {lesson.status === "PLANNED" ||
-              (lesson.status === "RESCHEDULED" && !timeChanged) ? (
-                <time
-                  className={styles.lessonTime}
-                  dateTime={lesson.startsAtIso}
-                >
-                  {lesson.timeLabel}
-                </time>
-              ) : lesson.status === "RESCHEDULED" ? (
-                <time
-                  className={styles.lessonTime}
-                  dateTime={lesson.startsAtIso}
-                >
-                  {lesson.timeLabel}
-                </time>
-              ) : (
-                <span className={styles.lessonTime}>
-                  <s>{cancelledTime}</s>
-                </span>
-              )}
-            </div>
-            <div className={styles.lessonContent}>
-              <div className={styles.lessonTitleRow}>
-                <h3 className={styles.subject}>{lesson.subject}</h3>
-                <span className={`${styles.statusBadge} ${status.className}`}>
-                  <span aria-hidden="true">{status.icon}</span>
-                  {status.label}
-                </span>
-              </div>
-              <p className={styles.kind}>
-                {lesson.kindLabel} · {lesson.teacher}
-              </p>
-              {lesson.status === "RESCHEDULED" &&
-                (timeChanged || roomChanged) && (
-                  <div className={styles.scheduleChange}>
-                    <p className={styles.changeWas}>
-                      Было: <s>{changedBefore}</s>
-                    </p>
-                    <p className={styles.changeNow}>
-                      Стало:{" "}
-                      {timeChanged ? (
-                        <time dateTime={lesson.startsAtIso}>
-                          {changedAfter}
-                        </time>
-                      ) : (
-                        changedAfter
-                      )}
-                    </p>
+          <li id={`lesson-${lesson.id.split("-")[0]}`} key={lesson.id}>
+            <details
+              className={`${styles.lessonCard} ${
+                lesson.status === "RESCHEDULED" ? styles.rescheduledCard : ""
+              } ${lesson.status === "CANCELLED" ? styles.cancelledCard : ""} ${
+                isCurrent ? styles.currentCard : ""
+              } ${isNext ? styles.nextCard : ""}`}
+            >
+              <summary className={styles.lessonSummary}>
+                <div className={styles.lessonTimeColumn}>
+                  {lesson.status === "CANCELLED" ? (
+                    <span className={styles.lessonTime}>
+                      <s>{cancelledTime}</s>
+                    </span>
+                  ) : (
+                    <time
+                      className={styles.lessonTime}
+                      dateTime={lesson.startsAtIso}
+                    >
+                      {lesson.timeLabel}
+                    </time>
+                  )}
+                </div>
+                <div className={styles.lessonContent}>
+                  <div className={styles.lessonTitleRow}>
+                    <h3 className={styles.subject}>{lesson.subject}</h3>
+                    <span
+                      className={`${styles.statusBadge} ${status.className}`}
+                    >
+                      <span aria-hidden="true">{status.icon}</span>
+                      {status.label}
+                    </span>
                   </div>
+                  <p className={styles.kind}>
+                    {lesson.kindLabel} · {lesson.teacher}
+                  </p>
+                  {(isCurrent || isNext) && (
+                    <span className={styles.eventBadge}>
+                      {isCurrent ? "Сейчас" : "Далее"}
+                    </span>
+                  )}
+                </div>
+                <span className={styles.roomBadge}>
+                  Ауд.{" "}
+                  {lesson.status === "CANCELLED"
+                    ? cancelledRoom
+                    : lesson.room}
+                </span>
+                <span className={styles.detailChevron} aria-hidden="true">
+                  ⌄
+                </span>
+              </summary>
+              <div className={styles.lessonExpanded}>
+                <div>
+                  <span>Время</span>
+                  <strong>
+                    <time dateTime={lesson.startsAtIso}>{lesson.timeLabel}</time>
+                  </strong>
+                </div>
+                <div>
+                  <span>Формат занятия</span>
+                  <strong>{lesson.kindLabel}</strong>
+                </div>
+                <div>
+                  <span>Преподаватель</span>
+                  <strong>{lesson.teacher}</strong>
+                </div>
+                {lesson.status === "RESCHEDULED" &&
+                  (timeChanged || roomChanged) && (
+                    <div className={styles.changeDetails}>
+                      <span>Изменение</span>
+                      <strong>
+                        Было: <s>{changedBefore}</s>
+                        {" · "}
+                        Стало: {changedAfter}
+                      </strong>
+                    </div>
+                  )}
+                {lesson.status === "CANCELLED" && (
+                  <p className={styles.cancelledDetails}>
+                    Занятие отменено. Было: <s>{cancelledTime}</s>
+                    {cancelledRoom ? `, ауд. ${cancelledRoom}` : ""}
+                  </p>
                 )}
-              {lesson.status === "CANCELLED" && (
-                <p className={styles.cancelledDetails}>
-                  Было: <s>{cancelledTime}</s>
-                  {cancelledRoom ? `, ауд. ${cancelledRoom}` : ""}
-                </p>
-              )}
-              {lesson.changeNote && (
-                <p className={styles.changeNote}>{lesson.changeNote}</p>
-              )}
-            </div>
-            <span className={styles.roomBadge}>
-              Ауд. {lesson.status === "CANCELLED" ? cancelledRoom : lesson.room}
-            </span>
+                {lesson.changeNote && (
+                  <p className={styles.changeNote}>{lesson.changeNote}</p>
+                )}
+              </div>
+            </details>
           </li>
         );
       })}
@@ -148,19 +196,34 @@ export function ScheduleView({
   days,
   todayKey,
   view,
+  nowIso,
+  dayHref,
   todayHref,
   weekHref,
   nextLesson,
+  previousHref,
+  nextHref,
+  selectedDate,
 }: {
   days: ScheduleDayView[];
   todayKey: string;
   view: "today" | "week";
+  nowIso: string;
+  dayHref: string;
   todayHref: string;
   weekHref: string;
   nextLesson: ScheduleNextLessonView | null;
+  previousHref: string;
+  nextHref: string;
+  selectedDate: string;
 }) {
-  const today = days.find((day) => day.key === todayKey);
-  const todayLessons = today?.lessons ?? [];
+  const selectedDay = days.find((day) => day.key === selectedDate);
+  const selectedLessons = selectedDay?.lessons ?? [];
+  const displayedRange =
+    view === "week"
+      ? `${days[0]?.label ?? ""} — ${days[days.length - 1]?.label ?? ""}`
+      : selectedDay?.label ?? "Выбранный день";
+  const now = new Date(nowIso);
 
   return (
     <div className={styles.schedulePage}>
@@ -180,7 +243,11 @@ export function ScheduleView({
         </span>
         <div className={styles.weekHeroText}>
           <strong>
-            {view === "week" ? "Текущая неделя" : "Расписание на сегодня"}
+            {view === "week"
+              ? "Расписание на неделю"
+              : selectedDate === todayKey
+                ? "Расписание на сегодня"
+                : "Расписание на день"}
           </strong>
           <span>
             {days[0]?.label} — {days[days.length - 1]?.label}
@@ -193,7 +260,7 @@ export function ScheduleView({
         <Link
           aria-current={view === "today" ? "page" : undefined}
           className={styles.viewButton}
-          href={todayHref}
+          href={dayHref}
         >
           День
         </Link>
@@ -206,14 +273,53 @@ export function ScheduleView({
         </Link>
       </nav>
 
+      <nav className={styles.dateControls} aria-label="Навигация по датам">
+        <Link
+          aria-label={view === "week" ? "Предыдущая неделя" : "Предыдущий день"}
+          className={styles.dateArrow}
+          href={previousHref}
+        >
+          <span aria-hidden="true">←</span>
+        </Link>
+        <span className={styles.selectedRange} aria-live="polite">
+          {displayedRange}
+        </span>
+        <Link
+          aria-label={view === "week" ? "Следующая неделя" : "Следующий день"}
+          className={styles.dateArrow}
+          href={nextHref}
+        >
+          <span aria-hidden="true">→</span>
+        </Link>
+        <Link className={styles.todayButton} href={todayHref}>
+          Сегодня
+        </Link>
+      </nav>
+
       {view === "today" ? (
         <section>
-          <h2 className={styles.dayHeading}>{today?.label}</h2>
-          {todayLessons.length > 0 ? (
-            <LessonCards lessons={todayLessons} />
+          <div className={styles.dayTitleRow}>
+            <h2 className={styles.dayHeading}>
+              {selectedDay?.label ?? "Выбранный день"}
+            </h2>
+            {selectedDate === todayKey && (
+              <span className={styles.todayMark}>Сегодня</span>
+            )}
+          </div>
+          {selectedLessons.length > 0 ? (
+            <LessonCards
+              lessons={selectedLessons}
+              dayKey={selectedDate}
+              now={now}
+              todayKey={todayKey}
+            />
           ) : (
             <div className={styles.emptyState} aria-live="polite">
-              <strong>Сегодня занятий нет</strong>
+              <strong>
+                {selectedDate === todayKey
+                  ? "Сегодня занятий нет"
+                  : "На эту дату занятий нет"}
+              </strong>
               {nextLesson ? (
                 <p>
                   Ближайшее: {nextLesson.dayLabel}, {nextLesson.timeLabel},{" "}
@@ -263,7 +369,12 @@ export function ScheduleView({
                   )}
                 </div>
                 {day.lessons.length > 0 ? (
-                  <LessonCards lessons={day.lessons} />
+                  <LessonCards
+                    lessons={day.lessons}
+                    dayKey={day.key}
+                    now={now}
+                    todayKey={todayKey}
+                  />
                 ) : (
                   <p className={styles.emptyDay}>Занятий нет</p>
                 )}

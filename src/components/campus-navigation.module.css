@@ -1,10 +1,8 @@
 .navigation {
-  position: fixed;
+  position: relative;
   z-index: 15;
-  top: var(--size-header-desktop);
-  bottom: 0;
-  left: 0;
   width: var(--size-sidebar);
+  min-height: 0;
   display: grid;
   align-content: start;
   gap: var(--space-1);
@@ -12,6 +10,11 @@
   overflow-y: auto;
   border-right: 1px solid var(--color-border);
   background: var(--color-surface);
+}
+
+.mobileMenuButton,
+.mobileBackdrop {
+  display: none;
 }
 
 .navigationLink {
@@ -127,61 +130,101 @@
 }
 
 @media (max-width: 680px) {
+  .mobileMenuButton {
+    position: fixed;
+    z-index: 51;
+    top: calc((var(--size-header-mobile) - var(--size-touch)) / 2);
+    left: var(--space-4);
+    width: var(--size-touch);
+    height: var(--size-touch);
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--color-surface);
+  }
+
+  .mobileMenuButton svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .mobileBackdrop {
+    position: fixed;
+    z-index: 39;
+    inset: var(--size-header-mobile) 0 0;
+    display: block;
+    border: 0;
+    background: rgb(38 34 34 / 32%);
+  }
+
   .navigation {
-    top: auto;
-    right: 0;
+    position: fixed;
+    z-index: 40;
+    top: var(--size-header-mobile);
     bottom: 0;
     left: 0;
-    width: 100%;
-    height: calc(var(--size-bottom-nav) + env(safe-area-inset-bottom));
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-    align-content: stretch;
-    gap: 0;
-    padding: var(--space-1) var(--space-2) env(safe-area-inset-bottom);
-    overflow: visible;
+    width: min(280px, calc(100vw - 48px));
+    height: auto;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: var(--space-1);
+    padding: var(--space-4);
+    overflow-y: auto;
     border: 0;
-    border-top: 1px solid var(--color-border);
+    border-right: 1px solid var(--color-border);
     background: var(--color-surface);
     box-shadow: var(--shadow-soft);
+    transform: translateX(-101%);
+    transition: transform var(--motion-page) var(--motion-ease);
+  }
+
+  .mobileOpen {
+    transform: translateX(0);
   }
 
   .navigationLink {
-    min-width: 0;
-    min-height: var(--size-touch);
-    display: grid;
-    align-content: center;
-    justify-items: center;
-    gap: var(--space-1);
-    padding: var(--space-1);
-    border-radius: var(--radius-sm);
+    min-height: 48px;
+    display: flex;
+    justify-content: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
   }
 
   .navigationLabel {
     position: static;
     width: auto;
     height: auto;
-    display: block;
-    overflow: hidden;
+    display: inline;
+    overflow: visible;
     clip-path: none;
-    font-size: var(--font-size-nav-mobile);
-    line-height: 1.15;
-    text-align: center;
+    font-size: var(--font-size-body-compact);
+    line-height: 1.35;
+    text-align: left;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .iconSvg {
     width: 22px;
     height: 22px;
   }
 
-  .iconSvg {
-    width: 20px;
+  .desktopUnreadBadge {
+    position: static;
+    width: auto;
     height: 20px;
+    clip-path: none;
   }
 
-  .unreadBadge,
-  .desktopUnreadBadge {
-    display: none;
+  .unreadBadge {
+    display: grid;
   }
 }

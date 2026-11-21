@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type KeyboardEvent } from "react";
 import styles from "./grades.module.css";
 
 export type GradeSubjectSummary = {
@@ -103,6 +103,11 @@ function SubjectTable({
                       )}
                       <strong>{subject.name}</strong>
                       <small>{subject.controlLabel}</small>
+                      <small>
+                        {subject.id === "pi31-s5-networks"
+                          ? "Прогноз по формуле доступен"
+                          : "Весовой прогноз не опубликован"}
+                      </small>
                     </span>
                   </Link>
                 </td>
@@ -152,13 +157,52 @@ export function GradesOverview({
   const selectedSemester =
     semesters.find((semester) => semester.id === selectedSemesterId) ??
     currentSemester;
+  const displayedSemester =
+    period === "current" ? selectedSemester : currentSemester;
   const completionPercent =
-    currentSemester && currentSemester.totalCredits > 0
+    displayedSemester && displayedSemester.totalCredits > 0
       ? Math.round(
-          (currentSemester.completedCredits / currentSemester.totalCredits) *
+          (displayedSemester.completedCredits / displayedSemester.totalCredits) *
             100,
         )
       : 0;
+  const periodIndicatorClass =
+    period === "current"
+      ? styles.periodCurrent
+      : period === "all"
+        ? styles.periodAll
+        : styles.periodDynamics;
+  const handlePeriodKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    const tabs =
+      event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>(
+        '[role="tab"]',
+      );
+    if (!tabs?.length) return;
+
+    const currentIndex = Array.from(tabs).indexOf(event.currentTarget);
+    const nextIndex =
+        event.key === "ArrowRight"
+          ? (currentIndex + 1) % tabs.length
+          : event.key === "ArrowLeft"
+            ? (currentIndex - 1 + tabs.length) % tabs.length
+            : event.key === "Home"
+              ? 0
+              : event.key === "End"
+                ? tabs.length - 1
+                : -1;
+    if (nextIndex < 0) return;
+
+    event.preventDefault();
+    const nextTab = tabs[nextIndex];
+    nextTab.focus();
+    setPeriod(
+      nextTab.id === "grades-period-all-tab"
+        ? "all"
+        : nextTab.id === "grades-period-dynamics-tab"
+          ? "dynamics"
+          : "current",
+    );
+  };
 
   if (!currentSemester) {
     return (
@@ -174,10 +218,12 @@ export function GradesOverview({
       <div className={styles.overviewHero}>
         <section className={styles.averageCard}>
           <span className={styles.currentSemesterBadge}>
-            Текущий семестр
+            {displayedSemester?.isCurrent
+              ? "Текущий семестр"
+              : "Выбранный семестр"}
           </span>
           <strong className={styles.averageValue}>
-            {formatAverage(currentSemester.average)} / 5
+            {formatAverage(displayedSemester?.average ?? null)} / 5
           </strong>
           <span className={styles.averageCaption}>Средний балл</span>
           <span className={styles.creditsCaption}>
@@ -193,7 +239,7 @@ export function GradesOverview({
               <path d="m2 9 10-5 10 5-10 5z" />
               <path d="M6 11v5c3 2 9 2 12 0v-5M22 9v6" />
             </svg>
-            {currentSemester.completedCredits} зачётных единиц
+            {displayedSemester?.completedCredits ?? 0} зачётных единиц
           </span>
         </section>
 
@@ -202,15 +248,18 @@ export function GradesOverview({
             <h2>Академический прогресс</h2>
             <div className={styles.progressLabel}>
               <span>
-                Выполнено: {currentSemester.completedCredits} из{" "}
-                {currentSemester.totalCredits} кредитов
+                Выполнено: {displayedSemester?.completedCredits ?? 0} из{" "}
+                {displayedSemester?.totalCredits ?? 0} кредитов
               </span>
               <strong>{completionPercent} %</strong>
             </div>
             <div
               aria-label={`Академический прогресс: ${completionPercent}%`}
               className={styles.progressTrack}
-              role="img"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={completionPercent}
             >
               <span style={{ width: `${completionPercent}%` }} />
             </div>
@@ -220,13 +269,13 @@ export function GradesOverview({
             <h2>Статус обучения</h2>
             <span
               className={`${styles.studyStatus} ${
-                currentSemester.debtCount > 0
+                displayedSemester?.debtCount
                   ? styles.studyStatusDebt
                   : styles.studyStatusGood
               }`}
             >
-              {currentSemester.debtCount > 0
-                ? `Академическая задолженность: ${currentSemester.debtCount}`
+              {displayedSemester?.debtCount
+                ? `Академическая задолженность: ${displayedSemester.debtCount}`
                 : "Без академических задолженностей"}
             </span>
           </section>
@@ -236,7 +285,7 @@ export function GradesOverview({
       <div className={styles.periodControls}>
         <div
           aria-label="Период успеваемости"
-          className={styles.periodTabs}
+          className={`${styles.periodTabs} ${periodIndicatorClass}`}
           role="tablist"
         >
           <button
@@ -244,6 +293,8 @@ export function GradesOverview({
             aria-selected={period === "current"}
             className={styles.periodTab}
             id="grades-period-current-tab"
+            tabIndex={period === "current" ? 0 : -1}
+            onKeyDown={handlePeriodKeyDown}
             onClick={() => setPeriod("current")}
             role="tab"
             type="button"
@@ -255,6 +306,8 @@ export function GradesOverview({
             aria-selected={period === "all"}
             className={styles.periodTab}
             id="grades-period-all-tab"
+            tabIndex={period === "all" ? 0 : -1}
+            onKeyDown={handlePeriodKeyDown}
             onClick={() => setPeriod("all")}
             role="tab"
             type="button"
@@ -266,6 +319,8 @@ export function GradesOverview({
             aria-selected={period === "dynamics"}
             className={styles.periodTab}
             id="grades-period-dynamics-tab"
+            tabIndex={period === "dynamics" ? 0 : -1}
+            onKeyDown={handlePeriodKeyDown}
             onClick={() => setPeriod("dynamics")}
             role="tab"
             type="button"
@@ -349,7 +404,14 @@ export function GradesOverview({
                     </strong>
                     <span>{formatAverage(semester.average)} / 5</span>
                   </div>
-                  <div className={styles.dynamicsTrack}>
+                  <div
+                    aria-label={`Средний балл: ${formatAverage(semester.average)} из 5`}
+                    aria-valuemax={5}
+                    aria-valuemin={0}
+                    aria-valuenow={semester.average ?? 0}
+                    className={styles.dynamicsTrack}
+                    role="progressbar"
+                  >
                     <span
                       style={{
                         width: `${((semester.average ?? 0) / 5) * 100}%`,
