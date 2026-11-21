@@ -20,7 +20,7 @@ export default function RequestsError({
           <button className={styles.button} onClick={reset} type="button">
             Повторить
           </button>
-          <Link className={styles.secondaryButton} href="/help?tab=requests">
+          <Link className={styles.secondaryButton} href="/requests">
             Вернуться к моим заявкам
           </Link>
         </div>

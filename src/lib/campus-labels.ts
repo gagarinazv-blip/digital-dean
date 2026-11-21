@@ -22,9 +22,9 @@ export const requestStatusLabels: Record<RequestStatus, string> = {
   NEW: "Новая",
   IN_PROGRESS: "В работе",
   NEEDS_INFO: "Нужны данные",
-  READY: "Выполнена",
+  READY: "Готова",
   REJECTED: "Отклонена",
-  CANCELLED: "Отменена студентом",
+  CANCELLED: "Отменена",
 };
 
 export const requestTypeLabels: Record<RequestType, string> = {

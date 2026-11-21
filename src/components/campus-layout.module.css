@@ -93,6 +93,27 @@
   flex: 0 0 auto;
 }
 
+.headerSearch input {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--color-surface);
+  font: inherit;
+}
+
+.headerSearch input::placeholder {
+  color: rgb(255 255 255 / 72%);
+  opacity: 1;
+}
+
+.headerSearch:focus-within {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
 .headerActions {
   display: flex;
   align-items: center;

@@ -26,6 +26,7 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 import {
+  getStudentDocuments,
   getStudentRequest,
   getStudentRequests,
 } from "../src/lib/student-request-data";
@@ -48,6 +49,59 @@ describe("student request access", () => {
       expect.objectContaining({
         where: { studentId: 20 },
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      }),
+    );
+  });
+
+  it("returns only ready result attachments for the signed-in student", async () => {
+    const updatedAt = new Date("2026-11-21T10:00:00.000Z");
+    findManyMock.mockResolvedValue([
+      {
+        publicId: "b08f54cf-99ce-4a56-a780-8e22ce5ba0a1",
+        type: "CERTIFICATE",
+        catalogCode: "STUDY_CERTIFICATE",
+        updatedAt,
+        comments: [
+          {
+            attachments: [
+              {
+                id: 45,
+                fileName: "certificate.pdf",
+                mediaType: "application/pdf",
+                sizeBytes: 1200,
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+
+    await expect(getStudentDocuments()).resolves.toEqual([
+      {
+        id: 45,
+        fileName: "certificate.pdf",
+        mediaType: "application/pdf",
+        sizeBytes: 1200,
+        publicId: "b08f54cf-99ce-4a56-a780-8e22ce5ba0a1",
+        type: "CERTIFICATE",
+        catalogCode: "STUDY_CERTIFICATE",
+        updatedAt,
+      },
+    ]);
+    expect(findManyMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { studentId: 20, status: "READY" },
+        select: expect.objectContaining({
+          comments: {
+            where: { visibility: "PUBLIC" },
+            select: {
+              attachments: {
+                where: { kind: "RESULT" },
+                select: expect.objectContaining({ fileName: true }),
+              },
+            },
+          },
+        }),
       }),
     );
   });

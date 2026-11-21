@@ -38,11 +38,18 @@ const requestStatusClasses: Record<RequestStatus, string> = {
 export default async function StaffHomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+  searchParams: Promise<{
+    status?: string | string[];
+    q?: string | string[];
+    date?: string | string[];
+  }>;
 }) {
-  const { status: rawStatus } = await searchParams;
-  const { requests, counts, selectedStatus } =
-    await getStaffRequestList(rawStatus);
+  const { status: rawStatus, q: rawSearch, date: rawDateFilter } =
+    await searchParams;
+  const { requests, counts, selectedStatus, searchTerm, dateFilter } =
+    await getStaffRequestList(rawStatus, rawSearch, rawDateFilter);
+  const hasFilters =
+    Boolean(selectedStatus) || Boolean(searchTerm) || dateFilter !== "all";
 
   return (
     <main className={styles.page}>
@@ -52,7 +59,7 @@ export default async function StaffHomePage({
         <span>Заявки</span>
       </div>
       <header className={styles.pageHeading}>
-        <h1>Заявки студентов</h1>
+        <h1>Очередь заявок</h1>
         <p>Обработка и контроль заявок, поданных студентами вашего факультета.</p>
       </header>
 
@@ -61,7 +68,7 @@ export default async function StaffHomePage({
           <Link
             aria-current={selectedStatus === status ? "page" : undefined}
             className={`${styles.summaryCard} ${styles[tone]}`}
-            href={`/staff?status=${status}`}
+            href={`/staff/requests?status=${status}`}
             key={status}
           >
             <span aria-hidden="true" className={styles.summaryIcon}>
@@ -93,27 +100,59 @@ export default async function StaffHomePage({
             </h2>
             <p>
               {requests.length === 1
-                ? "1 заявка доступна по правилам вашего отдела"
-                : `${requests.length} заявок доступно по правилам вашего отдела`}
+                ? "1 заявка в очереди"
+                : `${requests.length} заявок в очереди`}
             </p>
           </div>
-          {selectedStatus ? (
-            <Link className={styles.showAll} href="/staff">
-              Показать все заявки
+          {hasFilters ? (
+            <Link className={styles.showAll} href="/staff/requests">
+              Сбросить фильтры
             </Link>
           ) : null}
         </div>
+        <form
+          action="/staff/requests"
+          className={styles.queueFilters}
+          role="search"
+        >
+          {selectedStatus && (
+            <input name="status" type="hidden" value={selectedStatus} />
+          )}
+          <label className={styles.queueSearch}>
+            <span>Номер заявки или ФИО</span>
+            <input
+              defaultValue={searchTerm}
+              maxLength={100}
+              name="q"
+              placeholder="Например, часть номера заявки"
+              type="search"
+            />
+          </label>
+          <label className={styles.queueDateFilter}>
+            <span>Дата подачи</span>
+            <select defaultValue={dateFilter} name="date">
+              <option value="all">Все даты</option>
+              <option value="today">Сегодня</option>
+              <option value="week">Последние 7 дней</option>
+            </select>
+          </label>
+          <button className={styles.filterButton} type="submit">
+            Найти
+          </button>
+        </form>
         {requests.length === 0 ? (
           <div className={styles.empty}>
             <span aria-hidden="true">⌕</span>
             <strong>
               {selectedStatus
                 ? `Заявок со статусом «${requestStatusLabels[selectedStatus]}» нет`
-                : "Доступных заявок пока нет"}
+                : hasFilters
+                  ? "Заявки по заданным параметрам не найдены"
+                  : "Доступных заявок пока нет"}
             </strong>
             <p>
-              {selectedStatus
-                ? "Выберите другой статус или покажите все заявки."
+              {hasFilters
+                ? "Измените поисковый запрос, дату или статус."
                 : "Новые заявки появятся здесь, когда они будут доступны по правилам вашего отдела."}
             </p>
           </div>
@@ -137,10 +176,13 @@ export default async function StaffHomePage({
                         <span aria-hidden="true" className={styles.serviceIcon}>
                           {request.type === "CERTIFICATE" ? "▤" : "▧"}
                         </span>
-                        {getRequestCatalogTitle(
-                          request.catalogCode,
-                          requestTypeLabels[request.type],
-                        )}
+                        <span>
+                          № {request.publicId.slice(0, 8).toUpperCase()} ·{" "}
+                          {getRequestCatalogTitle(
+                            request.catalogCode,
+                            requestTypeLabels[request.type],
+                          )}
+                        </span>
                       </span>
                     </td>
                     <td>

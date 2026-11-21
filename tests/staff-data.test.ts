@@ -35,6 +35,10 @@ vi.mock("@/lib/prisma", () => ({
   })),
 }));
 
+vi.mock("@/lib/demo-date", () => ({
+  getDemoNow: () => new Date("2026-11-21T18:00:00.000Z"),
+}));
+
 import {
   getStaffRequest,
   getStaffRequestList,
@@ -117,9 +121,10 @@ describe("staff request access", () => {
             { status: "READY" },
           ],
         },
-        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         select: {
           id: true,
+          publicId: true,
           type: true,
           catalogCode: true,
           status: true,
@@ -145,5 +150,46 @@ describe("staff request access", () => {
     });
     expect(result.counts).toMatchObject({ NEW: 4, READY: 2, REJECTED: 0 });
     expect(result.selectedStatus).toBe("READY");
+  });
+
+  it("applies the search and date range without changing the status counts", async () => {
+    await getStaffRequestList("NEW", "  AB12  ", "week");
+
+    expect(findManyMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          AND: [
+            {
+              OR: [
+                { assignedToId: 40 },
+                { assignedToId: null, type: { in: ["CERTIFICATE"] } },
+              ],
+            },
+            { status: "NEW" },
+            {
+              OR: [
+                { publicId: { contains: "AB12", mode: "insensitive" } },
+                {
+                  student: {
+                    fullName: { contains: "AB12", mode: "insensitive" },
+                  },
+                },
+              ],
+            },
+            { createdAt: { gte: new Date("2026-11-14T21:00:00.000Z") } },
+          ],
+        },
+      }),
+    );
+    expect(groupByMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          OR: [
+            { assignedToId: 40 },
+            { assignedToId: null, type: { in: ["CERTIFICATE"] } },
+          ],
+        },
+      }),
+    );
   });
 });

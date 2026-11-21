@@ -1,4 +1,5 @@
 import type { RequestStatus, RequestType } from "@/generated/prisma/enums";
+import type { Prisma } from "@/generated/prisma/client";
 import {
   canStaffChangeStatus,
   canStaffReadRequest,
@@ -42,20 +43,37 @@ export function isRequestStatus(value: string): value is RequestStatus {
 export function getStaffRequestListFilter(
   staff: StaffRequestAccess,
   rawStatus: unknown,
+  filters: { search?: string; createdAtGte?: Date } = {},
 ) {
   const accessFilter = getStaffRequestFilter(staff);
   const status =
     typeof rawStatus === "string" && isRequestStatus(rawStatus)
       ? rawStatus
       : null;
+  const conditions: Prisma.RequestWhereInput[] = [accessFilter];
+
+  if (status) {
+    conditions.push({ status });
+  }
+  if (filters.search) {
+    conditions.push({
+      OR: [
+        { publicId: { contains: filters.search, mode: "insensitive" } },
+        {
+          student: {
+            fullName: { contains: filters.search, mode: "insensitive" },
+          },
+        },
+      ],
+    });
+  }
+  if (filters.createdAtGte) {
+    conditions.push({ createdAt: { gte: filters.createdAtGte } });
+  }
 
   return {
     status,
-    where: status
-      ? {
-          AND: [accessFilter, { status }],
-        }
-      : accessFilter,
+    where: conditions.length === 1 ? accessFilter : { AND: conditions },
   };
 }
 

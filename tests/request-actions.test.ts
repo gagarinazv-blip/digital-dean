@@ -282,6 +282,7 @@ describe("request actions", () => {
         targetId: "b08f54cf-99ce-4a56-a780-8e22ce5ba0a1",
       },
     });
+    expect(revalidatePathMock).toHaveBeenCalledWith("/notifications");
   });
 
   it("does not allow a student to cancel a foreign request", async () => {
@@ -477,11 +478,12 @@ describe("request actions", () => {
         studentId: 20,
         type: "REQUEST_STATUS",
         title: "Изменился статус заявки",
-        text: "Статус заявки изменён: Выполнена.",
+        text: "Статус заявки изменён: Готова.",
         targetType: "REQUEST",
         targetId: "b08f54cf-99ce-4a56-a780-8e22ce5ba0a1",
       },
     });
+    expect(revalidatePathMock).toHaveBeenCalledWith("/notifications");
   });
 
   it("saves a real result file and notifies the owner in one transaction", async () => {

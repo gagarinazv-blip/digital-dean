@@ -72,6 +72,46 @@ export async function getStudentRequests() {
   });
 }
 
+export async function getStudentDocuments() {
+  const student = await requireStudent();
+  const requests = await getPrisma().request.findMany({
+    where: { studentId: student.id, status: "READY" },
+    orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+    select: {
+      publicId: true,
+      type: true,
+      catalogCode: true,
+      updatedAt: true,
+      comments: {
+        where: { visibility: "PUBLIC" },
+        select: {
+          attachments: {
+            where: { kind: "RESULT" },
+            select: {
+              id: true,
+              fileName: true,
+              mediaType: true,
+              sizeBytes: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return requests.flatMap((request) =>
+    request.comments.flatMap((comment) =>
+      comment.attachments.map((attachment) => ({
+        ...attachment,
+        publicId: request.publicId,
+        type: request.type,
+        catalogCode: request.catalogCode,
+        updatedAt: request.updatedAt,
+      })),
+    ),
+  );
+}
+
 export async function getStudentRequest(requestId: string) {
   const student = await requireStudent();
   if (!isRequestPublicId(requestId)) {

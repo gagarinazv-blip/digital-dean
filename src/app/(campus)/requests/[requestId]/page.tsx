@@ -178,7 +178,7 @@ export default async function StudentRequestPage({
 
   return (
     <CampusSection
-      eyebrow="Справки и обращения"
+      eyebrow="Документы и заявки"
       title={title}
       description={`${requestNumber} · ${serviceTitle}`}
     >
@@ -620,7 +620,7 @@ export default async function StudentRequestPage({
           </details>
         )}
 
-        <Link className={styles.backLink} href="/help?tab=requests">
+        <Link className={styles.backLink} href="/requests">
           ← Вернуться к списку заявок
         </Link>
       </div>

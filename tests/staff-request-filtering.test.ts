@@ -63,4 +63,34 @@ describe("staff request list filtering", () => {
       },
     });
   });
+
+  it("combines text and date filters without widening staff access", () => {
+    const createdAtGte = new Date("2026-11-15T21:00:00.000Z");
+
+    expect(
+      getStaffRequestListFilter(staff, "NEW", {
+        search: "ab12",
+        createdAtGte,
+      }),
+    ).toEqual({
+      status: "NEW",
+      where: {
+        AND: [
+          accessFilter,
+          { status: "NEW" },
+          {
+            OR: [
+              { publicId: { contains: "ab12", mode: "insensitive" } },
+              {
+                student: {
+                  fullName: { contains: "ab12", mode: "insensitive" },
+                },
+              },
+            ],
+          },
+          { createdAt: { gte: createdAtGte } },
+        ],
+      },
+    });
+  });
 });

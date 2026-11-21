@@ -9,13 +9,15 @@ const requestStatuses = Object.keys(requestStatusLabels) as RequestStatus[];
 export function RequestSearchForm({
   search,
   status,
+  routeBase = "/requests",
 }: {
   search: string;
   status: RequestStatus | "";
+  routeBase?: "/help" | "/requests";
 }) {
   return (
     <form
-      action="/help"
+      action={routeBase}
       className={styles.requestFilters}
       method="get"
       role="search"

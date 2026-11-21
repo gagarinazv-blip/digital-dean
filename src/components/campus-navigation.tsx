@@ -9,7 +9,8 @@ const navigation = [
   { href: "/", label: "Сегодня", icon: "home" },
   { href: "/schedule", label: "Расписание", icon: "calendar" },
   { href: "/grades", label: "Успеваемость", icon: "chart" },
-  { href: "/help", label: "Справки и обращения", icon: "page" },
+  { href: "/documents", label: "Документы", icon: "page" },
+  { href: "/requests", label: "Заявки", icon: "request" },
   { href: "/notifications", label: "Уведомления", icon: "bell" },
   { href: "/profile", label: "Профиль", icon: "profile" },
 ] as const;
@@ -34,6 +35,13 @@ const iconPaths: Record<(typeof navigation)[number]["icon"], ReactNode> = {
     <>
       <path d="M6 3h8l5 5v13H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
       <path d="M14 3v5h5M8 13h8M8 17h8" />
+    </>
+  ),
+  request: (
+    <>
+      <rect x="4" y="3" width="16" height="18" rx="2" />
+      <path d="M8 8h8M8 12h8m-8 4h4" />
+      <path d="m15 17 2 2 4-4" />
     </>
   ),
   bell: (
@@ -84,7 +92,7 @@ export function CampusNavigation({
         const isCurrent =
           pathname === item.href ||
           (item.href !== "/" && pathname.startsWith(`${item.href}/`)) ||
-          (item.href === "/help" && pathname.startsWith("/requests"));
+          (item.href === "/documents" && pathname.startsWith("/help"));
 
         return (
           <Link

@@ -70,8 +70,14 @@ export function CampusLayout({
             </span>
           </Link>
           <span className={styles.headerDescriptor}>Студенческий кабинет</span>
-          <div className={styles.headerSearch} aria-hidden="true">
+          <form
+            action="/documents"
+            className={styles.headerSearch}
+            role="search"
+          >
+            <input name="tab" type="hidden" value="catalog" />
             <svg
+              aria-hidden="true"
               fill="none"
               stroke="currentColor"
               strokeLinecap="round"
@@ -82,8 +88,13 @@ export function CampusLayout({
               <circle cx="11" cy="11" r="7" />
               <path d="m20 20-4-4" />
             </svg>
-            <span>Поиск по сервисам</span>
-          </div>
+            <input
+              aria-label="Поиск по сервисам"
+              name="q"
+              placeholder="Поиск по сервисам"
+              type="search"
+            />
+          </form>
           <div className={styles.headerActions}>
             <Link
               aria-label={

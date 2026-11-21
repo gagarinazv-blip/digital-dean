@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import type { Prisma } from "@/generated/prisma/client";
 import { getPrisma } from "@/lib/prisma";
 import { requireStaff, requireStaffContext } from "@/lib/staff";
+import { getDemoNow } from "@/lib/demo-date";
+import { getMoscowDateKey } from "@/lib/campus-time";
 import {
   getStaffRequestFilter,
   getStaffRequestListFilter,
@@ -13,6 +15,7 @@ import type { RequestStatus } from "@/generated/prisma/enums";
 
 const requestListSelection = {
   id: true,
+  publicId: true,
   type: true,
   catalogCode: true,
   status: true,
@@ -101,15 +104,38 @@ export async function getStaffRequests() {
   });
 }
 
-export async function getStaffRequestList(rawStatus?: string | string[]) {
+export async function getStaffRequestList(
+  rawStatus?: string | string[],
+  rawSearch?: string | string[],
+  rawDateFilter?: string | string[],
+) {
   const { staff } = await requireStaffContext();
   const prisma = getPrisma();
-  const { status, where } = getStaffRequestListFilter(staff, rawStatus);
+  const searchTerm =
+    typeof rawSearch === "string" ? rawSearch.trim().slice(0, 100) : "";
+  const dateFilter =
+    rawDateFilter === "today" || rawDateFilter === "week"
+      ? rawDateFilter
+      : "all";
+  let createdAtGte: Date | undefined;
+  if (dateFilter !== "all") {
+    const date = new Date(`${getMoscowDateKey(getDemoNow())}T12:00:00.000Z`);
+    if (dateFilter === "week") {
+      date.setUTCDate(date.getUTCDate() - 6);
+    }
+    createdAtGte = new Date(
+      `${date.toISOString().slice(0, 10)}T00:00:00.000+03:00`,
+    );
+  }
+  const { status, where } = getStaffRequestListFilter(staff, rawStatus, {
+    ...(searchTerm ? { search: searchTerm } : {}),
+    ...(createdAtGte ? { createdAtGte } : {}),
+  });
   const accessFilter = getStaffRequestFilter(staff);
   const [requests, groupedCounts] = await Promise.all([
     prisma.request.findMany({
       where,
-      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       select: requestListSelection,
     }),
     prisma.request.groupBy({
@@ -123,7 +149,7 @@ export async function getStaffRequestList(rawStatus?: string | string[]) {
     counts[requestStatus] = _count._all;
   }
 
-  return { requests, counts, selectedStatus: status };
+  return { requests, counts, selectedStatus: status, searchTerm, dateFilter };
 }
 
 export async function getStaffRequest(requestId: string) {

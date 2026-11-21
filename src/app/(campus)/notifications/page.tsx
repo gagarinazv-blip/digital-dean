@@ -59,13 +59,23 @@ function getTargetLabel(targetType: NotificationTargetType | null): string {
   }
 }
 
-export default async function NotificationsPage() {
+export default async function NotificationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ filter?: string | string[] }>;
+}) {
+  const params = await searchParams;
+  const activeFilter = params.filter === "unread" ? "unread" : "all";
   const student = await requireStudent();
   const notifications = await getStudentNotifications(student.id);
   const unreadCount = notifications.filter(
     (notification) => notification.readAt === null,
   ).length;
-  const selectedNotification = notifications[0];
+  const visibleNotifications =
+    activeFilter === "unread"
+      ? notifications.filter((notification) => notification.readAt === null)
+      : notifications;
+  const selectedNotification = visibleNotifications[0];
 
   return (
     <CampusSection
@@ -79,10 +89,22 @@ export default async function NotificationsPage() {
     >
       <div className={styles.stack}>
         <div className={styles.toolbar}>
-          <div className={styles.segments} aria-hidden="true">
-            <span className={styles.segmentActive}>Все</span>
-            <span>Непрочитанные</span>
-          </div>
+          <nav className={styles.segments} aria-label="Фильтр уведомлений">
+            <Link
+              aria-current={activeFilter === "all" ? "page" : undefined}
+              className={activeFilter === "all" ? styles.segmentActive : ""}
+              href="/notifications"
+            >
+              Все
+            </Link>
+            <Link
+              aria-current={activeFilter === "unread" ? "page" : undefined}
+              className={activeFilter === "unread" ? styles.segmentActive : ""}
+              href="/notifications?filter=unread"
+            >
+              Непрочитанные
+            </Link>
+          </nav>
           {unreadCount > 0 && (
             <form action={markAllNotificationsReadAction}>
               <button className={styles.secondaryButton} type="submit">
@@ -92,10 +114,18 @@ export default async function NotificationsPage() {
           )}
         </div>
 
-        {notifications.length === 0 ? (
+        {visibleNotifications.length === 0 ? (
           <div className={styles.empty}>
-            <strong>Уведомлений пока нет</strong>
-            <p>Здесь появятся важные изменения и напоминания для вас.</p>
+            <strong>
+              {activeFilter === "unread"
+                ? "Непрочитанных уведомлений нет"
+                : "Уведомлений пока нет"}
+            </strong>
+            <p>
+              {activeFilter === "unread"
+                ? "Вы прочитали все уведомления."
+                : "Здесь появятся важные изменения и напоминания для вас."}
+            </p>
           </div>
         ) : (
           <div className={styles.notificationGrid}>
@@ -105,10 +135,10 @@ export default async function NotificationsPage() {
             >
               <div className={styles.panelHeading}>
                 <h2 id="latest-events-title">Последние события</h2>
-                <span>{notifications.length}</span>
+                <span>{visibleNotifications.length}</span>
               </div>
               <ul className={styles.list}>
-                {notifications.map((notification) => (
+                {visibleNotifications.map((notification) => (
                   <li
                     className={`${styles.item} ${
                       notification.readAt === null ? styles.unread : ""

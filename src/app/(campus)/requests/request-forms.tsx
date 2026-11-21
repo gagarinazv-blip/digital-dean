@@ -242,7 +242,7 @@ export function NewRequestForm({
         <button className={styles.button} disabled={pending} type="submit">
           {pending ? "Отправляем…" : "Отправить заявку"}
         </button>
-        <Link className={styles.secondaryButton} href="/help">
+        <Link className={styles.secondaryButton} href="/documents">
           Отмена
         </Link>
       </div>

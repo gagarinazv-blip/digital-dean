@@ -415,7 +415,7 @@ export default async function StaffRequestPage({
           </aside>
         </div>
 
-        <Link className={styles.backLink} href="/staff">
+        <Link className={styles.backLink} href="/staff/requests">
           ← Вернуться к списку заявок
         </Link>
       </div>

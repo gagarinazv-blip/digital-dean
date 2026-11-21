@@ -24,12 +24,13 @@
   font-size: var(--font-size-body-compact);
 }
 
-.segments > span {
+.segments > a {
   min-height: 40px;
   display: inline-flex;
   align-items: center;
   padding: 0 var(--space-4);
   border-radius: var(--radius-sm);
+  color: inherit;
   white-space: nowrap;
 }
 
@@ -37,6 +38,11 @@
   background: var(--color-wine-900);
   color: var(--color-surface);
   font-weight: 600;
+}
+
+.segments > a:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 .notificationGrid {
@@ -304,7 +310,7 @@
     width: 100%;
   }
 
-  .segments > span {
+  .segments > a {
     flex: 1;
     justify-content: center;
     padding-inline: var(--space-2);

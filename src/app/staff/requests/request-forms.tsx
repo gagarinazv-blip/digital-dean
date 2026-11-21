@@ -78,7 +78,7 @@ export function RequestStatusForm({
                   : styles.secondaryButton;
           const buttonLabel =
             status === "READY"
-              ? "Одобрить"
+              ? "Готово"
               : status === "NEEDS_INFO"
                 ? "Запросить уточнение"
                 : status === "REJECTED"

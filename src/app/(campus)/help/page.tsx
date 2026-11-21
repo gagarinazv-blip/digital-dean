@@ -7,6 +7,7 @@ import {
   requestCatalog,
 } from "@/lib/request-catalog";
 import {
+  getStudentDocuments,
   getStudentRequest,
   getStudentRequests,
 } from "@/lib/student-request-data";
@@ -90,7 +91,7 @@ function getRequestSelectionHref(
   if (status) {
     params.set("status", status);
   }
-  return `/help?${params.toString()}#request-details`;
+  return `/requests?${params.toString()}#request-details`;
 }
 
 function SelectedRequestPanel({
@@ -242,18 +243,25 @@ function SelectedRequestPanel({
   );
 }
 
-export default async function HelpPage({
-  searchParams,
-}: {
+type HelpWorkspaceProps = {
   searchParams: Promise<{
     tab?: string | string[];
     q?: string | string[];
     status?: string | string[];
     selected?: string | string[];
   }>;
-}) {
+  defaultTab?: "catalog" | "documents" | "requests";
+};
+
+export async function HelpWorkspace({
+  searchParams,
+  defaultTab = "catalog",
+}: HelpWorkspaceProps) {
   const query = await searchParams;
-  const activeTab = query.tab === "requests" ? "requests" : "catalog";
+  const activeTab =
+    query.tab === "requests" || query.tab === "documents" || query.tab === "catalog"
+      ? query.tab
+      : defaultTab;
   const search = typeof query.q === "string" ? query.q.trim() : "";
   const selectedStatus =
     typeof query.status === "string" && isRequestStatus(query.status)
@@ -263,6 +271,8 @@ export default async function HelpPage({
     typeof query.selected === "string" ? query.selected : "";
   const normalizedSearch = search.toLocaleLowerCase("ru");
   const requests = await getStudentRequests();
+  const documents =
+    activeTab === "documents" ? await getStudentDocuments() : [];
   const visibleRequests = requests.filter((request) => {
     if (selectedStatus && request.status !== selectedStatus) {
       return false;
@@ -310,40 +320,58 @@ export default async function HelpPage({
   return (
     <CampusSection
       eyebrow="Сервисы кампуса"
-      title={activeTab === "requests" ? "Мои заявки" : "Справки и обращения"}
+      title={
+        activeTab === "requests"
+          ? "Мои заявки"
+          : activeTab === "documents"
+            ? "Документы"
+            : "Документы и заявки"
+      }
       description={
         activeTab === "requests"
           ? "История обращений и ход их обработки."
-          : "Выберите услугу, отправьте обращение и следите за его обработкой."
+          : activeTab === "documents"
+            ? "Готовые документы по обработанным заявкам."
+            : "Справки и услуги деканата — подайте заявку и следите за её обработкой."
       }
     >
       <div className={styles.pageContent}>
         {activeTab === "catalog" && (
-          <section className={styles.hero} aria-label="Справки и обращения">
+          <section className={styles.hero} aria-label="Документы и заявки">
             <div className={styles.heroArt} aria-hidden="true" />
             <div className={styles.heroContent}>
               <p className={styles.heroKicker}>Сервисы для студентов</p>
-              <h2>Документы и обращения — онлайн</h2>
+              <h2>Документы и заявки — онлайн</h2>
               <p>
                 Каталог услуг, отправка заявления и история общения с деканатом
                 — в одном разделе.
               </p>
+              <Link className={styles.primaryButton} href="/requests/new">
+                Новая заявка <span aria-hidden="true">→</span>
+              </Link>
             </div>
           </section>
         )}
 
-        <nav className={styles.tabs} aria-label="Раздел справок и обращений">
+        <nav className={styles.tabs} aria-label="Документы и заявки">
+          <Link
+            aria-current={activeTab === "documents" ? "page" : undefined}
+            className={activeTab === "documents" ? styles.activeTab : ""}
+            href="/documents"
+          >
+            Мои документы
+          </Link>
           <Link
             aria-current={activeTab === "catalog" ? "page" : undefined}
             className={activeTab === "catalog" ? styles.activeTab : ""}
-            href="/help?tab=catalog"
+            href="/documents?tab=catalog"
           >
             Каталог услуг
           </Link>
           <Link
             aria-current={activeTab === "requests" ? "page" : undefined}
             className={activeTab === "requests" ? styles.activeTab : ""}
-            href="/help?tab=requests"
+            href="/requests?tab=requests"
           >
             Мои заявки
             <span className={styles.tabCount}>· {requests.length}</span>
@@ -352,7 +380,7 @@ export default async function HelpPage({
 
         {activeTab === "catalog" ? (
           <>
-            <form action="/help" className={styles.filterBar} role="search">
+            <form action="/documents" className={styles.filterBar} role="search">
               <input name="tab" type="hidden" value={activeTab} />
               <label className={styles.searchField}>
                 <span className={styles.visuallyHidden}>Поиск услуг</span>
@@ -432,13 +460,79 @@ export default async function HelpPage({
               )}
             </section>
           </>
+        ) : activeTab === "documents" ? (
+          <section className={styles.section} aria-labelledby="documents-title">
+            <div className={styles.sectionHeading}>
+              <div>
+                <p className={styles.kicker}>Результаты обработанных заявок</p>
+                <h2 id="documents-title">Мои документы</h2>
+              </div>
+              <Link className={styles.secondaryLink} href="/documents?tab=catalog">
+                Заказать документ <span aria-hidden="true">→</span>
+              </Link>
+            </div>
+            {documents.length === 0 ? (
+              <div className={styles.emptyState}>
+                <h3>Готовых документов пока нет</h3>
+                <p>
+                  Когда деканат подготовит документ, он появится здесь для
+                  скачивания.
+                </p>
+                <Link className={styles.serviceLink} href="/documents?tab=catalog">
+                  Перейти в каталог услуг <span aria-hidden="true">→</span>
+                </Link>
+              </div>
+            ) : (
+              <div className={styles.documentGrid}>
+                {documents.map((document) => (
+                  <article className={styles.documentCard} key={document.id}>
+                    <div className={styles.documentHeading}>
+                      <span className={styles.serviceIcon} aria-hidden="true">
+                        <ServiceIcon
+                          kind={
+                            document.catalogCode === "CALL_CERTIFICATE"
+                              ? "call"
+                              : "certificate"
+                          }
+                        />
+                      </span>
+                      <div>
+                        <h3>
+                          {getRequestCatalogTitle(
+                            document.catalogCode,
+                            requestTypeLabels[document.type],
+                          )}
+                        </h3>
+                        <p>
+                          Заявка № {document.publicId.slice(0, 8).toUpperCase()} ·{" "}
+                          {requestDateFormatter.format(document.updatedAt)}
+                        </p>
+                      </div>
+                    </div>
+                    <a
+                      className={styles.serviceLink}
+                      download
+                      href={`/api/request-attachments/${document.id}`}
+                    >
+                      Скачать {document.fileName}
+                      <span aria-hidden="true">↓</span>
+                    </a>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
         ) : (
           <div className={styles.requestWorkspace}>
             <section
               className={styles.requestListColumn}
               aria-label="Список заявок"
             >
-              <RequestSearchForm search={search} status={selectedStatus} />
+              <RequestSearchForm
+                routeBase="/requests"
+                search={search}
+                status={selectedStatus}
+              />
               {visibleRequests.length === 0 ? (
                 <div className={styles.emptyState}>
                   {requests.length === 0
@@ -518,4 +612,10 @@ export default async function HelpPage({
       </div>
     </CampusSection>
   );
+}
+
+export default function HelpPage({
+  searchParams,
+}: Pick<HelpWorkspaceProps, "searchParams">) {
+  return HelpWorkspace({ searchParams });
 }

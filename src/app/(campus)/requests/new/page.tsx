@@ -6,6 +6,7 @@ import { NewRequestForm } from "@/app/(campus)/requests/request-forms";
 import { requireStudentContext } from "@/lib/student";
 import {
   getRequestCatalogTitle,
+  getRequestCatalogEntry,
   getRequestFieldValues,
   isRequestCatalogCode,
   requestCatalog,
@@ -16,10 +17,6 @@ import workflowStyles from "@/app/request-workflow.module.css";
 import styles from "./request-page.module.css";
 
 export const instant = false;
-
-const maxExecutionDays = Math.max(
-  ...requestCatalog.map((service) => service.executionDays),
-);
 
 export default async function NewRequestPage({
   searchParams,
@@ -75,16 +72,18 @@ export default async function NewRequestPage({
     recordBookNumber: student.recordBookNumber,
     studyForm: student.studyForm,
   };
+  const selectedService =
+    getRequestCatalogEntry(initialValues?.catalogCode) ?? requestCatalog[0];
 
   return (
     <CampusSection
-      eyebrow="Справки и обращения"
+      eyebrow="Документы и заявки"
       title="Новая заявка"
       description="Заполните заявление — профильные сведения подставятся автоматически."
     >
       <div className={styles.content}>
         <nav className={styles.breadcrumbs} aria-label="Хлебные крошки">
-          <Link href="/help">Справки и обращения</Link>
+          <Link href="/documents">Документы и заявки</Link>
           <span aria-hidden="true">/</span>
           <span>
             {getRequestCatalogTitle(
@@ -98,7 +97,7 @@ export default async function NewRequestPage({
             className={`${workflowStyles.panel} ${styles.formPanel}`}
             aria-labelledby="application-data-title"
           >
-            {initialValues && (
+            {copyPublicId && (
               <p className={workflowStyles.notice}>
                 Данные отклонённой заявки подставлены для удобства. Повторная
                 подача создаст новую заявку.
@@ -140,7 +139,7 @@ export default async function NewRequestPage({
             <dl className={styles.serviceDetails}>
               <div>
                 <dt>Срок</dt>
-                <dd>до {maxExecutionDays} рабочих дней</dd>
+                <dd>до {selectedService.executionDays} рабочих дней</dd>
               </div>
               <div>
                 <dt>Стоимость</dt>

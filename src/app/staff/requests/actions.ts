@@ -86,7 +86,9 @@ function revalidateStaffRequestPaths(requestId: number, publicId: string): void 
   revalidatePath("/staff");
   revalidatePath(`/staff/requests/${requestId}`);
   revalidatePath("/help");
+  revalidatePath("/documents");
   revalidatePath("/requests");
+  revalidatePath("/notifications");
   revalidatePath(`/requests/${publicId}`);
 }
 
