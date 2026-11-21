@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const {
   assertSameSiteRequestMock,
   requireStaffContextMock,
+  hashPasswordMock,
   encryptPasswordMock,
   revalidatePathMock,
   redirectMock,
@@ -26,6 +27,7 @@ const {
   return {
     assertSameSiteRequestMock: vi.fn(),
     requireStaffContextMock: vi.fn(),
+    hashPasswordMock: vi.fn(),
     encryptPasswordMock: vi.fn(),
     revalidatePathMock: vi.fn(),
     redirectMock: vi.fn(),
@@ -38,6 +40,7 @@ const {
 
 vi.mock("@/lib/auth", () => ({
   assertSameSiteRequest: assertSameSiteRequestMock,
+  hashPassword: hashPasswordMock,
 }));
 
 vi.mock("@/lib/staff", () => ({
@@ -98,12 +101,15 @@ const currentStudent = {
   corporateEmail: null,
   corporateMailPasswordEncrypted: null,
   corporateMailIssuedAt: null,
+  accountStatus: "ACTIVE",
+  user: { passwordHash: "existing-password-hash" },
 };
 
 beforeEach(() => {
   vi.clearAllMocks();
   assertSameSiteRequestMock.mockResolvedValue(undefined);
   requireStaffContextMock.mockResolvedValue({ userId: 7 });
+  hashPasswordMock.mockResolvedValue("hashed-student-password");
   encryptPasswordMock.mockReturnValue("encrypted-mail-password");
   redirectMock.mockImplementation((path: string) => {
     throw new Error(`Redirect to ${path}`);
@@ -122,7 +128,7 @@ beforeEach(() => {
 });
 
 describe("staff student management actions", () => {
-  it("creates an invited student account without a password", async () => {
+  it("creates an active student account with only a hashed password", async () => {
     await expect(
       createStaffStudentAction(
         {},
@@ -130,6 +136,8 @@ describe("staff student management actions", () => {
           ...validStudentFields,
           faculty: "МЭО",
           direction: "Экономика",
+          studentLoginPassword: "Fictional-Student-Password-1!",
+          studentLoginPasswordConfirmation: "Fictional-Student-Password-1!",
         }),
       ),
     ).rejects.toThrow("Redirect to /staff/students/20");
@@ -137,7 +145,7 @@ describe("staff student management actions", () => {
     expect(tx.user.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         login: expect.stringMatching(/^student\./),
-        passwordHash: null,
+        passwordHash: "hashed-student-password",
         role: "STUDENT",
       }),
       select: { id: true },
@@ -145,10 +153,13 @@ describe("staff student management actions", () => {
     expect(tx.student.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         phone: "+79000000001",
-        accountStatus: "INVITED",
+        accountStatus: "ACTIVE",
       }),
       select: { id: true },
     });
+    expect(hashPasswordMock).toHaveBeenCalledWith(
+      "Fictional-Student-Password-1!",
+    );
     expect(tx.studentAuditLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         action: "STUDENT_CREATED",
@@ -232,20 +243,59 @@ describe("staff student management actions", () => {
     );
   });
 
-  it("resets student access and revokes existing sessions", async () => {
-    const result = await resetStudentAccessAction(
+  it("sets a new student login password and revokes existing sessions", async () => {
+    const result = await updateStaffStudentAction(
       {},
-      formData({ studentId: "20" }),
+      formData({
+        studentId: "20",
+        ...validStudentFields,
+        corporateEmail: "",
+        corporateMailPassword: "",
+        studentLoginPassword: "Fictional-New-Password-1!",
+        studentLoginPasswordConfirmation: "Fictional-New-Password-1!",
+      }),
     );
 
-    expect(result).toEqual({ success: "Доступ студента сброшен." });
+    expect(result).toEqual({ success: "Изменения сохранены." });
+    expect(tx.user.update).toHaveBeenCalledWith({
+      where: { id: 10 },
+      data: { passwordHash: "hashed-student-password" },
+    });
+    expect(tx.session.deleteMany).toHaveBeenCalledWith({
+      where: { userId: 10 },
+    });
+    expect(tx.studentAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: "STUDENT_PASSWORD_REPLACED",
+        changedFields: ["studentLoginPassword"],
+      }),
+    });
+    expect(JSON.stringify(tx.studentAuditLog.create.mock.calls)).not.toContain(
+      "Fictional-New-Password-1!",
+    );
+  });
+
+  it("resets student access by saving a new hash and revoking existing sessions", async () => {
+    const result = await resetStudentAccessAction(
+      {},
+      formData({
+        studentId: "20",
+        studentLoginPassword: "Fictional-New-Password-1!",
+        studentLoginPasswordConfirmation: "Fictional-New-Password-1!",
+      }),
+    );
+
+    expect(result).toEqual({
+      success:
+        "Пароль обновлён. Студенту нужно войти с телефоном и новым паролем.",
+    });
     expect(tx.student.update).toHaveBeenCalledWith({
       where: { id: 20 },
-      data: { accountStatus: "INVITED" },
+      data: { accountStatus: "ACTIVE" },
     });
     expect(tx.user.update).toHaveBeenCalledWith({
       where: { id: 10 },
-      data: { passwordHash: null },
+      data: { passwordHash: "hashed-student-password" },
     });
     expect(tx.session.deleteMany).toHaveBeenCalledWith({
       where: { userId: 10 },

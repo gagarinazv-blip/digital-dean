@@ -30,9 +30,9 @@ vi.mock("@/lib/sms-provider", () => ({
 import { headers } from "next/headers";
 import {
   normalizeStudentPhone,
-  requestStudentLoginCode,
+  requestStudentPasswordResetCode,
   validateNewStudentPassword,
-  verifyStudentLoginCode,
+  verifyStudentPasswordResetCode,
 } from "../src/lib/student-login";
 
 const queryRaw = vi.fn();
@@ -146,13 +146,14 @@ describe("student phone login validation", () => {
   });
 });
 
-describe("one-time login codes", () => {
+describe("one-time password-reset codes", () => {
   it("stores only the hash and sends the code through the provider", async () => {
     studentFindUnique.mockResolvedValue({
+      accountStatus: "ACTIVE",
       user: { id: 12, role: "STUDENT" },
     });
 
-    await requestStudentLoginCode("+79000000001");
+    await requestStudentPasswordResetCode("+79000000001");
 
     expect(loginCodeCreate).toHaveBeenCalledOnce();
     const { data } = loginCodeCreate.mock.calls[0][0];
@@ -171,17 +172,29 @@ describe("one-time login codes", () => {
   });
 
   it("stores the same-shaped request for unknown phones without sending a code", async () => {
-    await requestStudentLoginCode("+79000000009");
+    await requestStudentPasswordResetCode("+79000000009");
 
     expect(loginCodeCreate).toHaveBeenCalledOnce();
     expect(loginCodeCreate.mock.calls[0][0].data.phone).toBe("+79000000009");
     expect(sendCodeMock).not.toHaveBeenCalled();
   });
 
+  it("does not send recovery codes for invited student accounts", async () => {
+    studentFindUnique.mockResolvedValue({
+      accountStatus: "INVITED",
+      user: { id: 12, role: "STUDENT" },
+    });
+
+    await requestStudentPasswordResetCode("+79000000001");
+
+    expect(loginCodeCreate).toHaveBeenCalledOnce();
+    expect(sendCodeMock).not.toHaveBeenCalled();
+  });
+
   it("enforces resend and hourly limits using persisted requests", async () => {
     loginCodeFindFirst.mockResolvedValue({ id: 3 });
 
-    await requestStudentLoginCode("+79000000001");
+    await requestStudentPasswordResetCode("+79000000001");
 
     expect(loginCodeCreate).not.toHaveBeenCalled();
     expect(sendCodeMock).not.toHaveBeenCalled();
@@ -192,7 +205,7 @@ describe("one-time login codes", () => {
       .mockResolvedValueOnce(5)
       .mockResolvedValueOnce(0);
 
-    await requestStudentLoginCode("+79000000001");
+    await requestStudentPasswordResetCode("+79000000001");
 
     expect(loginCodeCreate).not.toHaveBeenCalled();
     expect(sendCodeMock).not.toHaveBeenCalled();
@@ -208,25 +221,25 @@ describe("one-time login codes", () => {
       .mockResolvedValueOnce(0)
       .mockResolvedValueOnce(20);
 
-    await requestStudentLoginCode("+79000000001");
+    await requestStudentPasswordResetCode("+79000000001");
 
     expect(loginCodeCreate).not.toHaveBeenCalled();
     expect(sendCodeMock).not.toHaveBeenCalled();
   });
 
-  it("creates a temporary password-setup session after consuming a valid code", async () => {
+  it("creates a temporary password-reset session after consuming a valid code", async () => {
     loginCodeFindFirst.mockResolvedValue({
       id: 9,
       codeHash: hashCode("123456"),
       attempts: 0,
     });
     studentFindUnique.mockResolvedValue({
-      accountStatus: "INVITED",
+      accountStatus: "ACTIVE",
       user: { id: 12, role: "STUDENT" },
     });
 
     await expect(
-      verifyStudentLoginCode("+79000000001", "123456"),
+      verifyStudentPasswordResetCode("+79000000001", "123456"),
     ).resolves.toBe(true);
 
     expect(loginCodeUpdateMany).toHaveBeenCalledWith(
@@ -254,11 +267,11 @@ describe("one-time login codes", () => {
 
     for (let attempt = 0; attempt < 5; attempt += 1) {
       await expect(
-        verifyStudentLoginCode("+79000000001", "654321"),
+        verifyStudentPasswordResetCode("+79000000001", "654321"),
       ).resolves.toBe(false);
     }
     await expect(
-      verifyStudentLoginCode("+79000000001", "654321"),
+      verifyStudentPasswordResetCode("+79000000001", "654321"),
     ).resolves.toBe(false);
 
     expect(attempts).toBe(5);
@@ -270,7 +283,7 @@ describe("one-time login codes", () => {
     loginCodeFindFirst.mockResolvedValue(null);
 
     await expect(
-      verifyStudentLoginCode("+79000000001", "123456"),
+      verifyStudentPasswordResetCode("+79000000001", "123456"),
     ).resolves.toBe(false);
 
     expect(loginCodeUpdateMany).not.toHaveBeenCalled();

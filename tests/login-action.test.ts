@@ -5,16 +5,16 @@ const {
   loginUserMock,
   assertSameSiteRequestMock,
   loginStudentWithPhoneMock,
-  requestStudentLoginCodeMock,
-  verifyStudentLoginCodeMock,
+  requestStudentPasswordResetCodeMock,
+  verifyStudentPasswordResetCodeMock,
   normalizeStudentPhoneMock,
 } = vi.hoisted(() => ({
   redirectMock: vi.fn(),
   loginUserMock: vi.fn(),
   assertSameSiteRequestMock: vi.fn(),
   loginStudentWithPhoneMock: vi.fn(),
-  requestStudentLoginCodeMock: vi.fn(),
-  verifyStudentLoginCodeMock: vi.fn(),
+  requestStudentPasswordResetCodeMock: vi.fn(),
+  verifyStudentPasswordResetCodeMock: vi.fn(),
   normalizeStudentPhoneMock: vi.fn(),
 }));
 
@@ -24,7 +24,7 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/lib/auth", () => ({
   assertSameSiteRequest: assertSameSiteRequestMock,
-  completeStudentPasswordSetup: vi.fn(),
+  completeStudentPasswordReset: vi.fn(),
   getCurrentUser: vi.fn(),
   hashPassword: vi.fn(),
   loginStudentWithPhone: loginStudentWithPhoneMock,
@@ -35,9 +35,9 @@ vi.mock("@/lib/auth", () => ({
 vi.mock("@/lib/student-login", () => ({
   invalidCodeMessage: "Неверный или истёкший код.",
   normalizeStudentPhone: normalizeStudentPhoneMock,
-  requestStudentLoginCode: requestStudentLoginCodeMock,
+  requestStudentPasswordResetCode: requestStudentPasswordResetCodeMock,
   validateNewStudentPassword: vi.fn(),
-  verifyStudentLoginCode: verifyStudentLoginCodeMock,
+  verifyStudentPasswordResetCode: verifyStudentPasswordResetCodeMock,
 }));
 
 vi.mock("@/lib/prisma", () => ({
@@ -46,9 +46,9 @@ vi.mock("@/lib/prisma", () => ({
 
 import {
   loginAction,
-  requestStudentCodeAction,
+  requestStudentPasswordResetCodeAction,
   studentPhoneLoginAction,
-  verifyStudentCodeAction,
+  verifyStudentPasswordResetCodeAction,
 } from "../src/app/login/actions";
 
 beforeEach(() => {
@@ -133,33 +133,43 @@ describe("loginAction", () => {
   });
 
   it("returns the same code-request result regardless of account lookup", async () => {
-    requestStudentLoginCodeMock.mockResolvedValue(undefined);
+    requestStudentPasswordResetCodeMock.mockResolvedValue(undefined);
     const knownFormData = new FormData();
     knownFormData.set("phone", "+79000000001");
     const unknownFormData = new FormData();
     unknownFormData.set("phone", "+79000000009");
 
-    const knownResult = await requestStudentCodeAction({}, knownFormData);
-    const unknownResult = await requestStudentCodeAction({}, unknownFormData);
+    const knownResult = await requestStudentPasswordResetCodeAction(
+      {},
+      knownFormData,
+    );
+    const unknownResult = await requestStudentPasswordResetCodeAction(
+      {},
+      unknownFormData,
+    );
 
     expect(knownResult).toEqual({ phone: "+79000000001", sent: true });
     expect(unknownResult).toEqual({ phone: "+79000000009", sent: true });
     expect(knownResult).not.toHaveProperty("code");
     expect(unknownResult).not.toHaveProperty("code");
-    expect(requestStudentLoginCodeMock).toHaveBeenCalledWith("+79000000001");
-    expect(requestStudentLoginCodeMock).toHaveBeenCalledWith("+79000000009");
+    expect(requestStudentPasswordResetCodeMock).toHaveBeenCalledWith(
+      "+79000000001",
+    );
+    expect(requestStudentPasswordResetCodeMock).toHaveBeenCalledWith(
+      "+79000000009",
+    );
   });
 
   it("redirects only after the one-time code is verified", async () => {
-    verifyStudentLoginCodeMock.mockResolvedValue(true);
+    verifyStudentPasswordResetCodeMock.mockResolvedValue(true);
     const formData = new FormData();
     formData.set("phone", "+79000000001");
     formData.set("code", "123456");
 
     await expect(
-      verifyStudentCodeAction({}, formData),
+      verifyStudentPasswordResetCodeAction({}, formData),
     ).rejects.toThrow("Redirected to /login?role=student&step=password");
-    expect(verifyStudentLoginCodeMock).toHaveBeenCalledWith(
+    expect(verifyStudentPasswordResetCodeMock).toHaveBeenCalledWith(
       "+79000000001",
       "123456",
     );

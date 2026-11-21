@@ -11,10 +11,10 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   loginAction,
-  requestStudentCodeAction,
+  requestStudentPasswordResetCodeAction,
   setStudentPasswordAction,
   studentPhoneLoginAction,
-  verifyStudentCodeAction,
+  verifyStudentPasswordResetCodeAction,
   type LoginActionState,
   type StudentCodeRequestState,
 } from "./actions";
@@ -180,11 +180,11 @@ function StaffCredentialsForm() {
 
 function StudentPasswordLogin({
   onPhoneChange,
-  onRequestCode,
+  onForgotPassword,
   phone,
 }: {
   onPhoneChange: (value: string) => void;
-  onRequestCode: (phone: string) => void;
+  onForgotPassword: (phone: string) => void;
   phone: string;
 }) {
   const [state, formAction, pending] = useActionState(
@@ -227,14 +227,7 @@ function StudentPasswordLogin({
       <div className={styles.loginLinks}>
         <button
           className={styles.textButton}
-          onClick={() => onRequestCode(phone)}
-          type="button"
-        >
-          Первый вход
-        </button>
-        <button
-          className={styles.textButton}
-          onClick={() => onRequestCode(phone)}
+          onClick={() => onForgotPassword(phone)}
           type="button"
         >
           Забыли пароль?
@@ -255,7 +248,7 @@ function StudentCodeRequest({
 }) {
   const [phone, setPhone] = useState(initialPhone);
   const [state, formAction, pending] = useActionState(
-    requestStudentCodeAction,
+    requestStudentPasswordResetCodeAction,
     initialCodeState,
   );
 
@@ -268,7 +261,8 @@ function StudentCodeRequest({
   return (
     <form action={formAction} aria-busy={pending} className={styles.form}>
       <p className={styles.stepDescription}>
-        Введите номер телефона, указанный при зачислении.
+        Введите номер телефона, привязанный к аккаунту, чтобы восстановить
+        пароль.
       </p>
       <div className={styles.field}>
         <label htmlFor="login-student-code-phone">Номер телефона</label>
@@ -304,14 +298,14 @@ function StudentCodeVerification({
   phone: string;
 }) {
   const [state, formAction, pending] = useActionState(
-    verifyStudentCodeAction,
+    verifyStudentPasswordResetCodeAction,
     initialState,
   );
 
   return (
     <form action={formAction} aria-busy={pending} className={styles.form}>
       <p className={styles.stepDescription}>
-        Если номер зарегистрирован, следуйте инструкциям для получения кода.
+        Если номер зарегистрирован, введите код восстановления из SMS.
       </p>
       <div className={styles.field}>
         <label htmlFor="login-student-code">Код из SMS</label>
@@ -373,7 +367,7 @@ function StudentLoginForm() {
   return (
     <StudentPasswordLogin
       onPhoneChange={setPhone}
-      onRequestCode={(currentPhone) => {
+      onForgotPassword={(currentPhone) => {
         setPhone(currentPhone);
         setStep("request-code");
       }}
@@ -413,7 +407,7 @@ function PasswordStrength({ password }: { password: string }) {
   );
 }
 
-function PasswordSetupForm() {
+function PasswordResetForm() {
   const [state, formAction, pending] = useActionState(
     setStudentPasswordAction,
     initialState,
@@ -425,7 +419,7 @@ function PasswordSetupForm() {
   return (
     <form action={formAction} aria-busy={pending} className={styles.form}>
       <p className={styles.stepDescription}>
-        Придумайте пароль для входа в личный кабинет.
+        Задайте новый пароль. После сохранения войдите по телефону и паролю.
       </p>
       <div className={styles.field}>
         <label htmlFor="student-new-password">Новый пароль</label>
@@ -487,14 +481,14 @@ function PasswordSetupForm() {
       </div>
       <ActionError id="student-password-error" message={state.error} />
       <button className={styles.submit} disabled={pending} type="submit">
-        {pending ? "Сохраняем пароль…" : "Создать пароль"}
+        {pending ? "Сохраняем пароль…" : "Сохранить новый пароль"}
       </button>
     </form>
   );
 }
 
-export function StudentPasswordSetupForm() {
-  return <PasswordSetupForm />;
+export function StudentPasswordResetForm() {
+  return <PasswordResetForm />;
 }
 
 export function LoginForm({ initialRole }: { initialRole: LoginRole }) {

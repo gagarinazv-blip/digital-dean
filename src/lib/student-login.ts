@@ -118,7 +118,7 @@ async function getClientIp(): Promise<string> {
   return address.slice(0, 128);
 }
 
-export async function requestStudentLoginCode(
+export async function requestStudentPasswordResetCode(
   phone: string,
 ): Promise<void> {
   const ip = await getClientIp();
@@ -166,6 +166,7 @@ export async function requestStudentLoginCode(
     const student = await tx.student.findUnique({
       where: { phone },
       select: {
+        accountStatus: true,
         user: { select: { id: true, role: true } },
       },
     });
@@ -186,7 +187,10 @@ export async function requestStudentLoginCode(
       where: { createdAt: { lt: retentionCutoff } },
     });
 
-    return student?.user.role === "STUDENT";
+    return (
+      student?.user.role === "STUDENT" &&
+      student.accountStatus === "ACTIVE"
+    );
   });
 
   if (result) {
@@ -194,7 +198,7 @@ export async function requestStudentLoginCode(
   }
 }
 
-export async function verifyStudentLoginCode(
+export async function verifyStudentPasswordResetCode(
   phone: string,
   code: string,
 ): Promise<boolean> {
@@ -241,9 +245,16 @@ export async function verifyStudentLoginCode(
 
   const student = await prisma.student.findUnique({
     where: { phone },
-    select: { user: { select: { id: true, role: true } } },
+    select: {
+      accountStatus: true,
+      user: { select: { id: true, role: true } },
+    },
   });
-  if (!student || student.user.role !== "STUDENT") {
+  if (
+    !student ||
+    student.accountStatus !== "ACTIVE" ||
+    student.user.role !== "STUDENT"
+  ) {
     return false;
   }
 

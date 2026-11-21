@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { LoginForm, StudentPasswordSetupForm } from "./login-form";
+import { LoginForm, StudentPasswordResetForm } from "./login-form";
 import styles from "./login.module.css";
 
 function LoginFallback() {
@@ -93,15 +93,15 @@ async function LoginContent({
       <main className={styles.page}>
         <section className={styles.card} aria-labelledby="login-title">
           <h1 id="login-title">
-            {user?.requiresPasswordSetup ? "Создайте пароль" : "Вход"}
+            {user?.requiresPasswordSetup ? "Новый пароль" : "Вход"}
           </h1>
           <p className={styles.description}>
             {user?.requiresPasswordSetup
-              ? "Это последний шаг для доступа к личному кабинету."
+              ? "После сохранения войдите по телефону и новому паролю."
               : "Единый кабинет университета"}
           </p>
           {user?.requiresPasswordSetup ? (
-            <StudentPasswordSetupForm />
+            <StudentPasswordResetForm />
           ) : (
             <LoginForm initialRole={initialRole} />
           )}

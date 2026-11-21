@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import {
   assertSameSiteRequest,
-  completeStudentPasswordSetup,
+  completeStudentPasswordReset,
   getCurrentUser,
   hashPassword,
   loginStudentWithPhone,
@@ -13,9 +13,9 @@ import {
 import {
   invalidCodeMessage,
   normalizeStudentPhone,
-  requestStudentLoginCode,
+  requestStudentPasswordResetCode,
   validateNewStudentPassword,
-  verifyStudentLoginCode,
+  verifyStudentPasswordResetCode,
 } from "@/lib/student-login";
 import { getPrisma } from "@/lib/prisma";
 
@@ -123,7 +123,7 @@ export async function studentPhoneLoginAction(
   redirect("/");
 }
 
-export async function requestStudentCodeAction(
+export async function requestStudentPasswordResetCodeAction(
   _previousState: StudentCodeRequestState,
   formData: FormData,
 ): Promise<StudentCodeRequestState> {
@@ -138,7 +138,7 @@ export async function requestStudentCodeAction(
 
   try {
     await assertSameSiteRequest();
-    await requestStudentLoginCode(phone);
+    await requestStudentPasswordResetCode(phone);
     return { phone, sent: true };
   } catch (error) {
     logActionFailure("Student login code request", error);
@@ -148,7 +148,7 @@ export async function requestStudentCodeAction(
   }
 }
 
-export async function verifyStudentCodeAction(
+export async function verifyStudentPasswordResetCodeAction(
   _previousState: LoginActionState,
   formData: FormData,
 ): Promise<LoginActionState> {
@@ -165,7 +165,7 @@ export async function verifyStudentCodeAction(
   let verified = false;
   try {
     await assertSameSiteRequest();
-    verified = await verifyStudentLoginCode(phone, codeValue.trim());
+    verified = await verifyStudentPasswordResetCode(phone, codeValue.trim());
   } catch (error) {
     logActionFailure("Student login code verification", error);
     return { error: "Не удалось проверить код. Попробуйте немного позже." };
@@ -228,7 +228,7 @@ export async function setStudentPasswordAction(
 
   try {
     const passwordHash = await hashPassword(password);
-    const completed = await completeStudentPasswordSetup(
+    const completed = await completeStudentPasswordReset(
       user.id,
       passwordHash,
     );
@@ -240,5 +240,5 @@ export async function setStudentPasswordAction(
     return { error: "Не удалось сохранить пароль. Попробуйте позже." };
   }
 
-  redirect("/");
+  redirect("/login?role=student");
 }

@@ -15,7 +15,7 @@ import { cookies, headers } from "next/headers";
 import { getPrisma } from "@/lib/prisma";
 import {
   assertSameSiteRequest,
-  completeStudentPasswordSetup,
+  completeStudentPasswordReset,
   createSession,
   createPasswordSetupSession,
   deleteSession,
@@ -32,12 +32,11 @@ const sessionCreate = vi.fn();
 const sessionFindUnique = vi.fn();
 const sessionDeleteMany = vi.fn();
 const sessionUpdateMany = vi.fn();
-const sessionUpdate = vi.fn();
 const userFindUnique = vi.fn();
 const userFindFirst = vi.fn();
 const userUpdate = vi.fn();
 const studentFindUnique = vi.fn();
-const studentUpdate = vi.fn();
+const loginCodeUpdateMany = vi.fn();
 const loginAttemptDeleteMany = vi.fn();
 const queryRaw = vi.fn();
 let attempts = 0;
@@ -47,11 +46,10 @@ const transactionMock = {
   session: {
     create: sessionCreate,
     updateMany: sessionUpdateMany,
-    update: sessionUpdate,
     deleteMany: sessionDeleteMany,
   },
   user: { update: userUpdate },
-  student: { update: studentUpdate },
+  loginCode: { updateMany: loginCodeUpdateMany },
   loginAttempt: { deleteMany: loginAttemptDeleteMany },
   $queryRaw: queryRaw,
 };
@@ -62,17 +60,14 @@ const prismaMock = {
     findUnique: sessionFindUnique,
     deleteMany: sessionDeleteMany,
     updateMany: sessionUpdateMany,
-    update: sessionUpdate,
   },
   user: {
     findUnique: userFindUnique,
     findFirst: userFindFirst,
     update: userUpdate,
   },
-  student: {
-    findUnique: studentFindUnique,
-    update: studentUpdate,
-  },
+  student: { findUnique: studentFindUnique },
+  loginCode: { updateMany: loginCodeUpdateMany },
   loginAttempt: { deleteMany: loginAttemptDeleteMany },
 };
 
@@ -124,9 +119,8 @@ beforeEach(() => {
   sessionCreate.mockImplementation(async () => ({}));
   sessionDeleteMany.mockResolvedValue({ count: 1 });
   sessionUpdateMany.mockResolvedValue({ count: 1 });
-  sessionUpdate.mockResolvedValue({});
   userUpdate.mockResolvedValue({});
-  studentUpdate.mockResolvedValue({});
+  loginCodeUpdateMany.mockResolvedValue({ count: 0 });
   loginAttemptDeleteMany.mockResolvedValue({ count: 1 });
   userFindUnique.mockResolvedValue(null);
   userFindFirst.mockResolvedValue(null);
@@ -378,7 +372,7 @@ describe("login", () => {
     expect(userFindFirst).not.toHaveBeenCalled();
   });
 
-  it("activates the password setup session and invalidates prior sessions", async () => {
+  it("resets the password and invalidates all existing sessions", async () => {
     cookieToken = "temporary-password-setup-token";
     sessionFindUnique.mockResolvedValue({
       id: "temporary-session",
@@ -388,11 +382,12 @@ describe("login", () => {
     });
     studentFindUnique.mockResolvedValue({
       phone: "+79000000001",
+      accountStatus: "ACTIVE",
       user: { role: "STUDENT" },
     });
 
     await expect(
-      completeStudentPasswordSetup(
+      completeStudentPasswordReset(
         authenticatedUser.id,
         "new-password-hash",
       ),
@@ -402,25 +397,23 @@ describe("login", () => {
       where: { id: authenticatedUser.id },
       data: { passwordHash: "new-password-hash" },
     });
-    expect(studentUpdate).toHaveBeenCalledWith({
-      where: { userId: authenticatedUser.id },
-      data: { accountStatus: "ACTIVE" },
-    });
     expect(sessionDeleteMany).toHaveBeenCalledWith({
-      where: {
-        userId: authenticatedUser.id,
-        id: { not: "temporary-session" },
-      },
+      where: { userId: authenticatedUser.id },
     });
-    expect(sessionUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: "temporary-session" },
-        data: expect.objectContaining({
-          requiresPasswordSetup: false,
-          tokenHash: expect.any(String),
-        }),
-      }),
-    );
+    expect(sessionUpdateMany).toHaveBeenCalledWith({
+      where: {
+        id: "temporary-session",
+        userId: authenticatedUser.id,
+        requiresPasswordSetup: true,
+        expiresAt: { gt: expect.any(Date) },
+      },
+      data: { requiresPasswordSetup: false },
+    });
+    expect(loginCodeUpdateMany).toHaveBeenCalledWith({
+      where: { phone: "+79000000001", usedAt: null },
+      data: { usedAt: expect.any(Date) },
+    });
+    expect(cookieStoreMock.delete).toHaveBeenCalledWith(cookieName);
   });
 
   it("rejects an incorrect password", async () => {

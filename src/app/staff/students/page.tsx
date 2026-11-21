@@ -104,7 +104,7 @@ export default async function StaffStudentsPage({
             <p>
               {searchTerm
                 ? "Проверьте написание ФИО или номера телефона."
-                : "Добавьте студента, чтобы создать приглашённую учётную запись."}
+                : "Добавьте студента и задайте ему пароль для входа."}
             </p>
           </div>
         ) : (
@@ -144,7 +144,7 @@ export default async function StaffStudentsPage({
                       >
                         {student.accountStatus === "ACTIVE"
                           ? "Активен"
-                          : "Приглашён"}
+                          : "Ожидает пароль"}
                       </span>
                     </td>
                     <td data-label="Корпоративная почта">

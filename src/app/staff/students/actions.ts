@@ -3,11 +3,14 @@
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { assertSameSiteRequest } from "@/lib/auth";
+import { assertSameSiteRequest, hashPassword } from "@/lib/auth";
 import { encryptCorporateMailPassword } from "@/lib/corporate-mail-credentials";
 import { normalizeCorporateEmail } from "@/lib/corporate-mail";
 import { getPrisma } from "@/lib/prisma";
-import { normalizeStudentPhone } from "@/lib/student-login";
+import {
+  normalizeStudentPhone,
+  validateNewStudentPassword,
+} from "@/lib/student-login";
 import { requireStaffContext } from "@/lib/staff";
 
 export type StudentManagementField =
@@ -18,7 +21,8 @@ export type StudentManagementField =
   | "course"
   | "groupId"
   | "corporateEmail"
-  | "corporateMailPassword";
+  | "corporateMailPassword"
+  | "studentLoginPassword";
 
 export type StudentManagementActionState = {
   error?: string;
@@ -39,6 +43,35 @@ type StudentInput = {
 function getString(formData: FormData, name: string): string | null {
   const value = formData.get(name);
   return typeof value === "string" ? value : null;
+}
+
+function getStudentPasswordInput(
+  formData: FormData,
+  phone: string,
+  required: boolean,
+):
+  | { password: string }
+  | { error: string }
+  | null {
+  const password = getString(formData, "studentLoginPassword");
+  const confirmation = getString(
+    formData,
+    "studentLoginPasswordConfirmation",
+  );
+  if (password === null && confirmation === null && !required) {
+    return null;
+  }
+  if (password === null || confirmation === null) {
+    return { error: "Заполните пароль и его подтверждение." };
+  }
+  if (!password && !confirmation && !required) {
+    return null;
+  }
+  if (!password || !confirmation) {
+    return { error: "Заполните пароль и его подтверждение." };
+  }
+  const error = validateNewStudentPassword(password, confirmation, phone);
+  return error ? { error } : { password };
 }
 
 function parseStudentInput(
@@ -182,8 +215,30 @@ export async function createStaffStudentAction(
       },
     };
   }
+  const passwordInput = getStudentPasswordInput(
+    formData,
+    input.phone,
+    true,
+  );
+  if (!passwordInput || "error" in passwordInput) {
+    return {
+      fieldErrors: {
+        studentLoginPassword:
+          passwordInput && "error" in passwordInput
+            ? passwordInput.error
+            : "Задайте пароль для входа в кабинет.",
+      },
+    };
+  }
   const faculty = input.faculty;
   const direction = input.direction;
+  let passwordHash: string;
+  try {
+    passwordHash = await hashPassword(passwordInput.password);
+  } catch (error) {
+    logStudentActionFailure("Hash student login password", error);
+    return { error: "Не удалось задать пароль. Попробуйте позже." };
+  }
   const prisma = getPrisma();
   let studentId: number;
   try {
@@ -199,7 +254,7 @@ export async function createStaffStudentAction(
       const user = await tx.user.create({
         data: {
           login: `student.${randomUUID()}`,
-          passwordHash: null,
+          passwordHash,
           role: "STUDENT",
         },
         select: { id: true },
@@ -213,7 +268,7 @@ export async function createStaffStudentAction(
           direction,
           course: input.course,
           groupId: input.groupId,
-          accountStatus: "INVITED",
+          accountStatus: "ACTIVE",
         },
         select: { id: true },
       });
@@ -230,6 +285,14 @@ export async function createStaffStudentAction(
             "course",
             "group",
           ],
+        },
+      });
+      await tx.studentAuditLog.create({
+        data: {
+          studentId: student.id,
+          actorUserId: userId,
+          action: "STUDENT_PASSWORD_SET",
+          changedFields: ["studentLoginPassword"],
         },
       });
       return { id: student.id };
@@ -266,6 +329,25 @@ export async function updateStaffStudentAction(
     return { fieldErrors: parsed.fieldErrors };
   }
   const { input } = parsed;
+  const passwordInput = getStudentPasswordInput(
+    formData,
+    input.phone,
+    false,
+  );
+  if (passwordInput && "error" in passwordInput) {
+    return {
+      fieldErrors: { studentLoginPassword: passwordInput.error },
+    };
+  }
+  let studentLoginPasswordHash: string | null = null;
+  if (passwordInput && "password" in passwordInput) {
+    try {
+      studentLoginPasswordHash = await hashPassword(passwordInput.password);
+    } catch (error) {
+      logStudentActionFailure("Hash student login password", error);
+      return { error: "Не удалось задать пароль. Попробуйте позже." };
+    }
+  }
 
   const rawEmail = getString(formData, "corporateEmail");
   if (rawEmail === null) {
@@ -323,6 +405,8 @@ export async function updateStaffStudentAction(
           corporateEmail: true,
           corporateMailPasswordEncrypted: true,
           corporateMailIssuedAt: true,
+          accountStatus: true,
+          user: { select: { passwordHash: true } },
         },
       });
       if (!current) {
@@ -404,6 +488,7 @@ export async function updateStaffStudentAction(
         profileFields.length > 0 ||
         phoneChanged ||
         emailChanged ||
+        studentLoginPasswordHash !== null ||
         passwordWasSet ||
         current.corporateMailPasswordEncrypted !== nextEncryptedPassword ||
         current.corporateMailIssuedAt !== nextIssuedAt;
@@ -421,10 +506,20 @@ export async function updateStaffStudentAction(
           corporateEmail,
           corporateMailPasswordEncrypted: nextEncryptedPassword,
           corporateMailIssuedAt: nextIssuedAt,
+          ...(studentLoginPasswordHash
+            ? { accountStatus: "ACTIVE" as const }
+            : {}),
         },
       });
 
-      if (phoneChanged) {
+      if (studentLoginPasswordHash) {
+        await tx.user.update({
+          where: { id: current.userId },
+          data: { passwordHash: studentLoginPasswordHash },
+        });
+      }
+
+      if (phoneChanged || studentLoginPasswordHash) {
         await tx.session.deleteMany({ where: { userId: current.userId } });
         await tx.loginCode.updateMany({
           where: {
@@ -493,6 +588,18 @@ export async function updateStaffStudentAction(
           },
         });
       }
+      if (studentLoginPasswordHash) {
+        await tx.studentAuditLog.create({
+          data: {
+            studentId,
+            actorUserId: userId,
+            action: current.user.passwordHash
+              ? "STUDENT_PASSWORD_REPLACED"
+              : "STUDENT_PASSWORD_SET",
+            changedFields: ["studentLoginPassword"],
+          },
+        });
+      }
 
       return { success: "Изменения сохранены." };
     });
@@ -533,39 +640,82 @@ export async function resetStudentAccessAction(
     const result = await getPrisma().$transaction(async (tx) => {
       const student = await tx.student.findUnique({
         where: { id: studentId },
-        select: { id: true, userId: true, phone: true },
+        select: {
+          id: true,
+          userId: true,
+          phone: true,
+          user: { select: { passwordHash: true } },
+        },
       });
       if (!student) {
         return { error: "Студент не найден." };
       }
+      if (!student.phone) {
+        return {
+          fieldErrors: {
+            phone: "Сначала укажите номер телефона студента.",
+          },
+        };
+      }
+
+      const passwordInput = getStudentPasswordInput(
+        formData,
+        student.phone,
+        true,
+      );
+      if (!passwordInput || "error" in passwordInput) {
+        return {
+          fieldErrors: {
+            studentLoginPassword:
+              passwordInput && "error" in passwordInput
+                ? passwordInput.error
+                : "Задайте новый пароль.",
+          },
+        };
+      }
+      const passwordHash = await hashPassword(passwordInput.password);
 
       await tx.student.update({
         where: { id: studentId },
-        data: { accountStatus: "INVITED" },
+        data: { accountStatus: "ACTIVE" },
       });
       await tx.user.update({
         where: { id: student.userId },
-        data: { passwordHash: null },
+        data: { passwordHash },
       });
       await tx.session.deleteMany({ where: { userId: student.userId } });
-      if (student.phone) {
-        await tx.loginCode.updateMany({
-          where: { phone: student.phone, usedAt: null },
-          data: { usedAt: new Date() },
-        });
-      }
+      await tx.loginCode.updateMany({
+        where: { phone: student.phone, usedAt: null },
+        data: { usedAt: new Date() },
+      });
+      await tx.studentAuditLog.create({
+        data: {
+          studentId,
+          actorUserId: userId,
+          action: student.user.passwordHash
+            ? "STUDENT_PASSWORD_REPLACED"
+            : "STUDENT_PASSWORD_SET",
+          changedFields: ["studentLoginPassword"],
+        },
+      });
       await tx.studentAuditLog.create({
         data: {
           studentId,
           actorUserId: userId,
           action: "ACCESS_RESET",
-          changedFields: ["accountStatus", "activeSessions"],
+          changedFields: ["activeSessions"],
         },
       });
-      return { success: "Доступ студента сброшен." };
+      return {
+        success:
+          "Пароль обновлён. Студенту нужно войти с телефоном и новым паролем.",
+      };
     });
 
     if ("error" in result) {
+      return result;
+    }
+    if ("fieldErrors" in result) {
       return result;
     }
     revalidateStudentPaths(studentId);

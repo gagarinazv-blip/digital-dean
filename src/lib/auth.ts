@@ -199,7 +199,7 @@ export async function createPasswordSetupSession(userId: number): Promise<void> 
   });
 }
 
-export async function completeStudentPasswordSetup(
+export async function completeStudentPasswordReset(
   userId: number,
   passwordHash: string,
 ): Promise<boolean> {
@@ -231,14 +231,22 @@ export async function completeStudentPasswordSetup(
 
   const student = await prisma.student.findUnique({
     where: { userId },
-    select: { phone: true, user: { select: { role: true } } },
+    select: {
+      phone: true,
+      accountStatus: true,
+      user: { select: { role: true } },
+    },
   });
-  if (!student?.phone || student.user.role !== "STUDENT") {
+  if (
+    !student ||
+    !student.phone ||
+    student.accountStatus !== "ACTIVE" ||
+    student.user.role !== "STUDENT"
+  ) {
     return false;
   }
+  const phone = student.phone;
 
-  const nextToken = randomBytes(32).toString("base64url");
-  const expiresAt = new Date(Date.now() + getSessionTtlSeconds() * 1000);
   const now = new Date();
   const completed = await prisma.$transaction(async (tx) => {
     const claimedSession = await tx.session.updateMany({
@@ -258,20 +266,10 @@ export async function completeStudentPasswordSetup(
       where: { id: userId },
       data: { passwordHash },
     });
-    await tx.student.update({
-      where: { userId },
-      data: { accountStatus: "ACTIVE" },
-    });
-    await tx.session.deleteMany({
-      where: { userId, id: { not: session.id } },
-    });
-    await tx.session.update({
-      where: { id: session.id },
-      data: {
-        tokenHash: sha256(nextToken),
-        requiresPasswordSetup: false,
-        expiresAt,
-      },
+    await tx.session.deleteMany({ where: { userId } });
+    await tx.loginCode.updateMany({
+      where: { phone, usedAt: null },
+      data: { usedAt: now },
     });
     return true;
   });
@@ -280,7 +278,7 @@ export async function completeStudentPasswordSetup(
     return false;
   }
 
-  await setSessionCookie(nextToken, expiresAt);
+  cookieStore.delete(SESSION_COOKIE);
   return true;
 }
 

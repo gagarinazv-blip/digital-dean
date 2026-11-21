@@ -18,6 +18,8 @@ const auditActionLabels: Record<StudentAuditAction, string> = {
   CORPORATE_MAIL_PASSWORD_SET: "Задан пароль корпоративной почты",
   CORPORATE_MAIL_PASSWORD_REPLACED: "Заменён пароль корпоративной почты",
   CORPORATE_MAIL_PASSWORD_CLEARED: "Удалён пароль корпоративной почты",
+  STUDENT_PASSWORD_SET: "Задан пароль студенческого кабинета",
+  STUDENT_PASSWORD_REPLACED: "Заменён пароль студенческого кабинета",
   ACCESS_RESET: "Сброшен доступ студента",
 };
 
@@ -30,6 +32,7 @@ const changedFieldLabels: Record<string, string> = {
   group: "группа",
   corporateEmail: "корпоративная почта",
   corporateMailPassword: "пароль корпоративной почты",
+  studentLoginPassword: "пароль студенческого кабинета",
   accountStatus: "статус доступа",
   activeSessions: "активные сессии",
 };
@@ -115,8 +118,8 @@ export default async function StaffStudentDetailPage({
           <h1>{student.fullName}</h1>
           <p>
             {student.accountStatus === "ACTIVE"
-              ? "Учётная запись активна"
-              : "Учётная запись ожидает подтверждения телефона"}
+              ? "Учётная запись активна; пароль задан"
+              : "Ожидает, пока сотрудник задаст пароль"}
           </p>
         </div>
         <span
@@ -126,7 +129,7 @@ export default async function StaffStudentDetailPage({
               : styles.statusInvited
           }`}
         >
-          {student.accountStatus === "ACTIVE" ? "Активен" : "Приглашён"}
+          {student.accountStatus === "ACTIVE" ? "Активен" : "Ожидает пароль"}
         </span>
       </header>
 
@@ -160,8 +163,8 @@ export default async function StaffStudentDetailPage({
           <div>
             <h2 id="access-reset-title">Доступ к кабинету</h2>
             <p>
-              Сброс завершит сессии и позволит студенту повторно подтвердить
-              телефон и создать пароль.
+              Сброс завершит все сессии и задаст новый пароль. Студенту нужно
+              войти заново по телефону и паролю.
             </p>
           </div>
         </div>

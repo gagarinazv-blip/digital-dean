@@ -141,6 +141,55 @@ export function CreateStudentForm({ groups }: { groups: GroupOption[] }) {
           ) : null}
         </label>
 
+        <label className={styles.field} htmlFor="create-student-login-password">
+          Пароль для личного кабинета
+          <input
+            aria-describedby={
+              state.fieldErrors?.studentLoginPassword
+                ? "create-login-password-error"
+                : undefined
+            }
+            aria-invalid={Boolean(state.fieldErrors?.studentLoginPassword)}
+            autoComplete="new-password"
+            id="create-student-login-password"
+            minLength={10}
+            name="studentLoginPassword"
+            required
+            type="password"
+          />
+          <span className={styles.fieldHint}>
+            Не менее 10 символов, не номер телефона и не простой пароль.
+          </span>
+        </label>
+        <label
+          className={styles.field}
+          htmlFor="create-student-login-password-confirmation"
+        >
+          Повторите пароль
+          <input
+            aria-describedby={
+              state.fieldErrors?.studentLoginPassword
+                ? "create-login-password-error"
+                : undefined
+            }
+            aria-invalid={Boolean(state.fieldErrors?.studentLoginPassword)}
+            autoComplete="new-password"
+            id="create-student-login-password-confirmation"
+            minLength={10}
+            name="studentLoginPasswordConfirmation"
+            required
+            type="password"
+          />
+          {state.fieldErrors?.studentLoginPassword ? (
+            <span
+              className={styles.fieldError}
+              id="create-login-password-error"
+            >
+              {state.fieldErrors.studentLoginPassword}
+            </span>
+          ) : null}
+        </label>
+
         <label className={styles.field} htmlFor="create-student-faculty">
           Факультет
           <input
@@ -241,7 +290,7 @@ export function CreateStudentForm({ groups }: { groups: GroupOption[] }) {
       <ActionFeedback state={state} />
       <div className={styles.formActions}>
         <button className={styles.primaryButton} disabled={pending} type="submit">
-          {pending ? "Создаём…" : "Создать приглашённую учётную запись"}
+          {pending ? "Создаём…" : "Создать учётную запись"}
         </button>
       </div>
     </form>
@@ -271,6 +320,8 @@ export function UpdateStudentForm({
   const [phoneChanged, setPhoneChanged] = useState(false);
   const [confirmationOpen, setConfirmationOpen] = useState(false);
   const passwordInputRef = useRef<HTMLInputElement>(null);
+  const studentPasswordInputRef = useRef<HTMLInputElement>(null);
+  const studentPasswordConfirmationRef = useRef<HTMLInputElement>(null);
   const [state, formAction, pending] = useActionState(
     async (previousState: StudentManagementActionState, formData: FormData) => {
       const nextState = await updateStaffStudentAction(
@@ -281,6 +332,12 @@ export function UpdateStudentForm({
         setConfirmationOpen(false);
         setPhoneChanged(false);
         if (passwordInputRef.current) passwordInputRef.current.value = "";
+        if (studentPasswordInputRef.current) {
+          studentPasswordInputRef.current.value = "";
+        }
+        if (studentPasswordConfirmationRef.current) {
+          studentPasswordConfirmationRef.current.value = "";
+        }
       } else if (nextState.error || nextState.fieldErrors) {
         setConfirmationOpen(false);
       }
@@ -357,6 +414,58 @@ export function UpdateStudentForm({
                 id={`phone-error-${student.id}`}
               >
                 {state.fieldErrors.phone}
+              </span>
+            ) : null}
+          </label>
+
+          <label
+            className={styles.field}
+            htmlFor={`student-login-password-${student.id}`}
+          >
+            Задать/заменить пароль личного кабинета
+            <input
+              aria-describedby={
+                state.fieldErrors?.studentLoginPassword
+                  ? `login-password-error-${student.id}`
+                  : undefined
+              }
+              aria-invalid={Boolean(state.fieldErrors?.studentLoginPassword)}
+              autoComplete="new-password"
+              id={`student-login-password-${student.id}`}
+              minLength={10}
+              name="studentLoginPassword"
+              ref={studentPasswordInputRef}
+              type="password"
+            />
+            <span className={styles.fieldHint}>
+              Оставьте пустым, если менять пароль не нужно. Минимум 10 символов.
+            </span>
+          </label>
+          <label
+            className={styles.field}
+            htmlFor={`student-login-password-confirmation-${student.id}`}
+          >
+            Повторите новый пароль
+            <input
+              aria-describedby={
+                state.fieldErrors?.studentLoginPassword
+                  ? `login-password-error-${student.id}`
+                  : undefined
+              }
+              aria-invalid={Boolean(state.fieldErrors?.studentLoginPassword)}
+              autoComplete="new-password"
+              id={`student-login-password-confirmation-${student.id}`}
+              minLength={10}
+              name="studentLoginPasswordConfirmation"
+              ref={studentPasswordConfirmationRef}
+              type="password"
+            />
+            {state.fieldErrors?.studentLoginPassword ? (
+              <span
+                className={styles.fieldError}
+                id={`login-password-error-${student.id}`}
+              >
+                {state.fieldErrors.studentLoginPassword}
               </span>
             ) : null}
           </label>
@@ -561,10 +670,18 @@ export function UpdateStudentForm({
 
 export function ResetStudentAccessForm({ studentId }: { studentId: number }) {
   const [open, setOpen] = useState(false);
+  const passwordInputRef = useRef<HTMLInputElement>(null);
+  const passwordConfirmationRef = useRef<HTMLInputElement>(null);
   const [state, formAction, pending] = useActionState(
     async (previousState: StudentManagementActionState, formData: FormData) => {
       const nextState = await resetStudentAccessAction(previousState, formData);
-      if (nextState.success) setOpen(false);
+      if (nextState.success) {
+        setOpen(false);
+        if (passwordInputRef.current) passwordInputRef.current.value = "";
+        if (passwordConfirmationRef.current) {
+          passwordConfirmationRef.current.value = "";
+        }
+      }
       return nextState;
     },
     initialState,
@@ -580,11 +697,64 @@ export function ResetStudentAccessForm({ studentId }: { studentId: number }) {
         title="Сбросить доступ студента?"
       >
         <p className={styles.dialogHint}>
-          Все сессии будут завершены. Студенту потребуется подтвердить телефон
-          кодом и создать новый пароль.
+          Укажите новый пароль для входа. Все активные сессии студента будут
+          завершены.
         </p>
         <form action={formAction}>
           <input name="studentId" type="hidden" value={studentId} />
+          <label
+            className={styles.field}
+            htmlFor={`reset-student-password-${studentId}`}
+          >
+            Новый пароль
+            <input
+              aria-describedby={
+                state.fieldErrors?.studentLoginPassword
+                  ? `reset-password-error-${studentId}`
+                  : undefined
+              }
+              aria-invalid={Boolean(state.fieldErrors?.studentLoginPassword)}
+              autoComplete="new-password"
+              id={`reset-student-password-${studentId}`}
+              minLength={10}
+              name="studentLoginPassword"
+              ref={passwordInputRef}
+              required
+              type="password"
+            />
+            <span className={styles.fieldHint}>
+              Не менее 10 символов, не номер телефона и не простой пароль.
+            </span>
+          </label>
+          <label
+            className={styles.field}
+            htmlFor={`reset-student-password-confirmation-${studentId}`}
+          >
+            Повторите новый пароль
+            <input
+              aria-describedby={
+                state.fieldErrors?.studentLoginPassword
+                  ? `reset-password-error-${studentId}`
+                  : undefined
+              }
+              aria-invalid={Boolean(state.fieldErrors?.studentLoginPassword)}
+              autoComplete="new-password"
+              id={`reset-student-password-confirmation-${studentId}`}
+              minLength={10}
+              name="studentLoginPasswordConfirmation"
+              ref={passwordConfirmationRef}
+              required
+              type="password"
+            />
+            {state.fieldErrors?.studentLoginPassword ? (
+              <span
+                className={styles.fieldError}
+                id={`reset-password-error-${studentId}`}
+              >
+                {state.fieldErrors.studentLoginPassword}
+              </span>
+            ) : null}
+          </label>
           <ActionFeedback state={state} />
           <div className={styles.dialogActions}>
             <button
