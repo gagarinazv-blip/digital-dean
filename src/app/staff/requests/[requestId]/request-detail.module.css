@@ -76,7 +76,7 @@
   color: var(--color-muted);
   font-size: 10px;
   line-height: 1.35;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .stageComplete .stageMarker {
@@ -182,7 +182,7 @@
   color: var(--color-muted);
   font-size: var(--font-size-caption);
   line-height: 1.45;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .panel {
@@ -205,7 +205,7 @@
   font-size: 15px;
   font-weight: 700;
   line-height: 1.4;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .demoBadge {
@@ -251,7 +251,7 @@
   font-size: var(--font-size-caption);
   font-weight: 550;
   line-height: 1.4;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .studentSection,
@@ -536,7 +536,7 @@
   color: var(--color-muted);
   font-size: 10px;
   line-height: 1.4;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .commentForm {

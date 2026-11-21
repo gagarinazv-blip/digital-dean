@@ -232,8 +232,12 @@ export function NotificationBell({
                       <span className={styles.type}>
                         {notificationTypeLabels[notification.type]}
                       </span>
-                      <strong>{cleanStudentFacingText(notification.title)}</strong>
-                      <span className={styles.context}>{notification.context}</span>
+                      <strong title={cleanStudentFacingText(notification.title)}>
+                        {cleanStudentFacingText(notification.title)}
+                      </strong>
+                      <span className={styles.context} title={notification.context}>
+                        {notification.context}
+                      </span>
                       <time dateTime={notification.createdAt}>
                         {relativeTime(notification.createdAt)}
                       </time>

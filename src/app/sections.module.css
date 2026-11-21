@@ -20,7 +20,7 @@
   font-weight: 600;
   line-height: 38px;
   letter-spacing: -0.03em;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .description {
@@ -68,7 +68,7 @@
 .listItem h3 {
   font-size: var(--font-size-h3);
   line-height: 24px;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .listItem p {
@@ -76,7 +76,7 @@
   color: var(--color-muted);
   font-size: var(--font-size-body-compact);
   line-height: 20px;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .itemHeader {
@@ -218,7 +218,7 @@
 .listItem,
 .card,
 .empty {
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 @keyframes skeleton-shimmer {

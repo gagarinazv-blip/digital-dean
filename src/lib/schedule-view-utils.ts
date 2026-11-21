@@ -1,4 +1,4 @@
-export type ScheduleViewMode = "today" | "week" | "month";
+export type ScheduleViewMode = "today" | "week" | "month" | "list";
 export type ScheduleDateUnit = "day" | "week" | "month";
 
 export type ScheduleFilterState = {
@@ -37,7 +37,7 @@ export type ScheduleLayoutEntry = {
 };
 
 export function parseScheduleView(value: unknown): ScheduleViewMode {
-  if (value === "week" || value === "month") return value;
+  if (value === "week" || value === "month" || value === "list") return value;
   return "today";
 }
 
@@ -45,7 +45,10 @@ export function parseScheduleDay(
   value: unknown,
   view: ScheduleViewMode,
 ): string | null {
-  if ((view !== "week" && view !== "month") || typeof value !== "string") {
+  if (
+    (view !== "week" && view !== "month" && view !== "list") ||
+    typeof value !== "string"
+  ) {
     return null;
   }
   try {
@@ -127,13 +130,20 @@ export function buildScheduleHref(
   lessonId?: string,
   day?: string,
 ): string {
-  const params = new URLSearchParams({ view, date });
+  const params = new URLSearchParams({ section: "lessons", view, date });
   if (filters.kind) params.set("kind", filters.kind);
   if (filters.subject) params.set("subject", filters.subject);
   if (filters.q) params.set("q", filters.q);
   if (filters.changed) params.set("changed", "1");
   if (lessonId) params.set("lesson", lessonId);
   if (day) params.set("day", day);
+  return `/schedule?${params.toString()}`;
+}
+
+export function buildScheduleSessionHref(lessonsHref: string): string {
+  const query = lessonsHref.split("?")[1] ?? "";
+  const params = new URLSearchParams(query);
+  params.set("section", "session");
   return `/schedule?${params.toString()}`;
 }
 

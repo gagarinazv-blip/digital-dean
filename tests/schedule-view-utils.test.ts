@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildScheduleHref,
+  buildScheduleSessionHref,
   calculateLessonLayout,
   filterScheduleDayLessons,
   getMonthCalendarDays,
@@ -13,6 +14,7 @@ describe("schedule view helpers", () => {
   it("parses supported views and falls back to the day view", () => {
     expect(parseScheduleView("week")).toBe("week");
     expect(parseScheduleView("month")).toBe("month");
+    expect(parseScheduleView("list")).toBe("list");
     expect(parseScheduleView(["week"])).toBe("today");
     expect(parseScheduleView("unknown")).toBe("today");
   });
@@ -31,13 +33,25 @@ describe("schedule view helpers", () => {
         "42",
       ),
     ).toBe(
-      "/schedule?view=week&date=2026-11-16&kind=LECTURE&subject=%D0%9A%D0%BE%D0%BC%D0%BF%D1%8C%D1%8E%D1%82%D0%B5%D1%80%D0%BD%D1%8B%D0%B5+%D1%81%D0%B5%D1%82%D0%B8&q=%D0%98%D0%B2%D0%B0%D0%BD%D0%BE%D0%B2&changed=1&lesson=42",
+      "/schedule?section=lessons&view=week&date=2026-11-16&kind=LECTURE&subject=%D0%9A%D0%BE%D0%BC%D0%BF%D1%8C%D1%8E%D1%82%D0%B5%D1%80%D0%BD%D1%8B%D0%B5+%D1%81%D0%B5%D1%82%D0%B8&q=%D0%98%D0%B2%D0%B0%D0%BD%D0%BE%D0%B2&changed=1&lesson=42",
     );
   });
 
-  it("parses a selected day only for week and month views", () => {
+  it("keeps the active section in the URL when switching between lessons and session", () => {
+    const lessonsHref = buildScheduleHref("list", "2026-11-16", {
+      q: "Иванов",
+    });
+    const sessionHref = buildScheduleSessionHref(lessonsHref);
+    expect(new URL(lessonsHref, "http://localhost").searchParams.get("section")).toBe("lessons");
+    expect(new URL(sessionHref, "http://localhost").searchParams.get("section")).toBe("session");
+    expect(new URL(sessionHref, "http://localhost").searchParams.get("view")).toBe("list");
+    expect(new URL(sessionHref, "http://localhost").searchParams.get("q")).toBe("Иванов");
+  });
+
+  it("parses a selected day only for date-based views", () => {
     expect(parseScheduleDay("2026-11-16", "month")).toBe("2026-11-16");
     expect(parseScheduleDay("2026-11-16", "week")).toBe("2026-11-16");
+    expect(parseScheduleDay("2026-11-16", "list")).toBe("2026-11-16");
     expect(parseScheduleDay("2026-02-30", "month")).toBeNull();
     expect(parseScheduleDay(["2026-11-16"], "week")).toBeNull();
     expect(parseScheduleDay("2026-11-16", "today")).toBeNull();

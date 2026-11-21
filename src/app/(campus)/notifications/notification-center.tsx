@@ -47,6 +47,8 @@ function getTargetLabel(notification: StudentNotificationItem): string {
   switch (notification.targetType) {
     case "SCHEDULE_ITEM":
       return "Перейти к занятию";
+    case "ACADEMIC_SESSION":
+      return "Открыть экзамен";
     case "DEADLINE":
       return "Перейти к заданию";
     case "REQUEST":
@@ -98,8 +100,12 @@ function NotificationRow({
           <span className={styles.rowType}>
             {notificationTypeLabels[notification.type]}
           </span>
-          <strong>{cleanStudentFacingText(notification.title)}</strong>
-          <span className={styles.rowContext}>{notification.context}</span>
+          <strong title={cleanStudentFacingText(notification.title)}>
+            {cleanStudentFacingText(notification.title)}
+          </strong>
+          <span className={styles.rowContext} title={notification.context}>
+            {notification.context}
+          </span>
           <time dateTime={notification.createdAt}>
             {dateFormatter.format(new Date(notification.createdAt))}
           </time>

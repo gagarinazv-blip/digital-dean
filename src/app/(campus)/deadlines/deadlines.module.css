@@ -40,7 +40,7 @@
   font-size: var(--font-size-h3);
   font-weight: 600;
   line-height: 24px;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .item > p,
@@ -48,7 +48,7 @@
   color: var(--color-muted);
   font-size: var(--font-size-body-compact);
   line-height: 20px;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .status {

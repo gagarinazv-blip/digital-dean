@@ -1,9 +1,12 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { CampusSection } from "@/components/campus-section";
 import { getPrisma } from "@/lib/prisma";
 import { DEMO_NOW, getDemoNow } from "@/lib/demo-date";
+import { controlTypeLabels } from "@/lib/campus-labels";
+import { getAcademicRecords } from "@/lib/academic-records";
+import { getGradebookEntry } from "@/lib/gradebook-data";
 import {
   formatMoscowTime,
   formatMoscowWeekdayDate,
@@ -26,6 +29,7 @@ import {
   type ScheduleDayView,
   type ScheduleLessonView,
 } from "./schedule-view";
+import { SessionView, type SessionSemesterView } from "./session-view";
 import styles from "./schedule.module.css";
 
 type SchedulePageProps = {
@@ -89,6 +93,92 @@ async function ScheduleContent({
   await connection();
   const params = await searchParams;
   const student = await requireStudent();
+  const legacyExamId = getSingleParam(params.exam);
+  if (legacyExamId && params.section !== "session") {
+    const nextParams = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (typeof value === "string" && key !== "exam") {
+        nextParams.set(key, value);
+      }
+    }
+    nextParams.set("section", "session");
+    nextParams.set("event", legacyExamId);
+    redirect(`/schedule?${nextParams.toString()}`);
+  }
+  if (getSingleParam(params.section) === "session") {
+    const { dataset, login } = await getAcademicRecords();
+    const semesters: SessionSemesterView[] =
+      dataset?.semesters.map((semester) => {
+        const subjects = semester.planItems.map((item) => {
+          const attempts =
+            item.result?.attempts.map((attempt) => ({
+              number: attempt.attemptNumber,
+              date: attempt.date.toISOString().slice(0, 10),
+              value: attempt.value,
+            })) ?? [];
+          const formulaAvailable = Boolean(
+            getGradebookEntry(login, semester.code, item.id),
+          );
+          const events = item.sessions.map((session) => ({
+            id: String(session.id),
+            subjectId: item.id,
+            subject: item.name,
+            controlType: item.controlType,
+            controlLabel: controlTypeLabels[item.controlType],
+            teacher: item.teacher,
+            department: item.department,
+            date: session.date.toISOString().slice(0, 10),
+            startTime: session.startTime.toISOString().slice(11, 16),
+            endTime: session.endTime.toISOString().slice(11, 16),
+            room: session.room,
+            status: session.status,
+            resultStatus: item.result?.status ?? null,
+            resultValue: item.result?.value ?? null,
+            resultDate: item.result?.date.toISOString().slice(0, 10) ?? null,
+            attempts,
+            formulaAvailable,
+          }));
+          return {
+            id: item.id,
+            name: item.name,
+            controlLabel: controlTypeLabels[item.controlType],
+            controlType: item.controlType,
+            teacher: item.teacher,
+            department: item.department,
+            resultStatus: item.result?.status ?? null,
+            resultValue: item.result?.value ?? null,
+            resultDate: item.result?.date.toISOString().slice(0, 10) ?? null,
+            attemptCount: item.result?.attemptCount ?? 0,
+            attempts,
+            formulaAvailable,
+            events,
+          };
+        });
+        return {
+          id: String(semester.id),
+          code: semester.code,
+          number: semester.number,
+          name: semester.name,
+          isCurrent: semester.isCurrent,
+          subjects,
+          events: subjects.flatMap((subject) => subject.events),
+        };
+      }) ?? [];
+    return (
+      <CampusSection
+        eyebrow="Учебный план"
+        title="Расписание"
+        description={`Сессия · ${dataset?.academicYear ?? "результаты и предстоящие экзамены"}`}
+      >
+        <SessionView
+          academicYear={dataset?.academicYear ?? ""}
+          nowTime={formatMoscowTime(getDemoNow())}
+          semesters={semesters}
+          todayKey={getMoscowDateKey(getDemoNow())}
+        />
+      </CampusSection>
+    );
+  }
   const rawLessonId = getSingleParam(params.lesson);
   const lessonId =
     rawLessonId &&
@@ -190,17 +280,7 @@ async function ScheduleContent({
       data.referenceNow,
     );
   }
-  const monthLabel = new Intl.DateTimeFormat("ru-RU", {
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(`${selectedDate}T12:00:00.000Z`));
-  const lastDate = new Date(data.endDate);
-  lastDate.setUTCDate(lastDate.getUTCDate() - 1);
-  const description =
-    view === "month"
-      ? `Группа ${getStudentFacingGroupName(student.group.name)} · ${monthLabel}`
-      : `Группа ${getStudentFacingGroupName(student.group.name)} · ${formatMoscowWeekdayDate(data.startDate)} — ${formatMoscowWeekdayDate(lastDate)}`;
+  const description = `Группа ${getStudentFacingGroupName(student.group.name)}`;
 
   return (
     <CampusSection

@@ -3,15 +3,22 @@ import Link from "next/link";
 import { connection } from "next/server";
 import type { ScheduleKind } from "@/generated/prisma/enums";
 import { getCampusTodayData } from "@/lib/campus-data";
-import { getStudentFacingGroupName } from "@/lib/campus-labels";
+import {
+  controlTypeLabels,
+  getStudentFacingGroupName,
+} from "@/lib/campus-labels";
 import {
   formatCampusDate,
   formatCampusTime,
   formatMoscowDate,
+  formatMoscowTime,
   getCampusGreeting,
+  getMoscowDateKey,
 } from "@/lib/campus-time";
 import { requestStatusLabels, requestTypeLabels } from "@/lib/campus-labels";
 import { getRequestCatalogTitle } from "@/lib/request-catalog";
+import { getAcademicRecords } from "@/lib/academic-records";
+import { getSessionCountdown } from "@/lib/session-utils";
 import {
   getRequestStatusTone,
   getTodayHeroState,
@@ -96,7 +103,73 @@ function CampusFallback() {
 
 async function CampusToday() {
   await connection();
-  const data = await getCampusTodayData();
+  const [data, academicRecords] = await Promise.all([
+    getCampusTodayData(),
+    getAcademicRecords(),
+  ]);
+  const sessionDeadlines =
+    academicRecords.dataset?.semesters
+      .filter((semester) => semester.isCurrent)
+      .flatMap((semester) =>
+        semester.planItems.flatMap((item) =>
+          item.sessions
+            .filter(
+              (session) =>
+                (session.status === "PLANNED" ||
+                  session.status === "RESCHEDULED") &&
+                session.date.toISOString().slice(0, 10) >=
+                  getMoscowDateKey(data.now) &&
+                (!item.result ||
+                  (item.result.status === "ACADEMIC_DEBT" &&
+                    session.date > item.result.date)),
+            )
+            .map((session) => ({
+              id: `session-${session.id}`,
+              title: item.name,
+              subject: `${controlTypeLabels[item.controlType]} · ${session.startTime.toISOString().slice(11, 16)}`,
+              date: session.date.toISOString().slice(0, 10),
+              countdown: getSessionCountdown(
+                session.date.toISOString().slice(0, 10),
+                session.startTime.toISOString().slice(11, 16),
+                getMoscowDateKey(data.now),
+                formatMoscowTime(data.now),
+              ),
+              href: `/schedule?section=session&event=${session.id}`,
+            })),
+        ),
+      )
+      .sort((first, second) => first.date.localeCompare(second.date)) ?? [];
+  const deadlineRows = [
+    ...data.deadlines.map((deadline) => ({
+      id: deadline.id,
+      title: deadline.title,
+      subject: deadline.subject,
+      sortDate: getMoscowDateKey(deadline.dueAt),
+      dateLabel: formatMoscowDate(deadline.dueAt),
+      countdown:
+        deadline.countdown.kind === "UPCOMING" &&
+        deadline.countdown.daysRemaining <= 3
+          ? deadline.countdown.label.replace(/^Осталось /, "Через ")
+          : deadline.countdown.label,
+      urgent:
+        deadline.countdown.kind === "OVERDUE" ||
+        deadline.countdown.daysRemaining <= 3,
+      href: null as string | null,
+    })),
+    ...sessionDeadlines.map((deadline) => ({
+      id: deadline.id,
+      title: deadline.title,
+      subject: deadline.subject,
+      sortDate: deadline.date,
+      dateLabel: formatMoscowDate(new Date(`${deadline.date}T12:00:00.000Z`)),
+      countdown: deadline.countdown,
+      urgent: deadline.countdown === "Сегодня" ||
+        deadline.countdown.startsWith("завтра"),
+      href: deadline.href,
+    })),
+  ]
+    .sort((first, second) => first.sortDate.localeCompare(second.sortDate))
+    .slice(0, 3);
   const todayDate = new Date(`${data.week.todayKey}T00:00:00.000Z`);
   const firstName = data.student.fullName.split(" ")[0];
   const hero = getTodayHeroState(
@@ -215,42 +288,35 @@ async function CampusToday() {
               <p className={styles.eyebrow}>Скоро нужно сделать</p>
               <h2 id="deadlines-title">Ближайшие дедлайны</h2>
             </div>
-            {data.deadlines.length ? (
+            {deadlineRows.length ? (
               <ul className={styles.compactList}>
-                {data.deadlines.slice(0, 3).map((deadline) => (
+                {deadlineRows.map((deadline) => (
                   <li className={styles.deadlineItem} key={deadline.id}>
                     <span className={styles.deadlineIcon} aria-hidden="true">
                       <QuickActionIcon name="grades" />
                     </span>
                     <span className={styles.deadlineDetails}>
-                      <strong>{deadline.title}</strong>
-                      <small>
-                        {deadline.subject} · {formatMoscowDate(deadline.dueAt)}
-                      </small>
+                      {deadline.href ? (
+                        <Link href={deadline.href}><strong>{deadline.title}</strong></Link>
+                      ) : (
+                        <strong>{deadline.title}</strong>
+                      )}
+                      <small>{deadline.subject} · {deadline.dateLabel}</small>
                     </span>
                     <span
                       className={`${styles.deadlineTime} ${
-                        deadline.countdown.kind === "OVERDUE" ||
-                        deadline.countdown.daysRemaining <= 3
-                          ? styles.deadlineOverdue
-                          : ""
+                        deadline.urgent ? styles.deadlineOverdue : ""
                       }`}
                     >
-                      {deadline.countdown.kind === "UPCOMING" &&
-                      deadline.countdown.daysRemaining <= 3
-                        ? deadline.countdown.label.replace(
-                            /^Осталось /,
-                            "Через ",
-                          )
-                        : deadline.countdown.label}
+                      {deadline.countdown}
                     </span>
                   </li>
                 ))}
               </ul>
             ) : (
               <div className={styles.emptyState}>
-                <strong>Дедлайнов пока нет</strong>
-                <p>Открытых заданий и сроков нет.</p>
+                <strong>Дедлайнов и экзаменов пока нет</strong>
+                <p>Открытых заданий и предстоящих событий сессии нет.</p>
               </div>
             )}
             <Link className={styles.textLink} href="/deadlines">

@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { academicRecordsSeedData } from "../prisma/academic-records-seed-data";
+import {
+  academicRecordsSeedData,
+  shiftAcademicRecordDate,
+} from "../prisma/academic-records-seed-data";
 
 describe("academic records seed data", () => {
   it("includes two students with two semesters of seven subjects", () => {
@@ -140,6 +143,17 @@ describe("academic records seed data", () => {
         (result) => result.attemptCount > 1,
       ),
     ).toBe(true);
+    const debtResult = studentWithDebt.semesters[0].results.find(
+      (result) => result.status === "ACADEMIC_DEBT",
+    );
+    expect(
+      studentWithDebt.currentSemesterSchedule.some(
+        (item) =>
+          item.subjectId === debtResult?.subjectId &&
+          item.status === "PLANNED" &&
+          item.date > academicRecordsSeedData.snapshotDate,
+      ),
+    ).toBe(true);
 
     for (const student of academicRecordsSeedData.students) {
       expect(
@@ -153,5 +167,22 @@ describe("academic records seed data", () => {
         ),
       ).toBe(true);
     }
+  });
+
+  it("shifts session and result dates relative to the configured demo day", () => {
+    expect(
+      shiftAcademicRecordDate(
+        "2026-11-16",
+        "2026-11-15",
+        "2026-12-30",
+      ),
+    ).toBe("2026-12-31");
+    expect(
+      shiftAcademicRecordDate(
+        "2026-11-23",
+        "2026-11-15",
+        "2026-12-30",
+      ),
+    ).toBe("2027-01-07");
   });
 });

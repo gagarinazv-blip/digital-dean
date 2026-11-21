@@ -1,6 +1,9 @@
 import "server-only";
 
-import type { NotificationType } from "@/generated/prisma/enums";
+import type {
+  NotificationTargetType,
+  NotificationType,
+} from "@/generated/prisma/enums";
 import type {
   NotificationDetails,
   StudentNotificationItem,
@@ -14,6 +17,7 @@ import { getDemoNow } from "@/lib/demo-date";
 import {
   formatMoscowTime,
   formatMoscowWeekdayDate,
+  getMoscowDateTime,
   getMoscowDateKey,
 } from "@/lib/campus-time";
 import { getPrisma } from "@/lib/prisma";
@@ -27,7 +31,7 @@ type RawNotification = {
   type: NotificationType | null;
   title: string;
   text: string;
-  targetType: "SCHEDULE_ITEM" | "DEADLINE" | "REQUEST" | null;
+  targetType: NotificationTargetType | null;
   targetId: string | null;
   createdAt: Date;
   readAt: Date | null;
@@ -62,7 +66,14 @@ export async function presentStudentNotifications(
       row.targetType === "DEADLINE" && row.targetId ? [row.targetId] : [],
     ),
   )];
-  const [scheduleItems, requests, deadlines] = await Promise.all([
+  const academicSessionIds = [...new Set(
+    rows.flatMap((row) =>
+      row.targetType === "ACADEMIC_SESSION" && row.targetId && /^\d+$/.test(row.targetId)
+        ? [Number(row.targetId)]
+        : [],
+    ),
+  )];
+  const [scheduleItems, requests, deadlines, academicSessions] = await Promise.all([
     scheduleIds.length
       ? prisma.scheduleItem.findMany({
           where: { id: { in: scheduleIds }, groupId },
@@ -92,11 +103,35 @@ export async function presentStudentNotifications(
           select: { id: true, subject: true, title: true, dueAt: true, status: true },
         })
       : Promise.resolve([]),
+    academicSessionIds.length
+      ? prisma.academicSessionItem.findMany({
+          where: {
+            id: { in: academicSessionIds },
+            planItem: { semester: { studentId } },
+          },
+          select: {
+            id: true,
+            date: true,
+            startTime: true,
+            endTime: true,
+            room: true,
+            planItem: {
+              select: {
+                name: true,
+                semester: { select: { code: true } },
+              },
+            },
+          },
+        })
+      : Promise.resolve([]),
   ]);
 
   const scheduleById = new Map(scheduleItems.map((item) => [String(item.id), item]));
   const requestById = new Map(requests.map((item) => [item.publicId, item]));
   const deadlineById = new Map(deadlines.map((item) => [item.id, item]));
+  const academicSessionById = new Map(
+    academicSessions.map((item) => [String(item.id), item]),
+  );
   const now = getDemoNow();
 
   return rows.flatMap((row) => {
@@ -118,7 +153,36 @@ export async function presentStudentNotifications(
       targetAvailable = false;
     }
 
-    if (row.type === "SCHEDULE_CHANGE" && row.targetId) {
+    if (
+      row.type === "SCHEDULE_CHANGE" &&
+      row.targetType === "ACADEMIC_SESSION" &&
+      row.targetId
+    ) {
+      const item = academicSessionById.get(row.targetId);
+      targetAvailable = Boolean(item);
+      if (item) {
+        const startsAt = getMoscowDateTime(item.date, item.startTime);
+        const endsAt = getMoscowDateTime(item.date, item.endTime);
+        const dateLabel = formatMoscowWeekdayDate(startsAt);
+        const timeLabel = `${formatMoscowTime(startsAt)}–${formatMoscowTime(endsAt)}`;
+        href = `/schedule?section=session&semester=${encodeURIComponent(item.planItem.semester.code)}&event=${item.id}`;
+        details.schedule = {
+          dateLabel,
+          timeLabel,
+          previousTimeLabel: null,
+          previousDateLabel: null,
+          previousRoom: null,
+          room: item.room,
+          changeNote: null,
+        };
+        source = cleanStudentFacingText(item.planItem.name);
+        context = `${source} · ${dateLabel} · открыть сессию`;
+      }
+    } else if (
+      row.type === "SCHEDULE_CHANGE" &&
+      row.targetType === "SCHEDULE_ITEM" &&
+      row.targetId
+    ) {
       const item = scheduleById.get(row.targetId);
       targetAvailable = Boolean(item);
       if (item) {

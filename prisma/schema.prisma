@@ -79,6 +79,8 @@ enum AcademicResultStatus {
 enum AcademicSessionStatus {
   COMPLETED
   PLANNED
+  RESCHEDULED
+  CANCELLED
 }
 
 enum RequestType {
@@ -117,6 +119,7 @@ enum NotificationTargetType {
   SCHEDULE_ITEM
   DEADLINE
   REQUEST
+  ACADEMIC_SESSION
 }
 
 enum DeadlineStatus {

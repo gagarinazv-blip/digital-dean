@@ -99,7 +99,7 @@
   color: var(--color-ink);
   font-size: var(--font-size-caption);
   font-weight: 650;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .summaryContent strong {
@@ -261,7 +261,7 @@
   color: var(--color-ink);
   font-size: var(--font-size-caption);
   vertical-align: middle;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .table tbody tr:hover {
@@ -287,7 +287,7 @@
 .studentGroup {
   display: block;
   max-width: 260px;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .studentName {
@@ -304,7 +304,7 @@
 .assigneeEmpty {
   display: block;
   max-width: 190px;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .assigneeName {
@@ -321,7 +321,7 @@
   align-items: center;
   gap: 8px;
   line-height: 1.35;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .serviceIcon {

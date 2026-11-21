@@ -40,7 +40,7 @@
   font-weight: 600;
   letter-spacing: -0.035em;
   line-height: 1.25;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .heading p {
@@ -138,7 +138,7 @@
   font-size: var(--font-size-h3);
   font-weight: 600;
   line-height: 1.4;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .panelHeading p {
@@ -235,7 +235,7 @@
   color: var(--color-ink);
   font-size: var(--font-size-caption);
   line-height: 1.5;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .table td strong {
@@ -314,7 +314,7 @@
   font-size: var(--font-size-caption);
   font-weight: 400;
   line-height: 1.5;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .fieldHint strong {
@@ -385,7 +385,7 @@
   color: var(--color-ink);
   font-size: var(--font-size-body-compact);
   font-weight: 600;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .auditItem p,
@@ -393,7 +393,7 @@
   color: var(--color-muted);
   font-size: var(--font-size-caption);
   line-height: 1.5;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .panel > .emptyState {

@@ -45,6 +45,17 @@ export function buildNotificationTargetHref(
   targetId: string | null,
 ): string | null {
   if (
+    type === "SCHEDULE_CHANGE" &&
+    targetType === "ACADEMIC_SESSION" &&
+    targetId &&
+    /^\d+$/.test(targetId) &&
+    Number.isSafeInteger(Number(targetId)) &&
+    Number(targetId) > 0
+  ) {
+    return `/schedule?section=session&event=${encodeURIComponent(targetId)}`;
+  }
+
+  if (
     targetByType[type] === null ||
     targetByType[type] !== targetType ||
     !targetId
@@ -65,5 +76,7 @@ export function buildNotificationTargetHref(
       return isNotificationPublicId(targetId)
         ? `/requests/${targetId}`
         : null;
+    case "ACADEMIC_SESSION":
+      return null;
   }
 }

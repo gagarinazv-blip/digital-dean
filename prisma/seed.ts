@@ -4,11 +4,16 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 import type { Prisma } from "../src/generated/prisma/client";
 import type { RequestStatus } from "../src/generated/prisma/enums";
-import { academicRecordsSeedData } from "./academic-records-seed-data";
+import {
+  academicRecordsSeedData,
+  shiftAcademicRecordDate,
+} from "./academic-records-seed-data";
 import { buildTargetScheduleSeed } from "./schedule-seed-data";
 import { buildDeadlineSeedData } from "./deadline-seed-data";
 import { getDemoNotificationState } from "./notification-seed-data";
 import { getDemoNow } from "../src/lib/demo-date";
+import { getMoscowDateKey } from "../src/lib/campus-time";
+import { getSessionNotificationPlan } from "../src/lib/session-utils";
 import { encryptCorporateMailPassword } from "../src/lib/corporate-mail-credentials";
 import { getCorporateMailDomain } from "../src/lib/corporate-mail";
 import { validateGradebookSeedData } from "../src/lib/gradebook-data";
@@ -245,6 +250,7 @@ async function main() {
     ]),
   ];
   const seedNow = getDemoNow();
+  const academicSnapshotDate = getMoscowDateKey(seedNow);
   const corporateMailDomain = getCorporateMailDomain();
   const encryptedAlphaMailPassword = encryptCorporateMailPassword(
     alphaCorporateMailPassword,
@@ -453,12 +459,12 @@ async function main() {
         where: { id: academicRecordsSeedData.datasetId },
         update: {
           academicYear: academicRecordsSeedData.academicYear,
-          snapshotDate: dateOnly(academicRecordsSeedData.snapshotDate),
+          snapshotDate: dateOnly(academicSnapshotDate),
         },
         create: {
           id: academicRecordsSeedData.datasetId,
           academicYear: academicRecordsSeedData.academicYear,
-          snapshotDate: dateOnly(academicRecordsSeedData.snapshotDate),
+          snapshotDate: dateOnly(academicSnapshotDate),
         },
       });
 
@@ -502,12 +508,24 @@ async function main() {
                         create: {
                           status: result.status,
                           value: result.value,
-                          date: dateOnly(result.date),
+                          date: dateOnly(
+                            shiftAcademicRecordDate(
+                              result.date,
+                              academicRecordsSeedData.snapshotDate,
+                              academicSnapshotDate,
+                            ),
+                          ),
                           attemptCount: result.attemptCount,
                           attempts: {
                             create: result.attempts.map((attempt) => ({
                               attemptNumber: attempt.attempt,
-                              date: dateOnly(attempt.date),
+                              date: dateOnly(
+                                shiftAcademicRecordDate(
+                                  attempt.date,
+                                  academicRecordsSeedData.snapshotDate,
+                                  academicSnapshotDate,
+                                ),
+                              ),
                               value: attempt.value,
                             })),
                           },
@@ -521,16 +539,67 @@ async function main() {
         }
 
         for (const sessionItem of academicStudent.currentSemesterSchedule) {
-          await tx.academicSessionItem.create({
+          const date = shiftAcademicRecordDate(
+            sessionItem.date,
+            academicRecordsSeedData.snapshotDate,
+            academicSnapshotDate,
+          );
+          const session = await tx.academicSessionItem.create({
             data: {
               planItemId: sessionItem.subjectId,
-              date: dateOnly(sessionItem.date),
+              date: dateOnly(date),
               startTime: timeOfDay(sessionItem.startTime),
               endTime: timeOfDay(sessionItem.endTime),
               room: sessionItem.room,
               status: sessionItem.status,
             },
+            select: { id: true },
           });
+          const subject = academicStudent.semesters
+            .flatMap((semester) => semester.subjects)
+            .find((item) => item.id === sessionItem.subjectId);
+          if (!subject) {
+            throw new Error(
+              `Session subject "${sessionItem.subjectId}" is missing for ${academicStudent.login}.`,
+            );
+          }
+          const result = academicStudent.semesters
+            .flatMap((semester) => semester.results)
+            .find((item) => item.subjectId === sessionItem.subjectId);
+          const notices = getSessionNotificationPlan({
+            id: String(session.id),
+            subject: subject.name,
+            date,
+            startTime: sessionItem.startTime,
+            endTime: sessionItem.endTime,
+            room: sessionItem.room,
+            status: sessionItem.status,
+            resultStatus: result?.status ?? null,
+            resultValue: result?.value ?? null,
+            resultDate: result
+              ? shiftAcademicRecordDate(
+                  result.date,
+                  academicRecordsSeedData.snapshotDate,
+                  academicSnapshotDate,
+                )
+              : null,
+            controlType: sessionItem.controlType,
+            teacher: subject.teacher,
+            todayKey: academicSnapshotDate,
+          });
+          for (const notice of notices) {
+            await tx.notification.create({
+              data: {
+                studentId,
+                type: "SCHEDULE_CHANGE",
+                ...notice,
+                date: seedNow,
+                createdAt: seedNow,
+                targetType: "ACADEMIC_SESSION",
+                targetId: String(session.id),
+              },
+            });
+          }
         }
       }
 

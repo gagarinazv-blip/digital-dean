@@ -42,7 +42,9 @@ export function StaffLayout({
           </Link>
           <div className={styles.headerContext}>
             <strong>Кабинет сотрудника</strong>
-            <span>{staff.position} · {staff.department}</span>
+            <span title={`${staff.position} · ${staff.department}`}>
+              {staff.position} · {staff.department}
+            </span>
           </div>
           <div className={styles.account}>
             <div className={styles.accountText}>

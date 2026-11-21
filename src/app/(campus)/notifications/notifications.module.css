@@ -303,7 +303,7 @@
   color: var(--color-muted);
   font-size: var(--font-size-caption);
   line-height: 18px;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .rowContext {
@@ -330,7 +330,7 @@
   font-size: var(--font-size-body);
   font-weight: 600;
   line-height: 24px;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
@@ -425,7 +425,7 @@
   justify-items: start;
   gap: var(--space-3);
   padding: var(--space-6);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .detailEyebrow {
@@ -439,7 +439,7 @@
   font-size: var(--font-size-h2);
   font-weight: 600;
   line-height: 1.35;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .detailPanel time {
@@ -453,7 +453,7 @@
   font-size: var(--font-size-body-compact);
   line-height: 1.6;
   white-space: pre-line;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .changeDetails,
@@ -492,7 +492,7 @@
 }
 
 .changeDetails dd {
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .changeDetails > p {

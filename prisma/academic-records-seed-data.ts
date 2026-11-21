@@ -46,7 +46,7 @@ export type AcademicSessionItem = {
   endTime: string;
   room: string;
   controlType: AcademicControlType;
-  status: "COMPLETED" | "PLANNED";
+  status: "COMPLETED" | "PLANNED" | "RESCHEDULED" | "CANCELLED";
 };
 
 export type AcademicStudent = {
@@ -621,3 +621,29 @@ export const academicRecordsSeedData: {
     },
   ],
 };
+
+export function shiftAcademicRecordDate(
+  value: string,
+  snapshotDate: string,
+  referenceDate: string,
+): string {
+  const toUtcDay = (date: string) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      throw new RangeError(`Некорректная дата учебной записи: ${date}`);
+    }
+    const parsed = new Date(`${date}T00:00:00.000Z`);
+    if (
+      Number.isNaN(parsed.getTime()) ||
+      parsed.toISOString().slice(0, 10) !== date
+    ) {
+      throw new RangeError(`Некорректная дата учебной записи: ${date}`);
+    }
+    return parsed.getTime();
+  };
+  const offset = Math.round(
+    (toUtcDay(value) - toUtcDay(snapshotDate)) / (24 * 60 * 60 * 1000),
+  );
+  const shifted = new Date(toUtcDay(referenceDate));
+  shifted.setUTCDate(shifted.getUTCDate() + offset);
+  return shifted.toISOString().slice(0, 10);
+}

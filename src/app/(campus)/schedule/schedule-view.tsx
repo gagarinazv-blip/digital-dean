@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -20,6 +20,7 @@ import type {
 import { formatMoscowWeekdayDate, getMoscowTimeMinutes } from "@/lib/campus-time";
 import {
   buildScheduleHref,
+  buildScheduleSessionHref,
   calculateLessonLayout,
   filterScheduleDayLessons,
   getMonthCalendarDays,
@@ -29,6 +30,11 @@ import {
   type ScheduleViewMode,
 } from "@/lib/schedule-view-utils";
 import { generateScheduleIcs } from "@/lib/schedule-ics";
+import {
+  ScheduleFilterMenu,
+  ScheduleSectionTabs,
+  ScheduleToolbar,
+} from "./schedule-toolbar";
 import styles from "./schedule.module.css";
 
 export type ScheduleLessonView = {
@@ -248,8 +254,10 @@ function TimelineLesson({
       type="button"
     >
       <time dateTime={lesson.startsAtIso}>{lesson.timeLabel}</time>
-      <strong>{lesson.subject}</strong>
-      <span>{lesson.kindLabel} · ауд. {lesson.room}</span>
+      <strong title={lesson.subject}>{lesson.subject}</strong>
+      <span title={`${lesson.kindLabel} · ауд. ${lesson.room}`}>
+        {lesson.kindLabel} · ауд. {lesson.room}
+      </span>
       <span className={styles.timelineStatus}>
         {isCurrent ? "Сейчас" : isNext ? "Далее" : status.label}
       </span>
@@ -439,10 +447,18 @@ export function LessonAgenda({
               >
                 {lesson.subject}
               </strong>
-              <span className={styles.agendaMeta} lang="ru">
+              <span
+                className={styles.agendaMeta}
+                lang="ru"
+                title={`${lesson.kindLabel} · ${lesson.teacher}`}
+              >
                 {lesson.kindLabel} · {lesson.teacher}
               </span>
-              <span className={styles.roomBadge} lang="ru">
+              <span
+                className={styles.roomBadge}
+                lang="ru"
+                title={`Ауд. ${lesson.room}`}
+              >
                 Ауд. {lesson.room}
               </span>
               {lesson.status === "RESCHEDULED" &&
@@ -882,8 +898,12 @@ export function ScheduleView({
   openDayKey: string | null;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [liveSearch, setLiveSearch] = useState(filters.q ?? "");
   const [calendarError, setCalendarError] = useState<string | null>(null);
+  const filterPanelRef = useRef<HTMLDetailsElement>(null);
+  const periodPickerRef = useRef<HTMLDetailsElement>(null);
+  const actionsMenuRef = useRef<HTMLDetailsElement>(null);
   const now = useScheduleClock(nowIso, isDemoTime);
   const nowMinutes = getMoscowTimeMinutes(now);
   const activeFilters = useMemo(
@@ -960,6 +980,7 @@ export function ScheduleView({
           lesson.startsAtMinutes > nowMinutes,
       )
     : undefined;
+  const highlightedLesson = currentLesson ?? upcomingLesson;
   const activeFilterCount = [
     activeFilters.kind,
     activeFilters.subject,
@@ -974,10 +995,19 @@ export function ScheduleView({
   const rangeLabel =
     view === "month"
       ? monthLabel
-      : view === "week"
-        ? `${days[0]?.label ?? ""} — ${days[6]?.label ?? ""}`
+      : view === "week" || view === "list"
+        ? new Intl.DateTimeFormat("ru-RU", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+            timeZone: "UTC",
+          }).formatRange(
+            new Date(`${days[0]?.key ?? selectedDate}T12:00:00.000Z`),
+            new Date(`${days[6]?.key ?? selectedDate}T12:00:00.000Z`),
+          )
         : makeDayDateLabel(selectedDate);
-  const dateUnit = view === "month" ? "month" : view === "week" ? "week" : "day";
+  const dateUnit =
+    view === "month" ? "month" : view === "week" || view === "list" ? "week" : "day";
   const previousDate = shiftScheduleDate(selectedDate, -1, dateUnit);
   const nextDate = shiftScheduleDate(selectedDate, 1, dateUnit);
   const subjects = [...new Set(allLessons.map((lesson) => lesson.subject))].sort(
@@ -1001,17 +1031,17 @@ export function ScheduleView({
   const showSunday = (days[6]?.lessons.length ?? 0) > 0;
   const visibleWeekDays = filteredDays.slice(0, showSunday ? 7 : 6);
 
-  function navigateTo(
+  const navigateTo = useCallback((
     targetView: ScheduleViewMode,
     date: string,
     lessonId?: string,
     dayKey?: string,
-  ) {
+  ) => {
     router.push(
       buildScheduleHref(targetView, date, activeFilters, lessonId, dayKey),
       { scroll: false },
     );
-  }
+  }, [activeFilters, router]);
 
   function openDayPanel(dateKey: string) {
     if (dateKey === openDayKey) return;
@@ -1076,7 +1106,77 @@ export function ScheduleView({
     });
   }
 
-  function downloadWeekCalendar() {
+  useEffect(() => {
+    function onKeyDown(event: globalThis.KeyboardEvent) {
+      if (event.defaultPrevented) return;
+      const target = event.target;
+      if (event.key === "Escape") {
+        if (target instanceof HTMLElement && target.closest("[role='dialog']")) {
+          return;
+        }
+        const openMenu = [
+          filterPanelRef.current,
+          periodPickerRef.current,
+          actionsMenuRef.current,
+        ].find((menu) => menu?.open);
+        if (openMenu) {
+          openMenu.open = false;
+          event.preventDefault();
+        }
+        return;
+      }
+      if (event.altKey || event.ctrlKey || event.metaKey) return;
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable ||
+          target.closest("input, textarea, select, [contenteditable='true']"))
+      ) {
+        return;
+      }
+      if (target instanceof HTMLElement && target.closest("[role='dialog']")) {
+        return;
+      }
+
+      if (event.key.toLowerCase() === "f") {
+        if (filterPanelRef.current) {
+          filterPanelRef.current.open = !filterPanelRef.current.open;
+          event.preventDefault();
+        }
+        return;
+      }
+
+      const targetView =
+        event.key === "1"
+          ? "today"
+          : event.key === "2"
+            ? "week"
+            : event.key === "3"
+              ? "month"
+              : event.key === "4"
+                ? "list"
+                : null;
+      if (targetView) {
+        navigateTo(targetView, selectedDate);
+        event.preventDefault();
+        return;
+      }
+      if (event.key.toLowerCase() === "t") {
+        navigateTo(view, todayKey);
+        event.preventDefault();
+        return;
+      }
+      if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+        const amount = event.key === "ArrowLeft" ? -1 : 1;
+        navigateTo(view, shiftScheduleDate(selectedDate, amount, dateUnit));
+        event.preventDefault();
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [activeFilters, dateUnit, navigateTo, selectedDate, todayKey, view]);
+
+  function downloadCalendar() {
     let content: string;
     try {
       content = generateScheduleIcs(allLessons, now);
@@ -1090,7 +1190,7 @@ export function ScheduleView({
     );
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = `campus-os-week-${days[0]?.key ?? selectedDate}.ics`;
+    anchor.download = `campus-os-${view}-${days[0]?.key ?? selectedDate}.ics`;
     anchor.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
     setCalendarError(null);
@@ -1128,221 +1228,174 @@ export function ScheduleView({
     activeFilters.q ? `Поиск: ${activeFilters.q}` : "",
     activeFilters.changed ? "Только изменения" : "",
   ].filter(Boolean);
+  const lessonsHref = buildScheduleHref(view, selectedDate, activeFilters);
+  const sessionHref = buildScheduleSessionHref(lessonsHref);
+
+  useEffect(() => {
+    if (searchParams.has("view")) return;
+    if (!window.matchMedia("(max-width: 760px)").matches) return;
+    router.replace(buildScheduleHref("list", selectedDate, activeFilters), {
+      scroll: false,
+    });
+  }, [activeFilters, router, searchParams, selectedDate]);
 
   return (
     <div className={styles.schedulePage}>
-      <section className={styles.weekHero}>
-        <span aria-hidden="true" className={styles.weekIcon}>
-          <svg
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="1.7"
-            viewBox="0 0 24 24"
-          >
-            <rect x="3" y="5" width="18" height="16" rx="2" />
-            <path d="M16 3v4M8 3v4M3 10h18" />
-          </svg>
-        </span>
-        <div className={styles.weekHeroText}>
-          <strong>
-            {view === "month"
-              ? "План занятий на месяц"
-              : view === "week"
-                ? "Расписание на неделю"
-                : selectedIsToday
-                  ? "Расписание на сегодня"
-                  : "Расписание на день"}
-          </strong>
-          <span>{rangeLabel}</span>
-        </div>
-        <span aria-hidden="true" className={styles.weekHeroArt} />
-      </section>
+      <ScheduleToolbar>
+        <ScheduleSectionTabs
+          active="lessons"
+          lessonsHref={lessonsHref}
+          sessionHref={sessionHref}
+        />
+        <div className={styles.scheduleToolbarRow}>
+          <nav aria-label="Навигация по датам" className={styles.dateControls}>
+            <div className={styles.dateNavigationGroup}>
+              <Link
+                aria-label={view === "month" ? "Предыдущий месяц" : view === "week" || view === "list" ? "Предыдущая неделя" : "Предыдущий день"}
+                className={styles.dateArrow}
+                href={buildScheduleHref(view, previousDate, activeFilters)}
+                scroll={false}
+              >
+                <span aria-hidden="true">‹</span>
+              </Link>
+              <Link
+                className={styles.todayButton}
+                href={buildScheduleHref(view, todayKey, activeFilters)}
+                scroll={false}
+              >
+                Сегодня
+              </Link>
+              <Link
+                aria-label={view === "month" ? "Следующий месяц" : view === "week" || view === "list" ? "Следующая неделя" : "Следующий день"}
+                className={styles.dateArrow}
+                href={buildScheduleHref(view, nextDate, activeFilters)}
+                scroll={false}
+              >
+                <span aria-hidden="true">›</span>
+              </Link>
+            </div>
+            <details className={styles.periodPicker} ref={periodPickerRef}>
+              <summary aria-label={`Выбрать период: ${rangeLabel}`} className={styles.selectedRange}>
+                <span aria-live="polite">{rangeLabel}</span>
+                <span aria-hidden="true">⌄</span>
+              </summary>
+              <div className={styles.datePopover}>
+                <label>
+                  <span>Перейти к дате</span>
+                  <input
+                    aria-label="Выбрать дату"
+                    max="2100-12-31"
+                    min="2000-01-01"
+                    onChange={(event) => {
+                      if (event.currentTarget.value) {
+                        navigateTo(view, event.currentTarget.value);
+                        if (periodPickerRef.current) periodPickerRef.current.open = false;
+                      }
+                    }}
+                    type="date"
+                    value={selectedDate}
+                  />
+                </label>
+              </div>
+            </details>
+          </nav>
 
-      <nav aria-label="Период расписания" className={styles.viewSwitch}>
-        {(
-          [
-            ["today", "День"],
-            ["week", "Неделя"],
-            ["month", "Месяц"],
-          ] as const
-        ).map(([targetView, label]) => (
-          <Link
-            aria-current={view === targetView ? "page" : undefined}
-            className={styles.viewButton}
-            href={buildScheduleHref(targetView, selectedDate, activeFilters)}
-            key={targetView}
-            scroll={false}
-          >
-            {label}
-          </Link>
-        ))}
-      </nav>
-
-      <nav aria-label="Навигация по датам" className={styles.dateControls}>
-        <div className={styles.dateNavigationGroup}>
-          <Link
-            aria-label={
-              view === "month"
-                ? "Предыдущий месяц"
-                : view === "week"
-                  ? "Предыдущая неделя"
-                  : "Предыдущий день"
-            }
-            className={styles.dateArrow}
-            href={buildScheduleHref(view, previousDate, activeFilters)}
-            scroll={false}
-          >
-            <span aria-hidden="true">‹</span>
-          </Link>
-          <Link
-            className={styles.todayButton}
-            href={buildScheduleHref("today", todayKey, activeFilters)}
-            scroll={false}
-          >
-            Сегодня
-          </Link>
-          <Link
-            aria-label={
-              view === "month"
-                ? "Следующий месяц"
-                : view === "week"
-                  ? "Следующая неделя"
-                  : "Следующий день"
-            }
-            className={styles.dateArrow}
-            href={buildScheduleHref(view, nextDate, activeFilters)}
-            scroll={false}
-          >
-            <span aria-hidden="true">›</span>
-          </Link>
-        </div>
-        <span aria-live="polite" className={styles.selectedRange}>
-          {rangeLabel}
-        </span>
-        <label className={styles.datePicker}>
-          <span className={styles.visuallyHidden}>Выбрать дату</span>
-          <input
-            aria-label="Выбрать дату"
-            max="2100-12-31"
-            min="2000-01-01"
-            onChange={(event) => {
-              if (event.currentTarget.value) {
-                navigateTo(view, event.currentTarget.value);
-              }
-            }}
-            type="date"
-            value={selectedDate}
-          />
-        </label>
-      </nav>
-
-      {view === "week" && (
-        <>
-          <div className={styles.weekActions}>
-            <button
-              className={styles.secondaryAction}
-              onClick={downloadWeekCalendar}
-              type="button"
+          <div className={styles.toolbarActions}>
+            <nav aria-label="Вид расписания" className={styles.viewSwitch}>
+              {(
+                [
+                  ["today", "День"],
+                  ["week", "Неделя"],
+                  ["month", "Месяц"],
+                  ["list", "Список"],
+                ] as const
+              ).map(([targetView, label]) => (
+                <Link
+                  aria-current={view === targetView ? "page" : undefined}
+                  className={styles.viewButton}
+                  href={buildScheduleHref(targetView, selectedDate, activeFilters)}
+                  key={targetView}
+                  scroll={false}
+                >
+                  {label}
+                </Link>
+              ))}
+            </nav>
+            <ScheduleFilterMenu
+              activeCount={activeFilterCount}
+              detailsRef={filterPanelRef}
+              panelClassName={styles.scheduleFilterPopup}
             >
-              Добавить в календарь
-            </button>
-            <button
-              className={styles.secondaryAction}
-              onClick={() => window.print()}
-              type="button"
-            >
-              Печать недели
-            </button>
+              <form
+                className={styles.filterPanel}
+                key={`${view}:${selectedDate}:${filters.kind}:${filters.subject}:${filters.q}:${filters.changed}`}
+                onSubmit={(event) => {
+                  applyFilters(event);
+                  if (filterPanelRef.current) filterPanelRef.current.open = false;
+                }}
+              >
+                <label>
+                  <span>Тип занятия</span>
+                  <select defaultValue={filters.kind} name="kind">
+                    <option value="">Все типы</option>
+                    {Object.entries(kindFilterLabels).map(([kind, label]) => (
+                      <option key={kind} value={kind}>{label}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  <span>Дисциплина</span>
+                  <select defaultValue={filters.subject} name="subject">
+                    <option value="">Все дисциплины</option>
+                    {subjects.map((subject) => (
+                      <option key={subject} value={subject}>{subject}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className={styles.searchFilter}>
+                  <span>Преподаватель или дисциплина</span>
+                  <input
+                    autoComplete="off"
+                    name="q"
+                    onChange={(event) => setLiveSearch(event.currentTarget.value)}
+                    placeholder="Быстрый поиск"
+                    type="search"
+                    value={liveSearch}
+                  />
+                </label>
+                <label className={styles.changedFilter}>
+                  <input defaultChecked={filters.changed} name="changed" type="checkbox" value="1" />
+                  <span>Только изменения</span>
+                </label>
+                <button className={styles.applyFilters} type="submit">Применить</button>
+                {activeFilterCount > 0 && (
+                  <Link className={styles.clearFilters} href={buildScheduleHref(view, selectedDate)} scroll={false}>
+                    Сбросить фильтры
+                  </Link>
+                )}
+              </form>
+            </ScheduleFilterMenu>
+            <details className={styles.actionsMenu} ref={actionsMenuRef}>
+              <summary aria-label="Другие действия" className={styles.menuTrigger}>⋯</summary>
+              <div className={styles.actionsPopup}>
+                <button onClick={downloadCalendar} type="button">Скачать расписание (.ics)</button>
+                <button onClick={() => window.print()} type="button">Печать расписания</button>
+              </div>
+            </details>
           </div>
-          {calendarError && (
-            <p className={styles.calendarError} role="alert">
-              {calendarError}
-            </p>
-          )}
-        </>
-      )}
-
-      <form
-        className={styles.filterPanel}
-        key={`${view}:${selectedDate}:${filters.kind}:${filters.subject}:${filters.q}:${filters.changed}`}
-        onSubmit={applyFilters}
-      >
-        <input name="view" type="hidden" value={view} />
-        <input name="date" type="hidden" value={selectedDate} />
-        <label>
-          <span>Тип занятия</span>
-          <select defaultValue={filters.kind} name="kind">
-            <option value="">Все типы</option>
-            {Object.entries(kindFilterLabels).map(([kind, label]) => (
-              <option key={kind} value={kind}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          <span>Дисциплина</span>
-          <select defaultValue={filters.subject} name="subject">
-            <option value="">Все дисциплины</option>
-            {subjects.map((subject) => (
-              <option key={subject} value={subject}>
-                {subject}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className={styles.searchFilter}>
-          <span>Преподаватель или дисциплина</span>
-          <input
-            autoComplete="off"
-            name="q"
-            onChange={(event) => setLiveSearch(event.currentTarget.value)}
-            placeholder="Быстрый поиск"
-            type="search"
-            value={liveSearch}
-          />
-        </label>
-        <label className={styles.changedFilter}>
-          <input
-            defaultChecked={filters.changed}
-            name="changed"
-            type="checkbox"
-            value="1"
-          />
-          <span>Только изменения</span>
-        </label>
-        <button className={styles.applyFilters} type="submit">
-          Применить
-        </button>
-        {activeFilterCount > 0 && (
-          <Link
-            className={styles.clearFilters}
-            href={buildScheduleHref(view, selectedDate)}
-            scroll={false}
-          >
-            Сбросить фильтры
-          </Link>
-        )}
-      </form>
-
-      {activeFilterLabels.length > 0 && (
-        <div aria-label="Активные фильтры" className={styles.filterChips}>
-          {activeFilterLabels.map((label) => (
-            <span className={styles.filterChip} key={label}>
-              {label}
-            </span>
-          ))}
-          <Link
-            className={styles.clearChip}
-            href={buildScheduleHref(view, selectedDate)}
-            scroll={false}
-          >
-            Очистить все
-          </Link>
         </div>
-      )}
+        {activeFilterLabels.length > 0 && (
+          <div aria-label="Активные фильтры" className={styles.filterChips}>
+            {activeFilterLabels.map((label) => (
+              <span className={styles.filterChip} key={label}>{label}</span>
+            ))}
+            <Link className={styles.clearChip} href={buildScheduleHref(view, selectedDate)} scroll={false}>
+              Сбросить
+            </Link>
+          </div>
+        )}
+      </ScheduleToolbar>
+      {calendarError && <p className={styles.calendarError} role="alert">{calendarError}</p>}
 
       {view === "week" && allChanges.length > 0 && (
         <section
@@ -1377,58 +1430,39 @@ export function ScheduleView({
 
       {view === "today" && (
         <>
-          {selectedIsToday && (
+          {selectedIsToday && summary.count > 0 && (
             <section
               aria-label="Сейчас и дальше"
               className={styles.nowSummary}
               aria-live="polite"
             >
-              <div className={styles.nowSummaryMain}>
-                <span className={styles.nowSummaryLabel}>
-                  {currentLesson ? "Сейчас идёт" : "Дальше"}
-                </span>
-                <strong>
-                  {currentLesson?.subject ??
-                    upcomingLesson?.subject ??
-                    nextLesson?.subject ??
-                    (summary.count > 0 ? "Занятия на сегодня завершены" : "Сегодня свободный день")}
-                </strong>
-                <span>
-                  {currentLesson
-                    ? `До конца ${formatRelativeMinutes(
-                        Math.ceil((new Date(currentLesson.endsAtIso).getTime() - now.getTime()) / 60_000),
-                      )}`
-                    : upcomingLesson
-                      ? `Начало через ${formatRelativeMinutes(
-                          Math.ceil((new Date(upcomingLesson.startsAtIso).getTime() - now.getTime()) / 60_000),
-                        )} · ${upcomingLesson.timeLabel}`
-                      : nextLesson
-                        ? `Следующее занятие ${makeDayDateLabel(nextLesson.dateKey)}, ${nextLesson.timeLabel} · через ${formatRelativeMinutes(
-                            Math.ceil((new Date(nextLesson.startsAtIso).getTime() - now.getTime()) / 60_000),
-                          )}`
-                      : "Ближайшее занятие отображается в расписании недели"}
-                </span>
-              </div>
-              <div className={styles.daySummaryStats}>
-                <strong>{summary.count}</strong>
-                <span>{formatPairCount(summary.count)} сегодня</span>
-                {summary.first && summary.last && (
-                  <span>
-                    {formatClock(summary.first.startsAtMinutes)}–{formatClock(summary.last.endsAtMinutes)}
-                  </span>
-                )}
-                {summary.longGaps.length > 0 && (
-                  <span>
-                    Окна:{" "}
-                    {summary.longGaps
-                      .map(
-                        ({ from, to, duration }) =>
-                          `${formatRelativeMinutes(duration)} (${formatClock(from)}–${formatClock(to)})`,
-                      )
-                      .join(", ")}
-                  </span>
-                )}
-              </div>
+              <p className={styles.nowSummaryText}>
+                <strong>{currentLesson ? "Сейчас:" : upcomingLesson ? "Дальше:" : "Сегодня:"}</strong>{" "}
+                {currentLesson?.subject ??
+                  upcomingLesson?.subject ??
+                  "Занятия завершились"}
+                {currentLesson
+                  ? ` до ${formatClock(currentLesson.endsAtMinutes)}`
+                  : upcomingLesson
+                    ? ` в ${formatClock(upcomingLesson.startsAtMinutes)}`
+                    : ""}
+                {(currentLesson ?? upcomingLesson)?.room
+                  ? ` · ауд. ${(currentLesson ?? upcomingLesson)?.room}`
+                  : ""}
+              </p>
+              {highlightedLesson && (
+                <Link
+                  className={styles.nowSummaryLink}
+                  href={getLessonHref(
+                    highlightedLesson,
+                    view,
+                    activeFilters,
+                  )}
+                  scroll={false}
+                >
+                  Показать
+                </Link>
+              )}
             </section>
           )}
           {selectedLessons.length > 0 ? (
@@ -1436,14 +1470,6 @@ export function ScheduleView({
               aria-label={`Занятия: ${selectedDay?.label ?? ""}`}
               id={`schedule-day-${selectedDate}`}
             >
-              <div className={styles.dayTitleRow}>
-                <h2 className={styles.dayHeading}>
-                  {selectedDay?.label ?? "Выбранный день"}
-                </h2>
-                {selectedIsToday && (
-                  <span className={styles.todayMark}>Сегодня</span>
-                )}
-              </div>
               <div className={styles.dayTimelineDesktop}>
                 <TimelineColumn
                   day={selectedDay!}
@@ -1536,6 +1562,34 @@ export function ScheduleView({
             </div>
           )}
         </>
+      )}
+
+      {view === "list" && (
+        <div aria-label="Список занятий по дням" className={styles.agendaFeed}>
+          {daysWithLessons.length > 0 ? (
+            daysWithLessons.map((day) => (
+              <section className={styles.agendaFeedDay} key={day.key}>
+                <div className={styles.agendaFeedHeading}>
+                  <button
+                    aria-pressed={day.key === openDayKey}
+                    className={styles.weekAgendaDayTitle}
+                    data-schedule-day={day.key}
+                    onClick={() => openDayPanel(day.key)}
+                    type="button"
+                  >
+                    {day.label}
+                  </button>
+                </div>
+                <LessonAgenda day={day} openLesson={openLesson} />
+              </section>
+            ))
+          ) : (
+            <div className={styles.emptyState}>
+              <strong>{activeFilterCount ? "Нет занятий по выбранным фильтрам" : "Занятий нет"}</strong>
+              <p>{activeFilterCount ? "Измените условия или сбросьте фильтры." : "В этом периоде занятий не запланировано."}</p>
+            </div>
+          )}
+        </div>
       )}
 
       {view === "week" && (

@@ -76,7 +76,7 @@
   font-size: var(--font-size-h1);
   font-weight: 600;
   line-height: 38px;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .lesson > p:not(.lessonTime):not(.lessonCountdown) {
@@ -185,7 +185,7 @@
   font-size: clamp(22px, 2.2vw, 28px);
   font-weight: 600;
   line-height: 1.2;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;
@@ -198,7 +198,7 @@
   color: var(--color-muted);
   font-size: var(--font-size-body-compact);
   line-height: 20px;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .lesson .lessonTime {
@@ -233,7 +233,7 @@
   color: var(--color-muted);
   font-size: var(--font-size-caption);
   line-height: 16px;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .nextLessonPreview strong {
@@ -242,7 +242,7 @@
   color: var(--color-ink);
   font-size: var(--font-size-body-compact);
   line-height: 20px;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 1;
 }
@@ -322,7 +322,7 @@
   font-size: var(--font-size-h2);
   font-weight: 600;
   line-height: 28px;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .cardTitleRow {
@@ -395,7 +395,18 @@
 .deadlineDetails strong,
 .deadlineDetails small {
   display: block;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+}
+
+.deadlineDetails a {
+  color: var(--color-ink);
+  text-decoration: none;
+}
+
+.deadlineDetails a:hover {
+  color: var(--color-wine-900);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .deadlineDetails small {
@@ -436,7 +447,7 @@
   color: var(--color-ink);
   font-size: var(--font-size-body-compact);
   line-height: 20px;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .request p {
@@ -629,14 +640,14 @@
 .timelineDetails strong {
   font-size: var(--font-size-body-compact);
   line-height: 1.4;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .timelineDetails span {
   color: var(--color-muted);
   font-size: var(--font-size-caption);
   line-height: 1.4;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .emptySchedule {
@@ -692,7 +703,7 @@
   gap: var(--space-1);
   padding: var(--space-3);
   border-top: 1px solid var(--color-border);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .highlightedChange {
@@ -788,7 +799,7 @@
   font-size: var(--font-size-body-compact);
   font-weight: 600;
   line-height: 1.35;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .skeletonHeading,

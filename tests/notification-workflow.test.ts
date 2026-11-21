@@ -11,6 +11,13 @@ describe("notification target links", () => {
       ),
     ).toBe("/schedule?view=week&lesson=42#lesson-42");
     expect(
+      buildNotificationTargetHref(
+        "SCHEDULE_CHANGE",
+        "ACADEMIC_SESSION",
+        "19",
+      ),
+    ).toBe("/schedule?section=session&event=19");
+    expect(
       buildNotificationTargetHref("DEADLINE", "DEADLINE", "deadline-cuid"),
     ).toBe("/deadlines#deadline-deadline-cuid");
     expect(
@@ -28,6 +35,13 @@ describe("notification target links", () => {
     ).toBeNull();
     expect(
       buildNotificationTargetHref("SCHEDULE_CHANGE", "SCHEDULE_ITEM", "0"),
+    ).toBeNull();
+    expect(
+      buildNotificationTargetHref(
+        "SCHEDULE_CHANGE",
+        "ACADEMIC_SESSION",
+        "not-an-id",
+      ),
     ).toBeNull();
     expect(
       buildNotificationTargetHref(

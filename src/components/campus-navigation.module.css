@@ -30,7 +30,7 @@
   font-size: var(--font-size-body-compact);
   font-weight: 500;
   line-height: 1.35;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
   transition:
     color var(--motion-fast) var(--motion-ease),
     background-color var(--motion-fast) var(--motion-ease),

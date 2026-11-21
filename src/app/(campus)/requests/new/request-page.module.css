@@ -42,7 +42,7 @@
   font-size: var(--font-size-h2);
   font-weight: 600;
   line-height: 28px;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .panelTitle {
@@ -98,7 +98,7 @@
   color: var(--color-ink);
   font-size: var(--font-size-body-compact);
   line-height: 1.45;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .serviceDetails {
@@ -124,7 +124,7 @@
   color: var(--color-ink);
   font-weight: 600;
   text-align: right;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 @media (max-width: 1023px) {

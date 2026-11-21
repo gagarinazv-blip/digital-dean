@@ -66,7 +66,7 @@
   font-size: clamp(24px, 2.4vw, 32px);
   font-weight: 600;
   line-height: 1.2;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .heroContent > p:not(.heroKicker) {
@@ -421,7 +421,7 @@
   color: var(--color-ink);
   font-size: var(--font-size-body-compact);
   font-weight: 600;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .recentRequestMain > span,
@@ -474,7 +474,7 @@
   font-size: clamp(20px, 2vw, 24px);
   font-weight: 600;
   line-height: 1.25;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .detailDates {
@@ -507,14 +507,14 @@
   font-size: var(--font-size-label);
   font-weight: 600;
   line-height: 1.4;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .staffMessage p {
   color: var(--color-ink);
   font-size: var(--font-size-caption);
   line-height: 1.5;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
   white-space: pre-wrap;
 }
 
@@ -695,7 +695,7 @@
   color: var(--color-muted);
   font-size: var(--font-size-caption);
   line-height: 1.4;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .noSelectedRequest {
@@ -723,7 +723,7 @@
   font-size: var(--font-size-h2);
   font-weight: 600;
   line-height: 28px;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .headingCount {
@@ -771,7 +771,7 @@
   font-size: var(--font-size-h3);
   font-weight: 600;
   line-height: 1.4;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .documentHeading p {
@@ -782,7 +782,7 @@
 
 .documentCard .serviceLink {
   grid-column: 1;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .serviceCard {
@@ -822,7 +822,7 @@
   font-size: var(--font-size-h3);
   font-weight: 600;
   line-height: 1.4;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .serviceDescription,
@@ -836,7 +836,7 @@
   color: var(--color-muted);
   font-size: var(--font-size-label);
   line-height: 1.5;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .serviceMeta {
@@ -918,7 +918,7 @@
   color: var(--color-ink);
   font-size: var(--font-size-body-compact);
   line-height: 1.45;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .requestTable tbody tr:last-child td {
@@ -935,7 +935,7 @@
   font-size: var(--font-size-label);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .statusBadge {
@@ -1040,7 +1040,7 @@
   color: var(--color-ink);
   font-size: var(--font-size-body-compact);
   line-height: 1.45;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .mobileRequestMeta {
