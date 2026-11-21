@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { LoginForm } from "./login-form";
+import { LoginForm, StudentPasswordSetupForm } from "./login-form";
 import styles from "./login.module.css";
 
 function LoginFallback() {
@@ -20,7 +20,7 @@ async function LoginContent({
   searchParams: Promise<{ role?: string | string[] }>;
 }) {
   const user = await getCurrentUser();
-  if (user) {
+  if (user && !user.requiresPasswordSetup) {
     redirect(user.role === "STAFF" ? "/staff" : "/");
   }
   const { role } = await searchParams;
@@ -92,9 +92,19 @@ async function LoginContent({
       </header>
       <main className={styles.page}>
         <section className={styles.card} aria-labelledby="login-title">
-          <h1 id="login-title">Вход</h1>
-          <p className={styles.description}>Единый кабинет университета</p>
-          <LoginForm initialRole={initialRole} />
+          <h1 id="login-title">
+            {user?.requiresPasswordSetup ? "Создайте пароль" : "Вход"}
+          </h1>
+          <p className={styles.description}>
+            {user?.requiresPasswordSetup
+              ? "Это последний шаг для доступа к личному кабинету."
+              : "Единый кабинет университета"}
+          </p>
+          {user?.requiresPasswordSetup ? (
+            <StudentPasswordSetupForm />
+          ) : (
+            <LoginForm initialRole={initialRole} />
+          )}
         </section>
         <p className={styles.footer}>
           Демонстрационный проект. Все данные вымышлены.

@@ -183,6 +183,41 @@
   margin-top: var(--space-4);
 }
 
+.stepDescription {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--font-size-body-compact);
+  line-height: 20px;
+}
+
+.loginLinks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+}
+
+.textButton {
+  min-height: 44px;
+  padding: 8px 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-blue-700);
+  font: inherit;
+  font-size: var(--font-size-body-compact);
+  font-weight: 500;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.textButton:focus-visible {
+  border-radius: var(--radius-sm);
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
 .field {
   display: grid;
   gap: var(--space-2);
@@ -212,6 +247,56 @@
   outline: 3px solid var(--color-focus);
   outline-offset: 1px;
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-focus) 35%, transparent);
+}
+
+.passwordInput {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.passwordInput input {
+  padding-right: 88px;
+}
+
+.passwordToggle {
+  position: absolute;
+  right: 8px;
+  min-height: 36px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-subtle);
+  color: var(--color-wine-900);
+  font: inherit;
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.passwordToggle:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.fieldHint {
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+  line-height: 16px;
+}
+
+.passwordStrength {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+}
+
+.strengthMeter {
+  width: 96px;
+  height: 8px;
+  accent-color: var(--color-wine-900);
 }
 
 .messageSlot {
@@ -338,7 +423,9 @@
 @media (prefers-reduced-motion: reduce) {
   .roleTab,
   .field input,
-  .submit {
+  .submit,
+  .textButton,
+  .passwordToggle {
     transition: none;
   }
 }

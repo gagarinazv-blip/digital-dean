@@ -49,8 +49,10 @@ beforeEach(() => {
     id: 10,
     login: "student.alpha",
     role: "STUDENT",
+    requiresPasswordSetup: false,
     student: null,
   });
+
   findStudentMock.mockResolvedValue(student);
   redirectMock.mockImplementation((path: string) => {
     throw new Error(`Redirected to ${path}`);
@@ -83,7 +85,23 @@ describe("requireStudent", () => {
         },
       },
     });
+
     expect(requireStudent).toHaveLength(0);
+  });
+
+  it("redirects password-setup sessions before loading student data", async () => {
+    getCurrentUserMock.mockResolvedValue({
+      id: 10,
+      login: "student.alpha",
+      role: "STUDENT",
+      requiresPasswordSetup: true,
+      student: null,
+    });
+
+    await expect(requireStudent()).rejects.toThrow(
+      "Redirected to /login?role=student&step=password",
+    );
+    expect(findStudentMock).not.toHaveBeenCalled();
   });
 
   it("redirects unauthenticated visitors without querying student data", async () => {
@@ -102,6 +120,7 @@ describe("requireStudent", () => {
       id: 10,
       login: "staff.demo",
       role: "STAFF",
+      requiresPasswordSetup: false,
       student: null,
     });
 

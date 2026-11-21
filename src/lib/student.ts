@@ -9,6 +9,9 @@ export async function requireStudentContext() {
   if (!user) {
     redirect("/login?role=student");
   }
+  if (user.requiresPasswordSetup) {
+    redirect("/login?role=student&step=password");
+  }
   if (user.role !== "STUDENT") {
     forbidden();
   }

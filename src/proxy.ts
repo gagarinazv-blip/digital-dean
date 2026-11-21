@@ -35,6 +35,12 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL(loginUrl, request.url));
   }
 
+  if (principal.requiresPasswordSetup) {
+    return NextResponse.redirect(
+      new URL("/login?role=student&step=password", request.url),
+    );
+  }
+
   const requiredRole = isStaffArea ? "STAFF" : "STUDENT";
   if (principal.role !== requiredRole) {
     return new Response("403 — Доступ запрещён", {

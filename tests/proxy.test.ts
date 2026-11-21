@@ -25,12 +25,14 @@ import { proxy } from "../src/proxy";
 
 const studentPrincipal = {
   role: "STUDENT" as const,
+  requiresPasswordSetup: false,
   studentId: 20,
   staffProfile: null,
 };
 
 const staffPrincipal = {
   role: "STAFF" as const,
+  requiresPasswordSetup: false,
   studentId: null,
   staffProfile: {
     id: 40,
@@ -103,6 +105,23 @@ describe("role and request access proxy", () => {
     expect(getSessionPrincipalForTokenMock).toHaveBeenCalledWith(
       "opaque-session-token",
     );
+  });
+
+  it("restricts password-setup sessions to the password creation screen", async () => {
+    getSessionPrincipalForTokenMock.mockResolvedValue({
+      ...studentPrincipal,
+      requiresPasswordSetup: true,
+    });
+
+    const response = await proxy(
+      makeRequest("/schedule", "password-setup-session"),
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "https://digital-dean.test/login?role=student&step=password",
+    );
+    expect(findStaffRequestMock).not.toHaveBeenCalled();
   });
 
   it("redirects an expired staff session to the staff login tab", async () => {

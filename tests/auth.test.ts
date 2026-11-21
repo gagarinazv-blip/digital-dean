@@ -15,11 +15,14 @@ import { cookies, headers } from "next/headers";
 import { getPrisma } from "@/lib/prisma";
 import {
   assertSameSiteRequest,
+  completeStudentPasswordSetup,
   createSession,
+  createPasswordSetupSession,
   deleteSession,
   getCurrentUser,
   getSessionPrincipalForToken,
   loginUser,
+  loginStudentWithPhone,
   TooManyLoginAttemptsError,
   verifyPassword,
 } from "../src/lib/auth";
@@ -28,14 +31,27 @@ const cookieName = "digital-dean-session";
 const sessionCreate = vi.fn();
 const sessionFindUnique = vi.fn();
 const sessionDeleteMany = vi.fn();
+const sessionUpdateMany = vi.fn();
+const sessionUpdate = vi.fn();
 const userFindUnique = vi.fn();
+const userFindFirst = vi.fn();
+const userUpdate = vi.fn();
+const studentFindUnique = vi.fn();
+const studentUpdate = vi.fn();
 const loginAttemptDeleteMany = vi.fn();
 const queryRaw = vi.fn();
 let attempts = 0;
 let cookieToken: string | undefined;
 
 const transactionMock = {
-  session: { create: sessionCreate },
+  session: {
+    create: sessionCreate,
+    updateMany: sessionUpdateMany,
+    update: sessionUpdate,
+    deleteMany: sessionDeleteMany,
+  },
+  user: { update: userUpdate },
+  student: { update: studentUpdate },
   loginAttempt: { deleteMany: loginAttemptDeleteMany },
   $queryRaw: queryRaw,
 };
@@ -45,8 +61,18 @@ const prismaMock = {
   session: {
     findUnique: sessionFindUnique,
     deleteMany: sessionDeleteMany,
+    updateMany: sessionUpdateMany,
+    update: sessionUpdate,
   },
-  user: { findUnique: userFindUnique },
+  user: {
+    findUnique: userFindUnique,
+    findFirst: userFindFirst,
+    update: userUpdate,
+  },
+  student: {
+    findUnique: studentFindUnique,
+    update: studentUpdate,
+  },
   loginAttempt: { deleteMany: loginAttemptDeleteMany },
 };
 
@@ -97,8 +123,14 @@ beforeEach(() => {
   queryRaw.mockImplementation(async () => [{ attempts: ++attempts }]);
   sessionCreate.mockImplementation(async () => ({}));
   sessionDeleteMany.mockResolvedValue({ count: 1 });
+  sessionUpdateMany.mockResolvedValue({ count: 1 });
+  sessionUpdate.mockResolvedValue({});
+  userUpdate.mockResolvedValue({});
+  studentUpdate.mockResolvedValue({});
   loginAttemptDeleteMany.mockResolvedValue({ count: 1 });
   userFindUnique.mockResolvedValue(null);
+  userFindFirst.mockResolvedValue(null);
+  studentFindUnique.mockResolvedValue(null);
   sessionFindUnique.mockResolvedValue(null);
 });
 
@@ -144,6 +176,7 @@ describe("session lifecycle", () => {
     expect(sessionCreate).toHaveBeenCalledOnce();
     const { data } = sessionCreate.mock.calls[0][0];
     expect(data.userId).toBe(authenticatedUser.id);
+    expect(data.requiresPasswordSetup).toBe(false);
     expect(data.tokenHash).toMatch(/^[a-f0-9]{64}$/);
     expect(cookieToken).toBeDefined();
     expect(Buffer.from(cookieToken!, "base64url")).toHaveLength(32);
@@ -164,20 +197,41 @@ describe("session lifecycle", () => {
     );
   });
 
+  it("creates a short-lived session restricted to password setup", async () => {
+    const before = Date.now();
+    await createPasswordSetupSession(authenticatedUser.id);
+
+    const { data } = sessionCreate.mock.calls[0][0];
+    expect(data.requiresPasswordSetup).toBe(true);
+    expect(data.expiresAt.getTime()).toBeGreaterThanOrEqual(
+      before + 15 * 60_000 - 1000,
+    );
+    expect(data.expiresAt.getTime()).toBeLessThanOrEqual(
+      before + 15 * 60_000 + 1000,
+    );
+  });
+
   it("returns the user for a valid session", async () => {
     cookieToken = "valid-session-token";
     sessionFindUnique.mockResolvedValue({
       id: "session-1",
+      requiresPasswordSetup: false,
       expiresAt: new Date(Date.now() + 60_000),
       user: authenticatedUser,
     });
 
-    await expect(getCurrentUser()).resolves.toEqual(authenticatedUser);
+    await expect(getCurrentUser()).resolves.toEqual({
+      ...authenticatedUser,
+      requiresPasswordSetup: false,
+    });
     expect(sessionFindUnique).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
           tokenHash: createHash("sha256").update(cookieToken).digest("hex"),
         },
+        select: expect.objectContaining({
+          requiresPasswordSetup: true,
+        }),
       }),
     );
   });
@@ -199,6 +253,7 @@ describe("session lifecycle", () => {
   it("returns the request-access principal for a valid token", async () => {
     sessionFindUnique.mockResolvedValue({
       expiresAt: new Date(Date.now() + 60_000),
+      requiresPasswordSetup: false,
       user: {
         role: "STUDENT",
         student: { id: 3 },
@@ -210,6 +265,7 @@ describe("session lifecycle", () => {
       getSessionPrincipalForToken("valid-session-token"),
     ).resolves.toEqual({
       role: "STUDENT",
+      requiresPasswordSetup: false,
       studentId: 3,
       staffProfile: null,
     });
@@ -221,6 +277,7 @@ describe("session lifecycle", () => {
       },
       select: {
         expiresAt: true,
+        requiresPasswordSetup: true,
         user: {
           select: {
             role: true,
@@ -287,6 +344,83 @@ describe("login", () => {
     expect(loginAttemptDeleteMany).toHaveBeenCalledWith({
       where: expect.objectContaining({ keyHash: expect.any(String) }),
     });
+  });
+
+  it("authenticates active students by phone and rejects non-E.164 input", async () => {
+    const passwordHash = await bcrypt.hash("correct-demo-password", 4);
+    userFindFirst.mockResolvedValue({
+      ...authenticatedUser,
+      passwordHash,
+    });
+
+    await expect(
+      loginStudentWithPhone("+79000000001", "correct-demo-password"),
+    ).resolves.toEqual(authenticatedUser);
+    expect(userFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          role: "STUDENT",
+          student: {
+            is: {
+              phone: "+79000000001",
+              accountStatus: "ACTIVE",
+            },
+          },
+        },
+      }),
+    );
+    expect(sessionCreate).toHaveBeenCalledOnce();
+
+    userFindFirst.mockClear();
+    await expect(
+      loginStudentWithPhone("79000000001", "correct-demo-password"),
+    ).resolves.toBeNull();
+    expect(userFindFirst).not.toHaveBeenCalled();
+  });
+
+  it("activates the password setup session and invalidates prior sessions", async () => {
+    cookieToken = "temporary-password-setup-token";
+    sessionFindUnique.mockResolvedValue({
+      id: "temporary-session",
+      userId: authenticatedUser.id,
+      requiresPasswordSetup: true,
+      expiresAt: new Date(Date.now() + 60_000),
+    });
+    studentFindUnique.mockResolvedValue({
+      phone: "+79000000001",
+      user: { role: "STUDENT" },
+    });
+
+    await expect(
+      completeStudentPasswordSetup(
+        authenticatedUser.id,
+        "new-password-hash",
+      ),
+    ).resolves.toBe(true);
+
+    expect(userUpdate).toHaveBeenCalledWith({
+      where: { id: authenticatedUser.id },
+      data: { passwordHash: "new-password-hash" },
+    });
+    expect(studentUpdate).toHaveBeenCalledWith({
+      where: { userId: authenticatedUser.id },
+      data: { accountStatus: "ACTIVE" },
+    });
+    expect(sessionDeleteMany).toHaveBeenCalledWith({
+      where: {
+        userId: authenticatedUser.id,
+        id: { not: "temporary-session" },
+      },
+    });
+    expect(sessionUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "temporary-session" },
+        data: expect.objectContaining({
+          requiresPasswordSetup: false,
+          tokenHash: expect.any(String),
+        }),
+      }),
+    );
   });
 
   it("rejects an incorrect password", async () => {
