@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { logoutAction } from "@/app/profile/actions";
+import { StaffNavigation } from "@/components/staff-navigation";
 import styles from "./staff-layout.module.css";
 
 type StaffSummary = {
@@ -62,28 +63,7 @@ export function StaffLayout({
             </form>
           </div>
         </div>
-        <nav className={styles.navigation} aria-label="Разделы сотрудника">
-          <p className={styles.navigationTitle}>Рабочее место</p>
-          <Link
-            aria-current="page"
-            className={styles.navigationLink}
-            href="/staff"
-          >
-            <svg
-              aria-hidden="true"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="1.8"
-              viewBox="0 0 24 24"
-            >
-              <rect x="5" y="5" width="14" height="16" rx="2" />
-              <path d="M9 5V3h6v2M8 12l2 2 5-5" />
-            </svg>
-            Заявки
-          </Link>
-        </nav>
+        <StaffNavigation />
       </header>
       <div className={styles.content}>{children}</div>
     </div>

@@ -10,8 +10,8 @@ import { buildTargetScheduleSeed } from "./schedule-seed-data";
 import { buildDeadlineSeedData } from "./deadline-seed-data";
 import { getDemoNow } from "../src/lib/demo-date";
 import { encryptCorporateMailPassword } from "../src/lib/corporate-mail-credentials";
+import { getCorporateMailDomain } from "../src/lib/corporate-mail";
 
-const defaultCorporateMailDomain = "mail.example.test";
 const alphaCorporateMailPassword = "Demo-Mail-Alpha-Only-2026!";
 
 type SeedAccount = {
@@ -108,25 +108,6 @@ function academicAccountData(login: string) {
     recordBookNumber: student.recordBookNumber,
     studyForm: studyFormValues[student.studyForm],
   };
-}
-
-function getCorporateMailDomain(): string {
-  const domain =
-    process.env.CORPORATE_MAIL_DOMAIN?.trim().toLowerCase() ||
-    defaultCorporateMailDomain;
-  const labels = domain.split(".");
-  if (
-    domain.length > 253 ||
-    labels.length < 2 ||
-    labels.some(
-      (label) =>
-        label.length > 63 ||
-        !/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(label),
-    )
-  ) {
-    throw new Error("CORPORATE_MAIL_DOMAIN must be a valid domain.");
-  }
-  return domain;
 }
 
 const environmentAccounts = [

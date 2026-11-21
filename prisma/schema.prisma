@@ -22,6 +22,17 @@ enum StudentAccountStatus {
   ACTIVE
 }
 
+enum StudentAuditAction {
+  STUDENT_CREATED
+  PROFILE_UPDATED
+  PHONE_CHANGED
+  CORPORATE_EMAIL_CHANGED
+  CORPORATE_MAIL_PASSWORD_SET
+  CORPORATE_MAIL_PASSWORD_REPLACED
+  CORPORATE_MAIL_PASSWORD_CLEARED
+  ACCESS_RESET
+}
+
 enum Weekday {
   MONDAY
   TUESDAY
@@ -121,6 +132,7 @@ model User {
   requestComments          RequestComment[]           @relation("RequestCommentAuthor")
   requestStatusHistory     RequestStatusHistory[]     @relation("RequestStatusHistoryAuthor")
   requestAssignmentHistory RequestAssignmentHistory[] @relation("RequestAssignmentHistoryAuthor")
+  studentAuditLogs         StudentAuditLog[]
   createdAt                DateTime                   @default(now())
 }
 
@@ -182,6 +194,7 @@ model Student {
   requests                       Request[]
   notifications                  Notification[]
   deadlines                      Deadline[]
+  auditLogs                      StudentAuditLog[]
 
   @@index([groupId])
 }
@@ -205,6 +218,20 @@ model StudentGroup {
   students      Student[]
   scheduleItems ScheduleItem[]
   notifications Notification[]
+}
+
+model StudentAuditLog {
+  id            Int                @id @default(autoincrement())
+  studentId     Int
+  actorUserId   Int?
+  action        StudentAuditAction
+  changedFields String[]           @default([])
+  createdAt     DateTime           @default(now())
+  student       Student            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  actor         User?              @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([studentId, createdAt])
+  @@index([actorUserId, createdAt])
 }
 
 model Subject {
