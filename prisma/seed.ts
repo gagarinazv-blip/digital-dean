@@ -122,9 +122,9 @@ const environmentAccounts = [
   },
   {
     login: "student.beta",
-    passwordVariable: null,
+    passwordVariable: "SEED_BETA_PASSWORD",
     phone: "+79000000002",
-    accountStatus: "INVITED",
+    accountStatus: "ACTIVE",
     ...academicAccountData("student.beta"),
   },
 ] as const;
