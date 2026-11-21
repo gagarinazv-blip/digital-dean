@@ -84,6 +84,7 @@ function getOptionalMessage(formData: FormData): string | null {
 function revalidateStaffRequestPaths(requestId: number, publicId: string): void {
   revalidatePath("/");
   revalidatePath("/staff");
+  revalidatePath("/staff/requests");
   revalidatePath(`/staff/requests/${requestId}`);
   revalidatePath("/help");
   revalidatePath("/documents");

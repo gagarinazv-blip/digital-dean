@@ -184,6 +184,7 @@ describe("request actions", () => {
       }),
     );
     expect(revalidatePathMock).toHaveBeenCalledWith("/requests");
+    expect(revalidatePathMock).toHaveBeenCalledWith("/staff/requests");
   });
 
   it("rejects invalid request fields before creating a record", async () => {
@@ -283,6 +284,7 @@ describe("request actions", () => {
       },
     });
     expect(revalidatePathMock).toHaveBeenCalledWith("/notifications");
+    expect(revalidatePathMock).toHaveBeenCalledWith("/staff/requests");
   });
 
   it("does not allow a student to cancel a foreign request", async () => {
@@ -317,7 +319,7 @@ describe("request actions", () => {
     expect(prismaTransactionMock).not.toHaveBeenCalled();
   });
 
-  it("adds a student reply publicly without changing NEEDS_INFO", async () => {
+  it("adds a public reply and returns NEEDS_INFO requests to IN_PROGRESS", async () => {
     const formData = makeFormData({
       requestPublicId: "b08f54cf-99ce-4a56-a780-8e22ce5ba0a1",
       content: "Данные добавлены",
@@ -325,12 +327,12 @@ describe("request actions", () => {
     formData.append("files", new Blob(), "undefined");
 
     await expect(replyToRequestAction({}, formData)).resolves.toEqual({
-      success: "Ответ отправлен сотруднику.",
+      success: "Ответ отправлен, заявка возвращена в работу.",
     });
 
     expect(updateRequestManyMock).toHaveBeenCalledWith({
       where: { id: 123, studentId: 20, status: "NEEDS_INFO" },
-      data: { updatedAt: expect.any(Date) },
+      data: { status: "IN_PROGRESS", updatedAt: expect.any(Date) },
     });
     expect(createCommentMock).toHaveBeenCalledWith({
       data: {
@@ -341,6 +343,15 @@ describe("request actions", () => {
         attachments: { create: [] },
       },
     });
+    expect(createStatusHistoryMock).toHaveBeenCalledWith({
+      data: {
+        requestId: 123,
+        status: "IN_PROGRESS",
+        authorUserId: 10,
+        comment: "Студент отправил запрошенное уточнение.",
+      },
+    });
+    expect(revalidatePathMock).toHaveBeenCalledWith("/staff/requests");
   });
 
   it("lets a student ask a question on a rejected request without reopening it", async () => {

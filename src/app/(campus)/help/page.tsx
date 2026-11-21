@@ -94,6 +94,76 @@ function getRequestSelectionHref(
   return `/requests?${params.toString()}#request-details`;
 }
 
+function RecentRequests({
+  requests,
+}: {
+  requests: Awaited<ReturnType<typeof getStudentRequests>>;
+}) {
+  return (
+    <section className={styles.section} aria-labelledby="student-requests-title">
+      <div className={styles.sectionHeading}>
+        <div>
+          <p className={styles.kicker}>Статус обработки</p>
+          <h2 id="student-requests-title">
+            Мои заявки{" "}
+            <span className={styles.headingCount}>{requests.length}</span>
+          </h2>
+        </div>
+        <Link
+          className={styles.secondaryLink}
+          href="/requests?tab=requests"
+        >
+          Все заявки <span aria-hidden="true">→</span>
+        </Link>
+      </div>
+      {requests.length === 0 ? (
+        <div className={styles.emptyState}>
+          <h3>Заявок пока нет</h3>
+          <p>Выберите услугу в каталоге, чтобы отправить первое обращение.</p>
+          <Link className={styles.serviceLink} href="#catalog-title">
+            Выбрать услугу <span aria-hidden="true">→</span>
+          </Link>
+        </div>
+      ) : (
+        <ul className={styles.recentRequests}>
+          {requests.slice(0, 3).map((request) => (
+            <li key={request.id}>
+              <Link
+                className={styles.recentRequestLink}
+                href={getRequestSelectionHref(request.publicId, "", "")}
+              >
+                <span className={styles.recentRequestMain}>
+                  <strong>
+                    {getRequestCatalogTitle(
+                      request.catalogCode,
+                      requestTypeLabels[request.type],
+                    )}
+                  </strong>
+                  <span>
+                    № {request.publicId.slice(0, 8).toUpperCase()}
+                  </span>
+                </span>
+                <time
+                  className={styles.recentRequestDate}
+                  dateTime={request.createdAt.toISOString()}
+                >
+                  {requestDateFormatter.format(request.createdAt)}
+                </time>
+                <span
+                  className={styles.statusBadge}
+                  data-status={request.status}
+                >
+                  {requestStatusLabels[request.status]}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 function SelectedRequestPanel({
   request,
 }: {
@@ -357,7 +427,7 @@ export async function HelpWorkspace({
           <Link
             aria-current={activeTab === "documents" ? "page" : undefined}
             className={activeTab === "documents" ? styles.activeTab : ""}
-            href="/documents"
+            href="/documents?tab=documents"
           >
             Мои документы
           </Link>
@@ -459,6 +529,7 @@ export async function HelpWorkspace({
                 </div>
               )}
             </section>
+            <RecentRequests requests={requests} />
           </>
         ) : activeTab === "documents" ? (
           <section className={styles.section} aria-labelledby="documents-title">
