@@ -161,24 +161,27 @@ model LoginAttempt {
 }
 
 model Student {
-  id                Int                  @id @default(autoincrement())
-  userId            Int                  @unique
-  fullName          String
-  faculty           String
-  direction         String
-  course            Int
-  groupId           Int
-  phone             String?              @unique
-  accountStatus     StudentAccountStatus @default(ACTIVE)
-  recordBookNumber  String?              @unique
-  studyForm         StudyForm?
-  user              User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
-  group             StudentGroup         @relation(fields: [groupId], references: [id], onDelete: Restrict)
-  grades            Grade[]
-  academicSemesters AcademicSemester[]
-  requests          Request[]
-  notifications     Notification[]
-  deadlines         Deadline[]
+  id                             Int                  @id @default(autoincrement())
+  userId                         Int                  @unique
+  fullName                       String
+  faculty                        String
+  direction                      String
+  course                         Int
+  groupId                        Int
+  phone                          String?              @unique
+  accountStatus                  StudentAccountStatus @default(ACTIVE)
+  corporateEmail                 String?              @unique
+  corporateMailPasswordEncrypted String?
+  corporateMailIssuedAt          DateTime?
+  recordBookNumber               String?              @unique
+  studyForm                      StudyForm?
+  user                           User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
+  group                          StudentGroup         @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  grades                         Grade[]
+  academicSemesters              AcademicSemester[]
+  requests                       Request[]
+  notifications                  Notification[]
+  deadlines                      Deadline[]
 
   @@index([groupId])
 }

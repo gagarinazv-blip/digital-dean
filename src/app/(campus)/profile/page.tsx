@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import type { StudyForm } from "@/generated/prisma/enums";
-import { requireStudent } from "@/lib/student";
+import { getPrisma } from "@/lib/prisma";
+import { requireStudentContext } from "@/lib/student";
+import { CorporateMailCard } from "./corporate-mail-card";
 import styles from "./profile.module.css";
 
 const studyFormLabels: Record<StudyForm, string> = {
@@ -18,7 +20,23 @@ function ProfileFallback() {
 }
 
 async function ProfileContent() {
-  const student = await requireStudent();
+  const { student } = await requireStudentContext();
+  const mailCredentials = await getPrisma().student.findUnique({
+    where: { id: student.id },
+    select: {
+      corporateEmail: true,
+      corporateMailPasswordEncrypted: true,
+      corporateMailIssuedAt: true,
+    },
+  });
+  const mailIsIssued = Boolean(
+    mailCredentials?.corporateEmail &&
+      mailCredentials.corporateMailPasswordEncrypted &&
+      mailCredentials.corporateMailIssuedAt,
+  );
+  const mailIssuedAt = mailIsIssued
+    ? mailCredentials?.corporateMailIssuedAt ?? null
+    : null;
   const initials = student.fullName
     .trim()
     .split(/\s+/)
@@ -90,6 +108,20 @@ async function ProfileContent() {
             </div>
           </dl>
         </section>
+
+        <CorporateMailCard
+          email={
+            mailIsIssued ? mailCredentials?.corporateEmail ?? null : null
+          }
+          issuedDate={
+            mailIssuedAt
+              ? new Intl.DateTimeFormat("ru-RU", {
+                  dateStyle: "long",
+                  timeZone: "Europe/Moscow",
+                }).format(mailIssuedAt)
+              : null
+          }
+        />
       </section>
     </main>
   );

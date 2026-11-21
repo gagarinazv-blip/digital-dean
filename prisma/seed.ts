@@ -9,6 +9,10 @@ import { academicRecordsSeedData } from "./academic-records-seed-data";
 import { buildTargetScheduleSeed } from "./schedule-seed-data";
 import { buildDeadlineSeedData } from "./deadline-seed-data";
 import { getDemoNow } from "../src/lib/demo-date";
+import { encryptCorporateMailPassword } from "../src/lib/corporate-mail-credentials";
+
+const defaultCorporateMailDomain = "mail.example.test";
+const alphaCorporateMailPassword = "Demo-Mail-Alpha-Only-2026!";
 
 type SeedAccount = {
   login: string;
@@ -104,6 +108,25 @@ function academicAccountData(login: string) {
     recordBookNumber: student.recordBookNumber,
     studyForm: studyFormValues[student.studyForm],
   };
+}
+
+function getCorporateMailDomain(): string {
+  const domain =
+    process.env.CORPORATE_MAIL_DOMAIN?.trim().toLowerCase() ||
+    defaultCorporateMailDomain;
+  const labels = domain.split(".");
+  if (
+    domain.length > 253 ||
+    labels.length < 2 ||
+    labels.some(
+      (label) =>
+        label.length > 63 ||
+        !/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(label),
+    )
+  ) {
+    throw new Error("CORPORATE_MAIL_DOMAIN must be a valid domain.");
+  }
+  return domain;
 }
 
 const environmentAccounts = [
@@ -332,6 +355,10 @@ async function main() {
     ]),
   ];
   const seedNow = getDemoNow();
+  const corporateMailDomain = getCorporateMailDomain();
+  const encryptedAlphaMailPassword = encryptCorporateMailPassword(
+    alphaCorporateMailPassword,
+  );
   const seedDay = startOfMoscowDay(seedNow);
   const targetScheduleRows = buildTargetScheduleSeed(seedNow);
   const deadlineSeedRows = buildDeadlineSeedData(seedNow);
@@ -456,6 +483,16 @@ async function main() {
             groupId: getGroupId(groupIds, account.groupName),
             phone: account.phone,
             accountStatus: account.accountStatus ?? "ACTIVE",
+            corporateEmail:
+              account.login === "student.alpha"
+                ? `student.alpha@${corporateMailDomain}`
+                : null,
+            corporateMailPasswordEncrypted:
+              account.login === "student.alpha"
+                ? encryptedAlphaMailPassword
+                : null,
+            corporateMailIssuedAt:
+              account.login === "student.alpha" ? seedNow : null,
             recordBookNumber: account.recordBookNumber,
             studyForm: account.studyForm,
           },
