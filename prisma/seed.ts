@@ -8,6 +8,7 @@ import type { RequestStatus } from "../src/generated/prisma/enums";
 import { academicRecordsSeedData } from "./academic-records-seed-data";
 import { buildTargetScheduleSeed } from "./schedule-seed-data";
 import { buildDeadlineSeedData } from "./deadline-seed-data";
+import { getDemoNotificationState } from "./notification-seed-data";
 import { getDemoNow } from "../src/lib/demo-date";
 import { validateGradebookSeedData } from "../src/lib/gradebook-data";
 
@@ -935,6 +936,16 @@ async function main() {
         ) {
           throw new Error(`Notification targets are missing for ${login}.`);
         }
+        const scheduleState = getDemoNotificationState(
+          login,
+          "schedule",
+          seedNow,
+        );
+        const requestState = getDemoNotificationState(
+          login,
+          "request",
+          seedNow,
+        );
         await tx.notification.create({
           data: {
             studentId,
@@ -943,8 +954,7 @@ async function main() {
             text: `${scheduleTarget.subject}: время или аудитория занятия перенесены.`,
             targetType: "SCHEDULE_ITEM",
             targetId: String(scheduleTarget.id),
-            date: seedNow,
-            createdAt: seedNow,
+            ...scheduleState,
           },
         });
         await tx.notification.create({
@@ -955,12 +965,12 @@ async function main() {
             text: requestStatusText[requestTarget.status],
             targetType: "REQUEST",
             targetId: requestTarget.publicId,
-            date: seedNow,
-            createdAt: seedNow,
+            ...requestState,
           },
         });
       }
 
+      const deadlineNotificationIndex = new Map<string, number>();
       for (const deadline of deadlineSeedRows) {
         const studentId = studentIds.get(deadline.login);
         if (studentId === undefined) {
@@ -978,6 +988,8 @@ async function main() {
           },
           select: { id: true },
         });
+        const index = deadlineNotificationIndex.get(deadline.login) ?? 0;
+        deadlineNotificationIndex.set(deadline.login, index + 1);
         await tx.notification.create({
           data: {
             studentId,
@@ -986,14 +998,35 @@ async function main() {
             text: `${deadline.subject}. Срок: ${deadline.dueAt.toLocaleDateString("ru-RU", { timeZone: "Europe/Moscow" })}.`,
             targetType: "DEADLINE",
             targetId: createdDeadline.id,
-            date: seedNow,
-            createdAt: seedNow,
+            ...getDemoNotificationState(
+              deadline.login,
+              "deadline",
+              seedNow,
+              index,
+            ),
           },
         });
       }
 
-      for (const announcement of generalAnnouncements) {
-        await tx.notification.create({ data: announcement });
+      for (const [index, login] of (
+        ["student.alpha", "student.beta"] as const
+      ).entries()) {
+        const studentId = studentIds.get(login);
+        if (studentId === undefined) {
+          throw new Error(`Announcement student "${login}" is missing.`);
+        }
+        const announcement = generalAnnouncements[index];
+        if (!announcement) {
+          throw new Error(`Announcement fixture is missing for ${login}.`);
+        }
+        await tx.notification.create({
+          data: {
+            ...announcement,
+            studentId,
+            type: "ANNOUNCEMENT",
+            ...getDemoNotificationState(login, "announcement", seedNow),
+          },
+        });
       }
     });
 

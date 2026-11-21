@@ -37,4 +37,13 @@ describe("notification target links", () => {
       ),
     ).toBeNull();
   });
+
+  it("keeps announcements in the notification center without inventing a target", () => {
+    expect(
+      buildNotificationTargetHref("ANNOUNCEMENT", null, null),
+    ).toBeNull();
+    expect(
+      buildNotificationTargetHref("ANNOUNCEMENT", "REQUEST", "id"),
+    ).toBeNull();
+  });
 });

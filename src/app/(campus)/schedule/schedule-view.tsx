@@ -382,7 +382,7 @@ function TimelineColumn({
   );
 }
 
-function LessonAgenda({
+export function LessonAgenda({
   day,
   openLesson,
   emptyMessage = "Занятий нет",
@@ -429,37 +429,41 @@ function LessonAgenda({
                   lesson.timeLabel
                 )}
               </span>
-              <span className={styles.agendaContent}>
-                <span className={styles.agendaTitleRow}>
-                  <strong>{lesson.subject}</strong>
-                  <span className={`${styles.statusBadge} ${status.className}`}>
-                    {status.label}
-                  </span>
-                </span>
-                <span className={styles.kind}>
-                  {lesson.kindLabel} · {lesson.teacher}
-                </span>
-                {lesson.status === "RESCHEDULED" &&
-                  (changedDate || changedTime || changedRoom) && (
-                    <span className={styles.agendaChange}>
-                      Было:{" "}
-                      {changedDate || changedTime
-                        ? `${lesson.originalDateLabel ? `${lesson.originalDateLabel}, ` : ""}${lesson.originalTimeLabel ?? ""}`
-                        : ""}
-                      {changedRoom ? ` · ауд. ${lesson.originalRoom}` : ""}
-                      {" → "}
-                      {changedDate || changedTime
-                        ? `${changedDate ? `${makeDayDateLabel(lesson.dateKey)}, ` : ""}${lesson.timeLabel}`
-                        : ""}
-                      {changedRoom ? ` · ауд. ${lesson.room}` : ""}
-                    </span>
-                  )}
-                {lesson.changeNote && (
-                  <span className={styles.agendaNote}>{lesson.changeNote}</span>
-                )}
+              <span className={`${styles.statusBadge} ${status.className}`}>
+                {status.label}
               </span>
-              <span className={styles.roomBadge}>Ауд. {lesson.room}</span>
-              <span aria-hidden="true" className={styles.detailChevron}>
+              <strong
+                className={styles.agendaTitle}
+                lang="ru"
+                title={lesson.subject}
+              >
+                {lesson.subject}
+              </strong>
+              <span className={styles.agendaMeta} lang="ru">
+                {lesson.kindLabel} · {lesson.teacher}
+              </span>
+              <span className={styles.roomBadge} lang="ru">
+                Ауд. {lesson.room}
+              </span>
+              {lesson.status === "RESCHEDULED" &&
+                (changedDate || changedTime || changedRoom) && (
+                  <span className={styles.agendaChange}>
+                    Было:{" "}
+                    {changedDate || changedTime
+                      ? `${lesson.originalDateLabel ? `${lesson.originalDateLabel}, ` : ""}${lesson.originalTimeLabel ?? ""}`
+                      : ""}
+                    {changedRoom ? ` · ауд. ${lesson.originalRoom}` : ""}
+                    {" → "}
+                    {changedDate || changedTime
+                      ? `${changedDate ? `${makeDayDateLabel(lesson.dateKey)}, ` : ""}${lesson.timeLabel}`
+                      : ""}
+                    {changedRoom ? ` · ауд. ${lesson.room}` : ""}
+                  </span>
+                )}
+              {lesson.changeNote && (
+                <span className={styles.agendaNote}>{lesson.changeNote}</span>
+              )}
+              <span aria-hidden="true" className={styles.agendaAction}>
                 →
               </span>
             </button>

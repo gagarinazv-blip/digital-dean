@@ -7,18 +7,24 @@ const notificationTypes: NotificationType[] = [
   "SCHEDULE_CHANGE",
   "DEADLINE",
   "REQUEST_STATUS",
+  "ANNOUNCEMENT",
 ];
 
 export const notificationTypeLabels: Record<NotificationType, string> = {
   SCHEDULE_CHANGE: "Перенос занятия",
   DEADLINE: "Дедлайн",
   REQUEST_STATUS: "Изменение статуса заявки",
+  ANNOUNCEMENT: "Объявление",
 };
 
-const targetByType: Record<NotificationType, NotificationTargetType> = {
+const targetByType: Record<
+  NotificationType,
+  NotificationTargetType | null
+> = {
   SCHEDULE_CHANGE: "SCHEDULE_ITEM",
   DEADLINE: "DEADLINE",
   REQUEST_STATUS: "REQUEST",
+  ANNOUNCEMENT: null,
 };
 
 export function isNotificationPublicId(value: string): boolean {
@@ -35,10 +41,14 @@ export function isNotificationType(
 
 export function buildNotificationTargetHref(
   type: NotificationType,
-  targetType: NotificationTargetType,
-  targetId: string,
+  targetType: NotificationTargetType | null,
+  targetId: string | null,
 ): string | null {
-  if (targetByType[type] !== targetType || targetId.length === 0) {
+  if (
+    targetByType[type] === null ||
+    targetByType[type] !== targetType ||
+    !targetId
+  ) {
     return null;
   }
 

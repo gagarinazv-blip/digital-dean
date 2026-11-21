@@ -6,18 +6,14 @@ const {
   requireStudentContextMock,
   getStudentNotificationMock,
   markStudentNotificationReadMock,
-  scheduleFindFirstMock,
-  deadlineFindFirstMock,
-  requestFindFirstMock,
+  presentStudentNotificationsMock,
 } = vi.hoisted(() => ({
   notFoundMock: vi.fn(),
   redirectMock: vi.fn(),
   requireStudentContextMock: vi.fn(),
   getStudentNotificationMock: vi.fn(),
   markStudentNotificationReadMock: vi.fn(),
-  scheduleFindFirstMock: vi.fn(),
-  deadlineFindFirstMock: vi.fn(),
-  requestFindFirstMock: vi.fn(),
+  presentStudentNotificationsMock: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -34,12 +30,8 @@ vi.mock("@/lib/notification-data", () => ({
   markStudentNotificationRead: markStudentNotificationReadMock,
 }));
 
-vi.mock("@/lib/prisma", () => ({
-  getPrisma: vi.fn(() => ({
-    scheduleItem: { findFirst: scheduleFindFirstMock },
-    deadline: { findFirst: deadlineFindFirstMock },
-    request: { findFirst: requestFindFirstMock },
-  })),
+vi.mock("@/lib/notification-presentation", () => ({
+  presentStudentNotifications: presentStudentNotificationsMock,
 }));
 
 import OpenNotificationPage from "../src/app/(campus)/notifications/[notificationId]/page";
@@ -59,9 +51,13 @@ beforeEach(() => {
     targetId: "42",
   });
   markStudentNotificationReadMock.mockResolvedValue({ count: 1 });
-  scheduleFindFirstMock.mockResolvedValue({ id: 42 });
-  deadlineFindFirstMock.mockResolvedValue({ id: "deadline-1" });
-  requestFindFirstMock.mockResolvedValue({ publicId: notificationId });
+  presentStudentNotificationsMock.mockResolvedValue([
+    {
+      publicId: notificationId,
+      href: "/schedule?view=week&date=2026-11-20&day=2026-11-20&lesson=42",
+      targetAvailable: true,
+    },
+  ]);
   notFoundMock.mockImplementation(() => {
     throw new Error("Not found");
   });
@@ -76,13 +72,16 @@ describe("open notification route", () => {
       OpenNotificationPage({
         params: Promise.resolve({ notificationId }),
       }),
-    ).rejects.toThrow("Redirect /schedule?view=week&lesson=42#lesson-42");
+    ).rejects.toThrow(
+      "Redirect /schedule?view=week&date=2026-11-20&day=2026-11-20&lesson=42",
+    );
 
     expect(getStudentNotificationMock).toHaveBeenCalledWith(notificationId, 17);
-    expect(scheduleFindFirstMock).toHaveBeenCalledWith({
-      where: { id: 42, groupId: 41 },
-      select: { id: true },
-    });
+    expect(presentStudentNotificationsMock).toHaveBeenCalledWith(
+      [expect.objectContaining({ publicId: notificationId })],
+      17,
+      41,
+    );
     expect(markStudentNotificationReadMock).toHaveBeenCalledWith(
       notificationId,
       17,
@@ -106,28 +105,57 @@ describe("open notification route", () => {
         targetType,
         targetId,
       });
+      presentStudentNotificationsMock.mockResolvedValue([
+        { publicId: notificationId, href: destination, targetAvailable: true },
+      ]);
 
       await expect(
         OpenNotificationPage({
           params: Promise.resolve({ notificationId }),
         }),
       ).rejects.toThrow(`Redirect ${destination}`);
-
-      if (targetType === "DEADLINE") {
-        expect(deadlineFindFirstMock).toHaveBeenCalledWith({
-          where: { id: targetId, studentId: 17 },
-          select: { id: true },
-        });
-      } else {
-        expect(requestFindFirstMock).toHaveBeenCalledWith({
-          where: { publicId: targetId, studentId: 17 },
-          select: { publicId: true },
-        });
-      }
+      expect(markStudentNotificationReadMock).toHaveBeenCalledWith(
+        notificationId,
+        17,
+      );
     },
   );
 
-  it("does not read or redirect for a foreign or unavailable target", async () => {
+  it("keeps unavailable target details readable instead of returning a dead link", async () => {
+    presentStudentNotificationsMock.mockResolvedValue([
+      { publicId: notificationId, href: null, targetAvailable: false },
+    ]);
+
+    await expect(
+      OpenNotificationPage({
+        params: Promise.resolve({ notificationId }),
+      }),
+    ).rejects.toThrow(`Redirect /notifications?open=${notificationId}`);
+    expect(markStudentNotificationReadMock).toHaveBeenCalledWith(
+      notificationId,
+      17,
+    );
+  });
+
+  it("opens announcement details even when the announcement has no action target", async () => {
+    getStudentNotificationMock.mockResolvedValue({
+      publicId: notificationId,
+      type: "ANNOUNCEMENT",
+      targetType: null,
+      targetId: null,
+    });
+    presentStudentNotificationsMock.mockResolvedValue([
+      { publicId: notificationId, href: null, targetAvailable: null },
+    ]);
+
+    await expect(
+      OpenNotificationPage({
+        params: Promise.resolve({ notificationId }),
+      }),
+    ).rejects.toThrow(`Redirect /notifications?open=${notificationId}`);
+  });
+
+  it("does not read or redirect for a foreign notification", async () => {
     getStudentNotificationMock.mockResolvedValue(null);
 
     await expect(
@@ -135,28 +163,8 @@ describe("open notification route", () => {
         params: Promise.resolve({ notificationId }),
       }),
     ).rejects.toThrow("Not found");
+    expect(presentStudentNotificationsMock).not.toHaveBeenCalled();
     expect(markStudentNotificationReadMock).not.toHaveBeenCalled();
     expect(redirectMock).not.toHaveBeenCalled();
-  });
-
-  it("does not expose a request target owned by another student", async () => {
-    getStudentNotificationMock.mockResolvedValue({
-      publicId: notificationId,
-      type: "REQUEST_STATUS",
-      targetType: "REQUEST",
-      targetId: notificationId,
-    });
-    requestFindFirstMock.mockResolvedValue(null);
-
-    await expect(
-      OpenNotificationPage({
-        params: Promise.resolve({ notificationId }),
-      }),
-    ).rejects.toThrow("Not found");
-    expect(requestFindFirstMock).toHaveBeenCalledWith({
-      where: { publicId: notificationId, studentId: 17 },
-      select: { publicId: true },
-    });
-    expect(markStudentNotificationReadMock).not.toHaveBeenCalled();
   });
 });

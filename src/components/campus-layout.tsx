@@ -6,6 +6,7 @@ import { NotificationBell } from "@/components/notification-bell";
 import styles from "./campus-layout.module.css";
 
 type CampusStudentMenu = {
+  id: number;
   fullName: string;
 };
 
@@ -81,7 +82,7 @@ export function CampusLayout({
           <div className={styles.headerActions}>
             <NotificationBell
               initialUnreadCount={unreadNotificationCount}
-              key={unreadNotificationCount}
+              studentId={student.id}
             />
             <details className={styles.accountMenu}>
               <summary
@@ -114,7 +115,6 @@ export function CampusLayout({
       </header>
       <div className={styles.shellBody}>
         <CampusNavigation
-          key={unreadNotificationCount}
           unreadNotificationCount={unreadNotificationCount}
         />
         <div className={styles.content}>{children}</div>

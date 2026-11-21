@@ -92,6 +92,7 @@ enum NotificationType {
   SCHEDULE_CHANGE
   DEADLINE
   REQUEST_STATUS
+  ANNOUNCEMENT
 }
 
 enum NotificationTargetType {

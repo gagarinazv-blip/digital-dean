@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import styles from "@/app/request-workflow.module.css";
+import styles from "./notifications.module.css";
 
 export default function NotificationsError({
   reset,
@@ -10,19 +9,12 @@ export default function NotificationsError({
   reset: () => void;
 }) {
   return (
-    <main className={styles.stack}>
-      <section className={styles.panel} role="alert">
-        <h1>Не удалось загрузить уведомления</h1>
-        <p className={styles.hint}>Попробуйте ещё раз немного позже.</p>
-        <div className={styles.errorActions}>
-          <button className={styles.button} onClick={reset} type="button">
-            Повторить
-          </button>
-          <Link className={styles.secondaryButton} href="/notifications">
-            К уведомлениям
-          </Link>
-        </div>
-      </section>
-    </main>
+    <div className={styles.errorState} role="alert">
+      <strong>Не удалось загрузить уведомления</strong>
+      <p>Попробуйте ещё раз немного позже.</p>
+      <button onClick={reset} type="button">
+        Повторить
+      </button>
+    </div>
   );
 }

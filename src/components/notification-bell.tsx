@@ -2,64 +2,86 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { buildNotificationTargetHref } from "@/lib/notification-workflow";
-import { notificationTypeLabels } from "@/lib/notification-workflow";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { NotificationSymbol } from "@/components/notification-symbol";
 import { cleanStudentFacingText } from "@/lib/campus-labels";
-import type {
-  NotificationTargetType,
-  NotificationType,
-} from "@/generated/prisma/enums";
+import { useStudentNotificationStore } from "@/lib/notification-store";
+import { notificationTypeLabels } from "@/lib/notification-workflow";
 import styles from "./notification-bell.module.css";
 
-type BellNotification = {
-  publicId: string;
-  type: NotificationType | null;
-  title: string;
-  text: string;
-  targetType: NotificationTargetType | null;
-  targetId: string | null;
-  createdAt: string;
-  readAt: string | null;
-};
-
 const dateFormatter = new Intl.DateTimeFormat("ru-RU", {
-  dateStyle: "medium",
-  timeStyle: "short",
+  day: "numeric",
+  month: "short",
   timeZone: "Europe/Moscow",
 });
 
-const unreadCountEvent = "campus:unread-notification-count";
+function relativeTime(value: string): string {
+  const difference = Math.max(0, Date.now() - new Date(value).getTime());
+  if (difference < 60_000) return "только что";
+  if (difference < 3_600_000) return `${Math.floor(difference / 60_000)} мин`;
+  if (difference < 86_400_000) return `${Math.floor(difference / 3_600_000)} ч`;
+  if (difference < 172_800_000) return "вчера";
+  return dateFormatter.format(new Date(value));
+}
 
 export function NotificationBell({
   initialUnreadCount,
+  studentId,
 }: {
   initialUnreadCount: number;
+  studentId: number;
 }) {
   const router = useRouter();
+  const state = useStudentNotificationStore(studentId, initialUnreadCount);
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [notifications, setNotifications] = useState<BellNotification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(initialUnreadCount);
-  const [mutationPending, setMutationPending] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<"all" | "unread">("all");
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
-  const mutationPendingRef = useRef(false);
+  const listRef = useRef<HTMLUListElement>(null);
+  const previousFirstIdRef = useRef<string | null>(null);
+  const previousScrollHeightRef = useRef(0);
 
-  function updateUnreadCount(count: number) {
-    setUnreadCount(count);
-    window.dispatchEvent(new CustomEvent(unreadCountEvent, { detail: count }));
-  }
+  const notifications = useMemo(
+    () =>
+      state.notifications
+        .filter(
+          (notification) =>
+            activeFilter === "all" || notification.readAt === null,
+        )
+        .slice(0, 8),
+    [activeFilter, state.notifications],
+  );
+
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    const previousFirstId = previousFirstIdRef.current;
+    const firstId = notifications[0]?.publicId ?? null;
+    if (
+      list &&
+      previousFirstId &&
+      firstId !== previousFirstId &&
+      notifications.some((item) => item.publicId === previousFirstId) &&
+      list.scrollTop > 0
+    ) {
+      const heightDelta = list.scrollHeight - previousScrollHeightRef.current;
+      if (heightDelta > 0) list.scrollTop += heightDelta;
+    }
+    previousFirstIdRef.current = firstId;
+    if (list) previousScrollHeightRef.current = list.scrollHeight;
+  }, [notifications]);
 
   useEffect(() => {
     if (!open) return;
     requestAnimationFrame(() => popoverRef.current?.focus());
     const handlePointerDown = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-      }
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
     };
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -75,130 +97,11 @@ export function NotificationBell({
     };
   }, [open]);
 
-  async function loadNotifications() {
-    setLoading(true);
-    setError("");
-    try {
-      const response = await fetch("/api/student-notifications", {
-        cache: "no-store",
-      });
-      if (!response.ok) throw new Error("Не удалось загрузить уведомления.");
-      const data = (await response.json()) as {
-        notifications: BellNotification[];
-        unreadCount: number;
-      };
-      if (
-        !Array.isArray(data.notifications) ||
-        !Number.isSafeInteger(data.unreadCount) ||
-        data.unreadCount < 0
-      ) {
-        throw new Error("Некорректный список уведомлений.");
-      }
-      setNotifications(data.notifications);
-      updateUnreadCount(data.unreadCount);
-    } catch {
-      setError("Не удалось загрузить уведомления.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function togglePanel() {
-    if (open) {
-      setOpen(false);
-      return;
-    }
-    setOpen(true);
-    await loadNotifications();
-  }
-
-  async function markOneRead(notification: BellNotification): Promise<boolean> {
-    if (notification.readAt !== null) return true;
-    if (mutationPendingRef.current) return false;
-    mutationPendingRef.current = true;
-    setMutationPending(true);
-    setError("");
-
-    const previousNotifications = notifications;
-    const previousUnreadCount = unreadCount;
-    setNotifications((current) =>
-      current.map((item) =>
-        item.publicId === notification.publicId
-          ? { ...item, readAt: new Date().toISOString() }
-          : item,
-      ),
-    );
-    updateUnreadCount(Math.max(0, previousUnreadCount - 1));
-
-    try {
-      const response = await fetch("/api/student-notifications", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ publicId: notification.publicId }),
-      });
-      if (!response.ok) throw new Error("Не удалось обновить уведомление.");
-      const data = (await response.json()) as { unreadCount: unknown };
-      if (
-        typeof data.unreadCount !== "number" ||
-        !Number.isSafeInteger(data.unreadCount) ||
-        data.unreadCount < 0
-      ) {
-        throw new Error("Некорректный счётчик уведомлений.");
-      }
-      updateUnreadCount(data.unreadCount);
-      return true;
-    } catch {
-      setNotifications(previousNotifications);
-      updateUnreadCount(previousUnreadCount);
-      setError("Не удалось отметить уведомление прочитанным.");
-      return false;
-    } finally {
-      mutationPendingRef.current = false;
-      setMutationPending(false);
-    }
-  }
-
-  async function markAllRead() {
-    if (mutationPendingRef.current) return;
-    mutationPendingRef.current = true;
-    setMutationPending(true);
-    setError("");
-
-    const previousNotifications = notifications;
-    const previousUnreadCount = unreadCount;
-    setNotifications((current) =>
-      current.map((item) => ({
-        ...item,
-        readAt: item.readAt ?? new Date().toISOString(),
-      })),
-    );
-    updateUnreadCount(0);
-
-    try {
-      const response = await fetch("/api/student-notifications", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ all: true }),
-      });
-      if (!response.ok) throw new Error("Не удалось обновить уведомления.");
-      const data = (await response.json()) as { unreadCount: unknown };
-      if (
-        typeof data.unreadCount !== "number" ||
-        !Number.isSafeInteger(data.unreadCount) ||
-        data.unreadCount < 0
-      ) {
-        throw new Error("Некорректный счётчик уведомлений.");
-      }
-      updateUnreadCount(data.unreadCount);
-      router.refresh();
-    } catch {
-      setNotifications(previousNotifications);
-      updateUnreadCount(previousUnreadCount);
-      setError("Не удалось отметить уведомления прочитанными.");
-    } finally {
-      mutationPendingRef.current = false;
-      setMutationPending(false);
-    }
+  async function openNotification(publicId: string, href: string | null) {
+    const success = await state.markRead(publicId);
+    if (!success) return;
+    setOpen(false);
+    router.push(href ?? `/notifications?open=${encodeURIComponent(publicId)}`);
   }
 
   return (
@@ -207,13 +110,9 @@ export function NotificationBell({
         aria-controls="notification-popover"
         aria-expanded={open}
         aria-haspopup="dialog"
-        aria-label={
-          unreadCount > 0
-            ? `Уведомления, непрочитанных: ${unreadCount}`
-            : "Уведомления"
-        }
+        aria-label={`Уведомления, непрочитанных: ${state.unreadCount}`}
         className={styles.trigger}
-        onClick={togglePanel}
+        onClick={() => setOpen((current) => !current)}
         ref={triggerRef}
         type="button"
       >
@@ -229,33 +128,32 @@ export function NotificationBell({
           <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
           <path d="M10 21h4" />
         </svg>
-        {unreadCount > 0 && (
+        {state.unreadCount > 0 && (
           <span aria-hidden="true" className={styles.badge}>
-            {unreadCount > 99 ? "99+" : unreadCount}
+            {state.unreadCount > 9 ? "9+" : state.unreadCount}
           </span>
         )}
       </button>
 
       {open && (
         <div
-          aria-label="Последние уведомления"
-          aria-modal="false"
+          aria-labelledby="notification-popover-title"
           className={styles.popover}
           id="notification-popover"
-          role="dialog"
           ref={popoverRef}
+          role="dialog"
           tabIndex={-1}
         >
           <div className={styles.header}>
             <div>
-              <p className={styles.eyebrow}>Новые события</p>
-              <h2>Уведомления</h2>
+              <p className={styles.eyebrow}>Важное об учёбе</p>
+              <h2 id="notification-popover-title">Уведомления</h2>
             </div>
-            {unreadCount > 0 && (
+            {state.unreadCount > 0 && (
               <button
                 className={styles.markAll}
-                disabled={mutationPending}
-                onClick={markAllRead}
+                disabled={state.actionPending}
+                onClick={() => void state.markAllRead()}
                 type="button"
               >
                 Прочитать все
@@ -263,116 +161,104 @@ export function NotificationBell({
             )}
           </div>
 
-          {loading ? (
-            <div className={styles.loading} aria-label="Загрузка уведомлений">
+          <div aria-label="Фильтр уведомлений" className={styles.tabs} role="tablist">
+            {(["all", "unread"] as const).map((filter) => (
+              <button
+                aria-selected={activeFilter === filter}
+                className={activeFilter === filter ? styles.tabActive : ""}
+                key={filter}
+                onClick={() => setActiveFilter(filter)}
+                role="tab"
+                type="button"
+              >
+                {filter === "all" ? "Все" : "Непрочитанные"}
+              </button>
+            ))}
+          </div>
+
+          {state.loading && state.notifications.length === 0 ? (
+            <div aria-label="Загрузка уведомлений" className={styles.loading}>
               <span />
               <span />
               <span />
             </div>
+          ) : state.error && state.notifications.length === 0 ? (
+            <div className={styles.empty} role="alert">
+              <strong>Не удалось загрузить</strong>
+              <p>{state.error}</p>
+              <button onClick={() => void state.refresh()} type="button">
+                Повторить
+              </button>
+            </div>
+          ) : notifications.length === 0 ? (
+            <div className={styles.empty}>
+              <span aria-hidden="true" className={styles.emptyIcon}>✓</span>
+              <strong>
+                {activeFilter === "unread"
+                  ? "Новых уведомлений нет"
+                  : "Уведомлений пока нет"}
+              </strong>
+              <p>Здесь появятся изменения по учёбе и заявкам.</p>
+            </div>
           ) : (
-            <>
-              {error && (
-                <div className={styles.empty} role="alert">
-                  <strong>Не удалось выполнить действие</strong>
-                  <p>{error}</p>
-                </div>
-              )}
-              {notifications.length === 0 ? (
-                !error && (
-                  <div className={styles.empty}>
-                    <strong>Уведомлений пока нет</strong>
-                    <p>Здесь появятся изменения по учёбе и заявкам.</p>
-                  </div>
-                )
-              ) : (
-                <ul className={styles.list}>
-                  {notifications.slice(0, 5).map((notification) => {
-                    const href =
-                      notification.type &&
-                      notification.targetType &&
-                      notification.targetId
-                        ? buildNotificationTargetHref(
-                            notification.type,
-                            notification.targetType,
-                            notification.targetId,
-                          )
-                        : null;
-                    const content = (
-                      <>
-                        <span className={styles.itemText}>
-                          <span className={styles.type}>
-                            {notification.type
-                              ? notificationTypeLabels[notification.type]
-                              : "Уведомление"}
-                          </span>
-                          <strong>{cleanStudentFacingText(notification.title)}</strong>
-                          <time dateTime={notification.createdAt}>
-                            {dateFormatter.format(
-                              new Date(notification.createdAt),
-                            )}
-                          </time>
-                        </span>
-                        {notification.readAt === null && (
-                          <span
-                            aria-label="Непрочитано"
-                            className={styles.unread}
-                          />
-                        )}
-                      </>
-                    );
-                    return (
-                      <li
-                        className={`${styles.item} ${
-                          notification.readAt === null
-                            ? styles.itemUnread
-                            : ""
-                        }`}
-                        key={notification.publicId}
-                      >
-                        {href ? (
-                          <Link
-                            aria-disabled={mutationPending}
-                            className={styles.itemLink}
-                            href={href}
-                            onClick={(event) => {
-                              event.preventDefault();
-                              void markOneRead(notification).then((success) => {
-                                if (success) {
-                                  router.push(href);
-                                }
-                              });
-                            }}
-                          >
-                            {content}
-                          </Link>
-                        ) : (
-                          <button
-                            className={styles.itemLink}
-                            disabled={mutationPending}
-                            onClick={() => {
-                              void markOneRead(notification).then((success) => {
-                                if (success) router.refresh();
-                              });
-                            }}
-                            type="button"
-                          >
-                            {content}
-                          </button>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </>
+            <ul
+              aria-label="Последние уведомления"
+              className={styles.list}
+              ref={listRef}
+              role="list"
+            >
+              {notifications.map((notification) => (
+                <li
+                  className={`${styles.item} ${
+                    notification.readAt === null ? styles.itemUnread : ""
+                  }`}
+                  key={notification.publicId}
+                >
+                  <button
+                    className={styles.itemLink}
+                    disabled={state.actionPending}
+                    onClick={() =>
+                      void openNotification(
+                        notification.publicId,
+                        notification.targetAvailable === false
+                          ? null
+                          : notification.href,
+                      )
+                    }
+                    type="button"
+                  >
+                    <NotificationSymbol type={notification.type} />
+                    <span className={styles.itemText}>
+                      <span className={styles.type}>
+                        {notificationTypeLabels[notification.type]}
+                      </span>
+                      <strong>{cleanStudentFacingText(notification.title)}</strong>
+                      <span className={styles.context}>{notification.context}</span>
+                      <time dateTime={notification.createdAt}>
+                        {relativeTime(notification.createdAt)}
+                      </time>
+                    </span>
+                    {notification.readAt === null && (
+                      <span aria-label="Непрочитано" className={styles.unread} />
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
           )}
+
+          {state.error && state.notifications.length > 0 && (
+            <p className={styles.inlineError} role="alert">{state.error}</p>
+          )}
+          <p aria-live="polite" className={styles.liveMessage}>
+            {state.message}
+          </p>
           <Link
             className={styles.allLink}
             href="/notifications"
             onClick={() => setOpen(false)}
           >
-            Все уведомления
-            <span aria-hidden="true">→</span>
+            Все уведомления <span aria-hidden="true">→</span>
           </Link>
         </div>
       )}
