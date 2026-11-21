@@ -9,6 +9,8 @@ import {
   getMoscowDateKey,
   getMoscowDateTime,
   getMoscowDateTimeOnDate,
+  getMoscowMonthRange,
+  getMoscowTimeMinutes,
   getCampusTime,
   getMoscowWeek,
   getMoscowWeekRange,
@@ -48,6 +50,17 @@ describe("Moscow campus time", () => {
     );
   });
 
+  it("builds a Monday-first 42-day month range using Moscow midnights", () => {
+    const month = getMoscowMonthRange(new Date("2026-11-14T18:00:00.000Z"));
+
+    expect(month.startDate.toISOString()).toBe("2026-10-26T00:00:00.000Z");
+    expect(month.endDate.toISOString()).toBe("2026-12-07T00:00:00.000Z");
+    expect(month.startInstant.toISOString()).toBe("2026-10-25T21:00:00.000Z");
+    expect(month.endInstant.toISOString()).toBe("2026-12-06T21:00:00.000Z");
+    expect(month.weekdays).toHaveLength(42);
+    expect(month.todayKey).toBe("2026-11-14");
+  });
+
   it("calculates Moscow day and week boundaries across Sunday midnight", () => {
     const justBeforeMonday = new Date("2026-11-15T20:59:59.000Z");
     const day = getMoscowDayRange(justBeforeMonday);
@@ -76,6 +89,7 @@ describe("Moscow campus time", () => {
 
     expect(startsAt.toISOString()).toBe("2026-11-16T07:30:00.000Z");
     expect(formatMoscowTime(startsAt)).toBe("10:30");
+    expect(getMoscowTimeMinutes(startsAt)).toBe(10 * 60 + 30);
   });
 
   it("replaces the Moscow calendar date while keeping its current time", () => {

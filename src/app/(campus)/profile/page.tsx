@@ -3,6 +3,8 @@ import type { StudyForm } from "@/generated/prisma/enums";
 import { getPrisma } from "@/lib/prisma";
 import { requireStudentContext } from "@/lib/student";
 import { CorporateMailCard } from "./corporate-mail-card";
+import { requireStudent } from "@/lib/student";
+import { getStudentFacingGroupName } from "@/lib/campus-labels";
 import styles from "./profile.module.css";
 
 const studyFormLabels: Record<StudyForm, string> = {
@@ -59,7 +61,8 @@ async function ProfileContent() {
             <p className={styles.identityLabel}>Студент</p>
             <h2>{student.fullName}</h2>
             <p className={styles.identityMeta}>
-              {student.course} курс · группа {student.group.name}
+              {student.course} курс · группа{" "}
+              {getStudentFacingGroupName(student.group.name)}
             </p>
           </div>
           <span className={styles.heroAccent} aria-hidden="true" />
@@ -92,7 +95,7 @@ async function ProfileContent() {
             </div>
             <div className={styles.detailCard}>
               <dt>Группа</dt>
-              <dd>{student.group.name}</dd>
+              <dd>{getStudentFacingGroupName(student.group.name)}</dd>
             </div>
             <div className={styles.detailCard}>
               <dt>Зачётная книжка</dt>

@@ -3,7 +3,8 @@ import { connection } from "next/server";
 import { CampusSection } from "@/components/campus-section";
 import { controlTypeLabels } from "@/lib/campus-labels";
 import { getAcademicRecords } from "@/lib/academic-records";
-import { computerNetworksFormula } from "@/lib/grade-formula";
+import { analyzeGrade } from "@/lib/grade-analysis";
+import { getGradebookEntry } from "@/lib/gradebook-data";
 import { GradeCalculator } from "./grade-calculator";
 import {
   GradesOverview,
@@ -30,15 +31,30 @@ function getNumericGrade(value: string | undefined) {
 
 function createSemesterSummary(
   semester: AcademicSemesterData,
+  studentLogin: string,
 ): GradeSemesterSummary {
-  const subjects = semester.planItems.map((item) => ({
-    id: item.id,
-    name: item.name,
-    controlLabel: controlTypeLabels[item.controlType],
-    credits: item.credits,
-    resultValue: item.result?.value ?? null,
-    resultStatus: item.result?.status ?? null,
-  }));
+  const subjects = semester.planItems.map((item) => {
+    const gradebookEntry = getGradebookEntry(
+      studentLogin,
+      semester.code,
+      item.id,
+    );
+    const currentContribution = gradebookEntry
+      ? analyzeGrade(gradebookEntry.formula, gradebookEntry.scores)
+          .accumulatedContribution
+      : null;
+
+    return {
+      id: item.id,
+      name: item.name,
+      controlLabel: controlTypeLabels[item.controlType],
+      credits: item.credits,
+      resultValue: item.result?.value ?? null,
+      resultStatus: item.result?.status ?? null,
+      formulaSource: gradebookEntry?.formula.source ?? null,
+      currentContribution,
+    };
+  });
   const numericGrades = semester.planItems
     .map((item) => getNumericGrade(item.result?.value))
     .filter((grade): grade is number => grade !== null);
@@ -73,8 +89,29 @@ function createSemesterSummary(
 async function GradesContent({ searchParams }: Required<GradesPageProps>) {
   await connection();
   const params = await searchParams;
-  const { dataset } = await getAcademicRecords();
+  const { dataset, login } = await getAcademicRecords();
   const initialTab = params.tab === "calculator" ? "calculator" : "results";
+  const calculatorEntries =
+    dataset?.semesters.flatMap((semester) =>
+      semester.planItems.flatMap((item) => {
+        const entry = getGradebookEntry(login, semester.code, item.id);
+        return entry
+          ? [
+              {
+                ...entry,
+                officialResult: item.result?.value ?? null,
+              },
+            ]
+          : [];
+      }),
+    ) ?? [];
+  const requestedSubject =
+    typeof params.subject === "string" ? params.subject : undefined;
+  const initialSubjectId = calculatorEntries.some(
+    (entry) => entry.formula.subjectId === requestedSubject,
+  )
+    ? requestedSubject
+    : undefined;
 
   return (
     <CampusSection
@@ -84,12 +121,21 @@ async function GradesContent({ searchParams }: Required<GradesPageProps>) {
     >
       {dataset?.semesters.length ? (
         <GradesTabs
-          calculator={<GradeCalculator formula={computerNetworksFormula} />}
+          calculator={
+            calculatorEntries.length ? (
+              <GradeCalculator
+                entries={calculatorEntries}
+                initialSubjectId={initialSubjectId}
+              />
+            ) : null
+          }
           initialTab={initialTab}
         >
           <GradesOverview
             academicYear={dataset.academicYear}
-            semesters={dataset.semesters.map(createSemesterSummary)}
+            semesters={dataset.semesters.map((semester) =>
+              createSemesterSummary(semester, login),
+            )}
           />
         </GradesTabs>
       ) : (
@@ -109,7 +155,11 @@ function GradesFallback() {
       title="Успеваемость"
       description="Загружаем данные текущего студента."
     >
-      <p aria-busy="true">Загружаем учебный план и оценки…</p>
+      <div aria-busy="true" className={styles.gradesSkeleton}>
+        <span />
+        <span />
+        <span />
+      </div>
     </CampusSection>
   );
 }

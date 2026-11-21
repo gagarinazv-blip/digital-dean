@@ -98,6 +98,7 @@
 .primaryButton:focus-visible,
 .serviceLink:focus-visible,
 .secondaryLink:focus-visible,
+.recentRequestLink:focus-visible,
 .requestNumber:focus-visible,
 .rowLink:focus-visible,
 .mobileRequestLink:focus-visible,
@@ -253,7 +254,7 @@
 
 .requestFilters .searchField,
 .requestFilters .statusFilter {
-  min-height: 42px;
+  min-height: var(--size-touch);
   border-radius: 11px;
   box-shadow: 0 2px 6px rgb(52 37 37 / 7%);
 }
@@ -309,7 +310,7 @@
   grid-template-columns: 40px minmax(0, 1fr) max-content minmax(128px, 0.8fr) 12px;
   align-items: center;
   gap: var(--space-3);
-  padding: 11px 13px;
+  padding: var(--space-3) var(--space-4);
 }
 
 .requestListLink:hover {
@@ -338,7 +339,7 @@
 .requestListMain {
   min-width: 0;
   display: grid;
-  gap: 3px;
+  gap: var(--space-1);
 }
 
 .requestListMain strong,
@@ -369,13 +370,67 @@
   min-width: 0;
   display: grid;
   justify-items: start;
-  gap: 3px;
+  gap: var(--space-1);
 }
 
 .requestListStatus small {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recentRequests {
+  min-width: 0;
+  display: grid;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  list-style: none;
+}
+
+.recentRequests > li + li {
+  border-top: 1px solid var(--color-border);
+}
+
+.recentRequestLink {
+  min-width: 0;
+  min-height: var(--size-touch);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content max-content;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  color: inherit;
+}
+
+.recentRequestLink:hover {
+  background: var(--color-subtle);
+}
+
+.recentRequestMain {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.recentRequestMain strong {
+  color: var(--color-ink);
+  font-size: var(--font-size-body-compact);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.recentRequestMain > span,
+.recentRequestDate {
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+}
+
+.recentRequestDate {
   white-space: nowrap;
 }
 
@@ -388,9 +443,9 @@
 .requestDetails,
 .noSelectedRequest {
   min-width: 0;
-  padding: 18px;
+  padding: var(--space-5);
   border: 1px solid var(--color-border);
-  border-radius: 13px;
+  border-radius: var(--radius-card);
   background: var(--color-surface);
   box-shadow: 0 3px 12px rgb(38 25 25 / 5%);
 }
@@ -409,7 +464,7 @@
 }
 
 .detailNumber {
-  margin-bottom: 4px;
+  margin-bottom: var(--space-1);
   color: var(--color-muted);
   font-size: var(--font-size-caption);
 }
@@ -432,7 +487,7 @@
   display: grid;
   grid-template-columns: 26px minmax(0, 1fr);
   gap: var(--space-2);
-  padding: 12px;
+  padding: var(--space-3);
   border-radius: 11px;
   background: #fcf4e8;
   color: #82521c;
@@ -447,7 +502,7 @@
 }
 
 .staffMessage h3 {
-  margin-bottom: 4px;
+  margin-bottom: var(--space-1);
   color: var(--color-ink);
   font-size: var(--font-size-label);
   font-weight: 600;
@@ -465,19 +520,19 @@
 
 .staffMessage div > span {
   display: block;
-  margin-top: 5px;
+  margin-top: var(--space-2);
   color: var(--color-muted);
   font-size: 11px;
 }
 
 .detailAction {
   width: fit-content;
-  min-height: 40px;
+  min-height: var(--size-touch);
   display: inline-flex;
   align-items: center;
-  gap: 9px;
-  padding: 0 15px;
-  border-radius: 10px;
+  gap: var(--space-2);
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-md);
   background: var(--color-wine-900);
   color: var(--color-surface);
   font-size: var(--font-size-label);
@@ -490,7 +545,7 @@
 
 .resultList {
   display: grid;
-  gap: 6px;
+  gap: var(--space-2);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -502,9 +557,9 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  padding: 9px 11px;
+  padding: var(--space-2) var(--space-3);
   border: 1px solid var(--color-border);
-  border-radius: 9px;
+  border-radius: var(--radius-md);
 }
 
 .resultList li > span {
@@ -517,7 +572,7 @@
 }
 
 .resultList a {
-  min-height: 36px;
+  min-height: var(--size-touch);
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
@@ -620,7 +675,7 @@
   min-width: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 2px var(--space-2);
+  gap: var(--space-1) var(--space-2);
 }
 
 .timelineContent strong {
@@ -799,7 +854,7 @@
 
 .requirements ul {
   display: grid;
-  gap: 3px;
+  gap: var(--space-1);
   margin: 0;
   padding-left: 18px;
   color: var(--color-muted);
@@ -884,7 +939,7 @@
 }
 
 .statusBadge {
-  min-height: 28px;
+  min-height: 26px;
   display: inline-flex;
   align-items: center;
   padding: var(--space-1) var(--space-3);
@@ -997,7 +1052,7 @@
   display: grid;
   justify-items: center;
   gap: var(--space-2);
-  padding: var(--space-8) var(--space-4);
+  padding: var(--space-8) var(--space-6);
   border: 1px dashed var(--color-border);
   border-radius: var(--radius-card);
   background: var(--color-surface);
@@ -1016,7 +1071,7 @@
 }
 
 .emptyState p {
-  max-width: 400px;
+  max-width: 64ch;
   color: var(--color-muted);
   font-size: var(--font-size-body-compact);
   line-height: 1.5;
@@ -1123,8 +1178,33 @@
   .requestListLink {
     grid-template-columns: 36px minmax(0, 1fr) 12px;
     grid-template-rows: auto auto auto;
-    gap: 3px 10px;
-    padding: 11px 10px;
+    gap: var(--space-1) var(--space-2);
+    padding: var(--space-4);
+  }
+
+  .recentRequestLink {
+    grid-template-columns: minmax(0, 1fr) max-content;
+    grid-template-rows: auto auto;
+    gap: var(--space-1) var(--space-2);
+    padding: var(--space-4);
+  }
+
+  .recentRequestMain {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .recentRequestDate {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .recentRequestLink > .statusBadge {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    justify-self: end;
+    padding-inline: var(--space-3);
+    font-size: var(--font-size-caption);
   }
 
   .requestListIcon {
@@ -1148,7 +1228,7 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 4px 8px;
+    gap: var(--space-1) var(--space-2);
   }
 
   .requestListStatus small {
@@ -1162,7 +1242,7 @@
 
   .requestDetails,
   .noSelectedRequest {
-    padding: 14px;
+    padding: var(--space-4);
   }
 
   .timelineContent {
@@ -1186,8 +1266,12 @@
     gap: var(--space-1);
   }
 
+  .emptyState {
+    padding: var(--space-4);
+  }
+
   .secondaryLink {
-    min-height: 38px;
+    min-height: var(--size-touch);
     text-align: left;
   }
 }

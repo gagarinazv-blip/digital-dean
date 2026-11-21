@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { formatCampusDate } from "@/lib/campus-time";
 import { prepareGradeInputs } from "@/lib/grade-calculator-input";
-import {
-  calculateGrade,
-  type GradeFormula,
-} from "@/lib/grade-formula";
+import { analyzeGrade } from "@/lib/grade-analysis";
+import type { GradebookEntry } from "@/lib/gradebook-data";
 import styles from "./grade-calculator.module.css";
 
 function ComponentIcon({ index }: { index: number }) {
@@ -39,33 +38,112 @@ function ComponentIcon({ index }: { index: number }) {
   );
 }
 
-export function GradeCalculator({ formula }: { formula: GradeFormula }) {
-  const [values, setValues] = useState<Record<string, string>>({});
-  const { scores, errors } = prepareGradeInputs(formula, values);
-  const calculation = calculateGrade(formula, scores);
+type CalculatorEntry = GradebookEntry & { officialResult: string | null };
+
+function getEntryKey(entry: CalculatorEntry) {
+  return `${entry.formula.semesterCode}:${entry.formula.subjectId}`;
+}
+
+function formatPoints(value: number) {
+  return new Intl.NumberFormat("ru-RU", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+export function GradeCalculator({
+  entries,
+  initialSubjectId,
+}: {
+  entries: readonly CalculatorEntry[];
+  initialSubjectId?: string;
+}) {
+  const initialEntry =
+    entries.find((item) => item.formula.subjectId === initialSubjectId) ??
+    entries[0];
+  const [selectedEntryKey, setSelectedEntryKey] = useState(
+    initialEntry ? getEntryKey(initialEntry) : "",
+  );
+  const [valuesBySubject, setValuesBySubject] = useState<
+    Record<string, Record<string, string>>
+  >({});
+  const entry =
+    entries.find((item) => getEntryKey(item) === selectedEntryKey) ??
+    entries[0];
+
+  if (!entry) return null;
+
+  const { formula } = entry;
+  const entryKey = getEntryKey(entry);
+  const values = valuesBySubject[entryKey] ?? {};
+  const { hypotheses, errors } = prepareGradeInputs(
+    formula,
+    entry.scores,
+    values,
+  );
+  const analysis = analyzeGrade(
+    formula,
+    entry.scores,
+    hypotheses,
+    entry.officialResult,
+    entry.components,
+  );
+  const calculation = analysis.forecastCalculation;
   const componentNames = new Map(
-    formula.components.map((component) => [component.id, component.name]),
+    formula.components.map((component) => [component.code, component.name]),
   );
   const missingNames = calculation.missingComponents.map(
-    (id) => componentNames.get(id) ?? id,
+    (code) => componentNames.get(code) ?? code,
   );
   const outcome =
-    calculation.passed === null
-      ? "Ещё не определено"
+    calculation.grade === null
+      ? "Оценка пока не определена"
       : calculation.passed
-        ? "Сдано"
-        : "Не сдано";
+        ? `Прогнозная оценка: ${calculation.grade} · зачтено`
+        : `Прогнозная оценка: ${calculation.grade} · не сдано`;
+
+  function setHypothesis(code: string, value: string) {
+    setValuesBySubject((current) => ({
+      ...current,
+      [entryKey]: {
+        ...current[entryKey],
+        [code]: value,
+      },
+    }));
+  }
 
   return (
     <section aria-labelledby="grade-calculator-title" className={styles.panel}>
       <header className={styles.heading}>
         <div>
-          <h2 id="grade-calculator-title">Калькулятор оценки</h2>
+          <h2 id="grade-calculator-title">Калькулятор прогноза</h2>
           <p className={styles.subjectName}>
-            {formula.subjectName} · прогноз для себя
+            {formula.subjectName} ·{" "}
+            {formula.source === "DEMONSTRATION"
+              ? "демонстрационная формула"
+              : "опубликованная формула"}
           </p>
         </div>
-        <span className={styles.forecastBadge}>Прогноз</span>
+        {entries.length > 1 ? (
+          <label className={styles.subjectPicker}>
+            <span>Дисциплина</span>
+            <select
+              onChange={(event) => setSelectedEntryKey(event.target.value)}
+              value={entryKey}
+            >
+              {entries.map((item) => (
+                <option
+                  key={getEntryKey(item)}
+                  value={getEntryKey(item)}
+                >
+                  {item.formula.subjectName}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : (
+          <span className={styles.forecastBadge}>Прогноз</span>
+        )}
       </header>
 
       <div className={styles.disclaimer}>
@@ -83,10 +161,10 @@ export function GradeCalculator({ formula }: { formula: GradeFormula }) {
           </svg>
         </span>
         <span>
-          <strong>Только гипотетический расчёт</strong>
+          <strong>Это прогноз, а не официальная оценка</strong>
           <small>
-            Фактические оценки доступны только для чтения. Значения прогноза не
-            сохраняются в журнал.
+            Фактические оценки нельзя изменить. Гипотезы действуют только пока
+            открыта эта страница и не сохраняются.
           </small>
         </span>
       </div>
@@ -101,28 +179,29 @@ export function GradeCalculator({ formula }: { formula: GradeFormula }) {
             <div>
               <h3 id="grade-components-title">Компоненты оценки</h3>
               <p>
-                Все компоненты можно менять для прогноза; полученные баллы
-                подставлены как начальные значения.
+                Полученные баллы зафиксированы. Введите гипотезы только для
+                компонентов, по которым оценки ещё нет.
               </p>
             </div>
           </div>
 
           <ul className={styles.componentList}>
             {formula.components.map((component, index) => {
-              const inputId = `grade-input-${component.id}`;
-              const descriptionId = `grade-description-${component.id}`;
-              const error = errors[component.id];
-              const score = scores[component.id];
-              const inputValue =
-                values[component.id] ??
-                (component.status === "RECEIVED"
-                  ? String(component.baselineScore)
-                  : "");
+              const details = entry.components[component.code];
+              const receivedScore = entry.scores[component.code];
+              const isReceived = receivedScore !== undefined;
+              const inputId = `grade-input-${component.code}`;
+              const descriptionId = `grade-description-${component.code}`;
+              const error = errors[component.code];
+              const score = isReceived
+                ? receivedScore
+                : hypotheses[component.code];
+              const inputValue = values[component.code] ?? "";
               const progress =
                 score === undefined ? 0 : (score / component.maxPoints) * 100;
 
               return (
-                <li className={styles.component} key={component.id}>
+                <li className={styles.component} key={component.code}>
                   <span className={styles.componentIcon}>
                     <ComponentIcon index={index} />
                   </span>
@@ -134,69 +213,79 @@ export function GradeCalculator({ formula }: { formula: GradeFormula }) {
                       </span>
                     </div>
                     <p className={styles.componentMeta}>
-                      {component.status === "RECEIVED"
-                        ? "Начальное значение"
-                        : "Будущий компонент"}{" "}
-                      · максимум {component.maxPoints} баллов
+                      Максимум {component.maxPoints} баллов
+                      {details.date
+                        ? ` · оценено ${formatCampusDate(
+                            new Date(`${details.date}T12:00:00Z`),
+                          )}`
+                        : ""}
                     </p>
 
-                    <div className={styles.field}>
-                      <label htmlFor={inputId}>
-                        Балл для прогноза (0–{component.maxPoints})
-                      </label>
-                      <div className={styles.scoreControls}>
+                    {isReceived ? (
+                      <div className={styles.receivedScore}>
+                        <strong>
+                          Получено: {formatPoints(receivedScore)} /{" "}
+                          {component.maxPoints}
+                        </strong>
+                        {details.comment && <span>{details.comment}</span>}
+                      </div>
+                    ) : (
+                      <div className={styles.field}>
+                        <label htmlFor={inputId}>
+                          Гипотеза (0–{component.maxPoints})
+                        </label>
+                        <div className={styles.scoreControls}>
+                          <input
+                            aria-describedby={descriptionId}
+                            aria-invalid={Boolean(error)}
+                            autoComplete="off"
+                            className={
+                              error ? styles.invalidInput : styles.input
+                            }
+                            id={inputId}
+                            inputMode="decimal"
+                            maxLength={24}
+                            onChange={(event) =>
+                              setHypothesis(
+                                component.code,
+                                event.currentTarget.value,
+                              )
+                            }
+                            placeholder={`0–${component.maxPoints}`}
+                            type="text"
+                            value={inputValue}
+                          />
+                          <span className={styles.scoreMaximum}>
+                            / {component.maxPoints}
+                          </span>
+                        </div>
                         <input
+                          aria-label={`Гипотеза баллов за ${component.name}`}
                           aria-describedby={descriptionId}
                           aria-invalid={Boolean(error)}
-                          autoComplete="off"
-                          className={
-                            error ? styles.invalidInput : styles.input
+                          aria-valuetext={`${score ?? 0} из ${component.maxPoints} баллов`}
+                          className={styles.range}
+                          max={component.maxPoints}
+                          min={0}
+                          onChange={(event) =>
+                            setHypothesis(
+                              component.code,
+                              event.currentTarget.value,
+                            )
                           }
-                          id={inputId}
-                          inputMode="decimal"
-                          maxLength={24}
-                          onChange={(event) => {
-                            const nextValue = event.currentTarget.value;
-                            setValues((current) => ({
-                              ...current,
-                              [component.id]: nextValue,
-                            }));
-                          }}
-                          placeholder={`0–${component.maxPoints}`}
-                          type="text"
-                          value={inputValue}
+                          step="0.1"
+                          type="range"
+                          value={score ?? 0}
                         />
-                        <span className={styles.scoreMaximum}>
-                          / {component.maxPoints}
-                        </span>
+                        <p
+                          className={error ? styles.error : styles.help}
+                          id={descriptionId}
+                        >
+                          {error ??
+                            "Не сохраняется и не влияет на официальный итог."}
+                        </p>
                       </div>
-                      <input
-                        aria-label={`Балл для прогноза за ${component.name}`}
-                        aria-describedby={descriptionId}
-                        aria-invalid={Boolean(error)}
-                        aria-valuetext={`${score ?? 0} из ${component.maxPoints} баллов`}
-                        className={styles.range}
-                        max={component.maxPoints}
-                        min={0}
-                        onChange={(event) => {
-                          const nextValue = event.currentTarget.value;
-                          setValues((current) => ({
-                            ...current,
-                            [component.id]: nextValue,
-                          }));
-                        }}
-                        step="0.1"
-                        type="range"
-                        value={score ?? 0}
-                      />
-                      <p
-                        className={error ? styles.error : styles.help}
-                        id={descriptionId}
-                      >
-                        {error ??
-                          "Значение используется только в прогнозе и не сохраняется."}
-                      </p>
-                    </div>
+                    )}
                     <div
                       aria-hidden="true"
                       className={styles.progressTrack}
@@ -211,10 +300,15 @@ export function GradeCalculator({ formula }: { formula: GradeFormula }) {
 
           <button
             className={styles.resetButton}
-            onClick={() => setValues({})}
+            onClick={() =>
+              setValuesBySubject((current) => ({
+                ...current,
+                [entryKey]: {},
+              }))
+            }
             type="button"
           >
-            Сбросить значения
+            Сбросить гипотезы
           </button>
         </section>
 
@@ -228,14 +322,10 @@ export function GradeCalculator({ formula }: { formula: GradeFormula }) {
             <h3 id="grade-result-title">Прогноз результата</h3>
             <div className={styles.scoreHero}>
               <strong className={styles.totalScore}>
-                {calculation.grade === null
-                  ? "— / 100"
-                  : `${calculation.totalPoints} / 100`}
+                {calculation.totalPoints} / 100
               </strong>
               <span className={styles.gradeSummary}>
-                {calculation.grade === null
-                  ? "Итог пока не определён"
-                  : `Оценка: ${calculation.grade} · ${outcome}`}
+                {outcome}
               </span>
               <div className={styles.resultTrack} aria-hidden="true">
                 <span
@@ -245,9 +335,16 @@ export function GradeCalculator({ formula }: { formula: GradeFormula }) {
                 />
               </div>
             </div>
+            <div className={styles.officialResult}>
+              <span>Официальный итог</span>
+              <strong>{entry.officialResult ?? "Не выставлен"}</strong>
+            </div>
             {calculation.missingComponents.length > 0 && (
               <div className={styles.resultNote}>
-                Не хватает: {missingNames.join(", ")}
+                {analysis.remainingWeight}% веса ещё не оценено
+                {missingNames.length > 0
+                  ? ` · Не заполнены гипотезы: ${missingNames.join(", ")}`
+                  : ""}
               </div>
             )}
             {calculation.notes.length > 0 && (
@@ -263,21 +360,19 @@ export function GradeCalculator({ formula }: { formula: GradeFormula }) {
             <h3>Расчёт</h3>
             <ul className={styles.breakdown}>
               {formula.components.map((component) => {
-                const score = scores[component.id];
-                const contribution =
-                  score === undefined
-                    ? null
-                    : ((score / component.maxPoints) * component.weight).toFixed(
-                        1,
-                      );
+                const grade = analysis.components.find(
+                  (item) => item.code === component.code,
+                );
 
                 return (
-                  <li key={component.id}>
+                  <li key={component.code}>
                     <span>{component.name}</span>
                     <strong>
-                      {score === undefined
-                        ? "Не задано"
-                        : `${score} / ${component.maxPoints} × ${component.weight}% = ${contribution}`}
+                      {grade?.status === "RECEIVED"
+                        ? `Факт: ${formatPoints(grade.score ?? 0)} / ${component.maxPoints} · вклад ${formatPoints(grade.currentContribution ?? 0)}`
+                        : grade?.status === "HYPOTHESIS"
+                          ? `Гипотеза: ${formatPoints(grade.score ?? 0)} / ${component.maxPoints} · вклад ${formatPoints(grade.forecastContribution ?? 0)}`
+                          : "Гипотеза не задана"}
                     </strong>
                   </li>
                 );
@@ -286,8 +381,8 @@ export function GradeCalculator({ formula }: { formula: GradeFormula }) {
                 <span>Итого</span>
                 <strong>
                   {calculation.grade === null
-                    ? `${calculation.totalPoints} / 100 · не итог`
-                    : `${calculation.totalPoints} / 100`}
+                    ? `${calculation.totalPoints} / 100 · промежуточный прогноз`
+                    : `${calculation.totalPoints} / 100 · прогноз`}
                 </strong>
               </li>
             </ul>

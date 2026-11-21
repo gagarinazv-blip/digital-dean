@@ -1,4 +1,7 @@
-import type { GradeFormula } from "@/lib/grade-formula";
+import {
+  calculateGrade,
+  type GradeFormula,
+} from "@/lib/grade-formula";
 
 export type ParsedGradeInput =
   | { kind: "empty" }
@@ -7,6 +10,7 @@ export type ParsedGradeInput =
 
 export type PreparedGradeInputs = {
   scores: Record<string, number | undefined>;
+  hypotheses: Record<string, number>;
   errors: Record<string, string>;
 };
 
@@ -53,30 +57,32 @@ export function parseGradeInput(
 
 export function prepareGradeInputs(
   formula: GradeFormula,
+  receivedScores: Readonly<Record<string, number>>,
   values: Readonly<Record<string, string>>,
 ): PreparedGradeInputs {
-  const scores: Record<string, number | undefined> = {};
+  calculateGrade(formula, receivedScores);
+  const scores: Record<string, number | undefined> = {
+    ...receivedScores,
+  };
+  const hypotheses: Record<string, number> = {};
   const errors: Record<string, string> = {};
 
   for (const component of formula.components) {
-    const defaultValue =
-      component.status === "RECEIVED" &&
-      component.baselineScore !== undefined
-        ? String(component.baselineScore)
-        : "";
-    const parsed = parseGradeInput(
-      values[component.id] ?? defaultValue,
-      component.maxPoints,
-    );
+    if (Object.prototype.hasOwnProperty.call(receivedScores, component.code)) {
+      continue;
+    }
+
+    const parsed = parseGradeInput(values[component.code] ?? "", component.maxPoints);
     if (parsed.kind === "valid") {
-      scores[component.id] = parsed.score;
+      scores[component.code] = parsed.score;
+      hypotheses[component.code] = parsed.score;
     } else {
-      scores[component.id] = undefined;
+      scores[component.code] = undefined;
       if (parsed.kind === "invalid") {
-        errors[component.id] = parsed.message;
+        errors[component.code] = parsed.message;
       }
     }
   }
 
-  return { scores, errors };
+  return { scores, hypotheses, errors };
 }

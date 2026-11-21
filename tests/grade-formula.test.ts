@@ -3,24 +3,36 @@ import { academicRecordsSeedData } from "../prisma/academic-records-seed-data";
 import {
   calculateGrade,
   computerNetworksFormula,
+  gradeFormulas,
   type GradeFormula,
 } from "../src/lib/grade-formula";
 
-describe("computer networks grade formula", () => {
-  it("uses components whose weights total exactly 100%", () => {
+describe("grade formulas", () => {
+  it("keeps formulas separate from student component scores", () => {
     expect(
-      computerNetworksFormula.components.reduce(
-        (total, component) => total + component.weight,
-        0,
+      gradeFormulas.map((formula) =>
+        formula.components.reduce(
+          (total, component) => total + component.weight,
+          0,
+        ),
       ),
-    ).toBe(100);
+    ).toEqual([100, 100, 100, 100]);
+
+    for (const formula of gradeFormulas) {
+      for (const component of formula.components) {
+        expect(component).not.toHaveProperty("baselineScore");
+        expect(component).not.toHaveProperty("status");
+      }
+    }
+
     expect(
       computerNetworksFormula.components.find(
-        (component) => component.id === "exam",
+        (component) => component.code === "exam",
       ),
     ).toMatchObject({
-      status: "NOT_RECEIVED",
       requiredForFinal: true,
+      weight: 20,
+      maxPoints: 20,
     });
   });
 
@@ -53,19 +65,19 @@ describe("computer networks grade formula", () => {
       ...computerNetworksFormula,
       components: [
         {
-          id: "first",
+          code: "first",
           name: "Первый компонент",
           weight: 50,
           maxPoints: 100,
-          status: "NOT_RECEIVED",
+          order: 1,
           requiredForFinal: false,
         },
         {
-          id: "second",
+          code: "second",
           name: "Второй компонент",
           weight: 50,
           maxPoints: 100,
-          status: "NOT_RECEIVED",
+          order: 2,
           requiredForFinal: false,
         },
       ],
@@ -78,11 +90,61 @@ describe("computer networks grade formula", () => {
     });
   });
 
-  it("returns known weighted points but no final grade while components are missing", () => {
-    const result = calculateGrade(computerNetworksFormula, { exam: undefined });
+  it("rounds a mathematical half-point up when binary addition lands just below it", () => {
+    const formula = {
+      ...computerNetworksFormula,
+      components: [
+        {
+          code: "first",
+          name: "Первый компонент",
+          weight: 10,
+          maxPoints: 100,
+          order: 1,
+          requiredForFinal: false,
+        },
+        {
+          code: "second",
+          name: "Второй компонент",
+          weight: 50,
+          maxPoints: 100,
+          order: 2,
+          requiredForFinal: false,
+        },
+        {
+          code: "third",
+          name: "Третий компонент",
+          weight: 40,
+          maxPoints: 100,
+          order: 3,
+          requiredForFinal: false,
+        },
+      ],
+    } as const satisfies GradeFormula;
+
+    expect(
+      calculateGrade(formula, {
+        first: 3,
+        second: 64.6,
+        third: 54.75,
+      }),
+    ).toMatchObject({
+      totalPoints: 55,
+      grade: 3,
+      passed: true,
+    });
+  });
+
+  it("uses only supplied student scores and leaves missing work out of the result", () => {
+    const scores = {
+      "midterm-1": 19,
+      "midterm-2": 18,
+      labs: 28,
+      activity: 9,
+    };
+    const result = calculateGrade(computerNetworksFormula, scores);
 
     expect(result).toMatchObject({
-      totalPoints: 72,
+      totalPoints: 74,
       grade: null,
       passed: null,
       missingComponents: ["exam"],
@@ -90,18 +152,24 @@ describe("computer networks grade formula", () => {
     expect(result.notes.join(" ")).toContain("обязателен компонент: Экзамен");
   });
 
-  it("applies hypothetical exam scores without mutating the formula or inputs", () => {
-    const scores = Object.freeze({ exam: 17 });
+  it("applies a hypothetical exam score without mutating the formula or inputs", () => {
+    const scores = Object.freeze({
+      "midterm-1": 19,
+      "midterm-2": 18,
+      labs: 28,
+      activity: 9,
+      exam: 17,
+    });
     const originalFormula = JSON.stringify(computerNetworksFormula);
 
     expect(calculateGrade(computerNetworksFormula, scores)).toMatchObject({
-      totalPoints: 89,
-      grade: 4,
+      totalPoints: 91,
+      grade: 5,
       passed: true,
       missingComponents: [],
     });
     expect(JSON.stringify(computerNetworksFormula)).toBe(originalFormula);
-    expect(scores).toEqual({ exam: 17 });
+    expect(scores.exam).toBe(17);
   });
 
   it("rejects unknown components and scores outside the component maximum", () => {
@@ -120,7 +188,7 @@ describe("computer networks grade formula", () => {
     const formula = {
       ...computerNetworksFormula,
       components: computerNetworksFormula.components.map((component) =>
-        component.id === "exam"
+        component.code === "exam"
           ? { ...component, weight: 19 }
           : component,
       ),
@@ -131,7 +199,7 @@ describe("computer networks grade formula", () => {
     );
   });
 
-  it("uses the fixture's planned exam course and its real study-load values", () => {
+  it("ties the networks formula to the student's real planned exam course", () => {
     const alpha = academicRecordsSeedData.students.find(
       (student) => student.login === "student.alpha",
     );
@@ -162,11 +230,6 @@ describe("computer networks grade formula", () => {
         (result) => result.subjectId === computerNetworksFormula.subjectId,
       ),
     ).toBe(false);
-    expect(calculateGrade(computerNetworksFormula, { exam: 18 })).toMatchObject({
-      totalPoints: 90,
-      grade: 5,
-      passed: true,
-    });
   });
 });
 
@@ -175,11 +238,11 @@ function makeSingleComponentFormula(): GradeFormula {
     ...computerNetworksFormula,
     components: [
       {
-        id: "result",
+        code: "result",
         name: "Итоговые баллы",
         weight: 100,
         maxPoints: 100,
-        status: "NOT_RECEIVED",
+        order: 1,
         requiredForFinal: false,
       },
     ],

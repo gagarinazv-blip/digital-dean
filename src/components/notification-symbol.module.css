@@ -1,0 +1,33 @@
+.icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: var(--radius-pill);
+}
+
+.icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.schedule {
+  background: var(--color-blue-100);
+  color: var(--color-blue-700);
+}
+
+.deadline {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.request {
+  background: var(--color-wine-100);
+  color: var(--color-wine-900);
+}
+
+.announcement {
+  background: var(--color-subtle);
+  color: var(--color-ink);
+}

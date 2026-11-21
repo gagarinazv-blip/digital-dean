@@ -1,10 +1,10 @@
 import "server-only";
 
 import { getPrisma } from "@/lib/prisma";
-import { requireStudent } from "@/lib/student";
+import { requireStudentContext } from "@/lib/student";
 
 export async function getAcademicRecords() {
-  const student = await requireStudent();
+  const { login, student } = await requireStudentContext();
   const dataset = await getPrisma().academicDataset.findUnique({
     where: { id: "academic-records-demo" },
     select: {
@@ -64,5 +64,5 @@ export async function getAcademicRecords() {
     },
   });
 
-  return { student, dataset };
+  return { login, student, dataset };
 }

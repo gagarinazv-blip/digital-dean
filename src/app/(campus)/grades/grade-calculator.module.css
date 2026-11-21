@@ -26,6 +26,30 @@
   font-size: var(--font-size-body-compact);
 }
 
+.subjectPicker {
+  min-width: min(100%, 260px);
+  display: grid;
+  gap: var(--space-1);
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+}
+
+.subjectPicker select {
+  width: 100%;
+  min-height: var(--size-touch);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+}
+
+.subjectPicker select:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
 .forecastBadge,
 .weightBadge {
   min-height: 28px;
@@ -201,6 +225,20 @@
   font-size: var(--font-size-caption);
 }
 
+.receivedScore {
+  display: grid;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+  color: var(--color-ink);
+  font-size: var(--font-size-caption);
+  line-height: 1.45;
+}
+
+.receivedScore span {
+  color: var(--color-muted);
+  overflow-wrap: anywhere;
+}
+
 .scoreControls {
   display: flex;
   align-items: center;
@@ -211,7 +249,7 @@
 .invalidInput {
   width: min(100%, 120px);
   min-width: 0;
-  min-height: 40px;
+  min-height: var(--size-touch);
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -234,7 +272,7 @@
 
 .range {
   width: 100%;
-  min-height: 24px;
+  min-height: var(--size-touch);
   display: block;
   accent-color: var(--color-wine-900);
   cursor: pointer;
@@ -287,7 +325,7 @@
   display: block;
   border-radius: inherit;
   background: var(--color-wine-900);
-  transition: width 150ms ease;
+  transition: width 220ms var(--motion-ease);
 }
 
 .resetButton {
@@ -363,6 +401,26 @@
   font-size: var(--font-size-caption);
   line-height: 1.4;
   overflow-wrap: anywhere;
+}
+
+.officialResult {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-subtle);
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+}
+
+.officialResult strong {
+  color: var(--color-ink);
+  font-size: var(--font-size-body-compact);
+  font-variant-numeric: tabular-nums;
 }
 
 .notes {

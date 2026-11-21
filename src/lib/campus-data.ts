@@ -6,6 +6,7 @@ import { countUnreadStudentNotifications } from "@/lib/notification-data";
 import { getPrisma } from "@/lib/prisma";
 import { requireStudent } from "@/lib/student";
 import { getMoscowDateKey, getMoscowWeek } from "@/lib/campus-time";
+import { cleanStudentFacingText } from "@/lib/campus-labels";
 import {
   getNextScheduleLesson,
   getScheduleForGroup,
@@ -76,6 +77,8 @@ export async function getCampusTodayData(now = getDemoNow()) {
 
   const deadlines = getNearestDeadlines(deadlineRecords, 5).map((deadline) => ({
     ...deadline,
+    subject: cleanStudentFacingText(deadline.subject),
+    title: cleanStudentFacingText(deadline.title),
     countdown: getDeadlineCountdown(deadline.dueAt, now),
   }));
   const schedule = scheduleData.lessons.map((item) => ({
@@ -85,6 +88,7 @@ export async function getCampusTodayData(now = getDemoNow()) {
     ),
     startTime: item.startsAt,
     endTime: item.endsAt,
+    kind: item.kind,
     room: item.room,
     teacher: item.teacher,
     status: item.status,
@@ -112,8 +116,8 @@ export async function getCampusTodayData(now = getDemoNow()) {
     ...announcements.map((announcement) => ({
       id: `announcement-${announcement.id}`,
       kind: "Объявление" as const,
-      title: announcement.title,
-      text: announcement.text,
+      title: cleanStudentFacingText(announcement.title),
+      text: cleanStudentFacingText(announcement.text),
       date: announcement.date,
     })),
   ]
@@ -123,10 +127,16 @@ export async function getCampusTodayData(now = getDemoNow()) {
   const todaySchedule = schedule.filter(
     (item) => getMoscowDateKey(item.startTime) === week.todayKey,
   );
-  let nextScheduleLesson = getNextScheduleLesson(
-    scheduleData.lessons,
-    now,
-  );
+  const activeScheduleLesson =
+    scheduleData.lessons.find(
+      (lesson) =>
+        lesson.status !== "CANCELLED" &&
+        lesson.startsAt.getTime() <= now.getTime() &&
+        lesson.endsAt.getTime() > now.getTime(),
+    ) ?? null;
+  let nextScheduleLesson =
+    activeScheduleLesson ??
+    getNextScheduleLesson(scheduleData.lessons, now);
   if (!nextScheduleLesson) {
     const nextWeekAnchor = new Date(scheduleData.endDate);
     nextWeekAnchor.setUTCHours(12, 0, 0, 0);
@@ -139,11 +149,17 @@ export async function getCampusTodayData(now = getDemoNow()) {
   }
   const nextLesson = nextScheduleLesson
     ? {
+        occurrenceId: nextScheduleLesson.id,
+        isCurrent:
+          activeScheduleLesson?.id === nextScheduleLesson.id,
         occurrenceDate: new Date(
           `${getMoscowDateKey(nextScheduleLesson.startsAt)}T00:00:00.000Z`,
         ),
         startTime: nextScheduleLesson.startsAt,
         endTime: nextScheduleLesson.endsAt,
+        kind: nextScheduleLesson.kind,
+        status: nextScheduleLesson.status,
+        changeNote: nextScheduleLesson.changeNote,
         room: nextScheduleLesson.room,
         teacher: nextScheduleLesson.teacher,
         subject: { name: nextScheduleLesson.subject },

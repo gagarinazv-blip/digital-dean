@@ -152,11 +152,37 @@ export function getMoscowWeekRange(now = new Date()) {
   return getMoscowCalendarWeek(now);
 }
 
+export function getMoscowMonthRange(now = new Date()) {
+  const dateParts = getNumericParts(moscowDateFormatter, now);
+  const monthStart = new Date(
+    Date.UTC(dateParts.year, dateParts.month - 1, 1),
+  );
+  const daysSinceMonday = (monthStart.getUTCDay() + 6) % 7;
+  const startDate = addUtcDays(monthStart, -daysSinceMonday);
+  const endDate = addUtcDays(startDate, 42);
+
+  return {
+    startDate,
+    endDate,
+    startInstant: moscowMidnightAsUtc(startDate),
+    endInstant: moscowMidnightAsUtc(endDate),
+    todayKey: getMoscowDateKey(now),
+    weekdays: Array.from({ length: 42 }, (_, index) => {
+      return weekdaysByUtcDay[addUtcDays(startDate, index).getUTCDay()];
+    }),
+  };
+}
+
 export function getMoscowDateKey(date: Date): string {
   const parts = getNumericParts(moscowDateFormatter, date);
   return `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(
     parts.day,
   ).padStart(2, "0")}`;
+}
+
+export function getMoscowTimeMinutes(date: Date): number {
+  const parts = getNumericParts(moscowTimeFormatter, date);
+  return parts.hour * 60 + parts.minute;
 }
 
 export function getMoscowDateTime(date: Date, time: Date): Date {

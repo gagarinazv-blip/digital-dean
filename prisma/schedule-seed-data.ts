@@ -100,7 +100,7 @@ export function buildTargetScheduleSeed(
     const rooms = isAlpha ? alphaRooms : betaRooms;
     const lessonCounts = isAlpha ? alphaLessonCounts : betaLessonCounts;
 
-    for (const weekOffset of [0, 7]) {
+    for (const weekOffset of [-14, -7, 0, 7, 14]) {
       for (let weekdayIndex = 0; weekdayIndex < 5; weekdayIndex += 1) {
         if (!isAlpha && weekdayIndex === 2) continue;
 

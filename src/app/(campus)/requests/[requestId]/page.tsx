@@ -5,7 +5,12 @@ import {
   StudentCancelForm,
   StudentReplyForm,
 } from "@/app/(campus)/requests/request-forms";
-import { requestStatusLabels, requestTypeLabels } from "@/lib/campus-labels";
+import {
+  cleanStudentFacingText,
+  getStudentFacingGroupName,
+  requestStatusLabels,
+  requestTypeLabels,
+} from "@/lib/campus-labels";
 import {
   getRequestCatalogEntry,
   getRequestCatalogTitle,
@@ -574,7 +579,11 @@ export default async function StudentRequestPage({
                   {profileEntries.map((entry) => (
                     <div key={entry.label}>
                       <dt>{entry.label}</dt>
-                      <dd>{entry.value}</dd>
+                      <dd>
+                        {entry.label === "Группа"
+                          ? getStudentFacingGroupName(entry.value)
+                          : cleanStudentFacingText(entry.value)}
+                      </dd>
                     </div>
                   ))}
                 </dl>

@@ -4,10 +4,11 @@
 }
 
 .tabs {
-  width: fit-content;
+  position: relative;
+  width: min(100%, 420px);
   max-width: 100%;
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-1);
   padding: var(--space-1);
   border: 1px solid var(--color-border);
@@ -15,7 +16,32 @@
   background: var(--color-subtle);
 }
 
+.tabs::before {
+  position: absolute;
+  inset: var(--space-1) auto var(--space-1) var(--space-1);
+  width: calc((100% - var(--space-2)) / 2);
+  border-radius: var(--radius-md);
+  background: var(--color-wine-900);
+  content: "";
+  transition: transform var(--motion-page) var(--motion-ease);
+}
+
+.tabsCalculatorActive::before {
+  transform: translateX(100%);
+}
+
+.tabsSingle {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.tabsSingle::before {
+  display: none;
+}
+
 .tab {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
   min-height: var(--size-touch);
   padding: var(--space-2) var(--space-4);
   border: 0;
@@ -26,11 +52,16 @@
   font-size: var(--font-size-body-compact);
   font-weight: 600;
   cursor: pointer;
+  transition: color var(--motion-page) var(--motion-ease);
 }
 
 .tab[aria-selected="true"] {
-  background: var(--color-wine-900);
   color: var(--color-surface);
+}
+
+.tabsSingle .tab[aria-selected="true"] {
+  border-radius: var(--radius-md);
+  background: var(--color-wine-900);
 }
 
 .tab:focus-visible,
@@ -86,7 +117,7 @@
 }
 
 .currentSemesterBadge {
-  min-height: 30px;
+  min-height: 26px;
   display: inline-flex;
   align-items: center;
   padding: var(--space-1) var(--space-3);
@@ -95,6 +126,7 @@
   color: var(--color-ink);
   font-size: var(--font-size-caption);
   font-weight: 500;
+  line-height: 18px;
 }
 
 .averageValue {
@@ -141,6 +173,16 @@
   border-radius: var(--radius-card);
   background: var(--color-surface);
   box-shadow: var(--shadow-soft);
+  transition:
+    transform var(--motion-fast) var(--motion-ease),
+    border-color var(--motion-fast) var(--motion-ease),
+    box-shadow var(--motion-fast) var(--motion-ease);
+}
+
+.summaryCard:hover {
+  border-color: var(--color-blue-300);
+  box-shadow: var(--shadow-soft);
+  transform: translateY(-1px);
 }
 
 .summaryCard h2 {
@@ -185,13 +227,13 @@
 .studyStatus {
   width: fit-content;
   max-width: 100%;
-  min-height: 30px;
+  min-height: 26px;
   display: inline-flex;
   align-items: center;
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-pill);
   font-size: var(--font-size-caption);
-  line-height: 1.35;
+  line-height: 18px;
   overflow-wrap: anywhere;
 }
 
@@ -214,28 +256,54 @@
 }
 
 .periodTabs {
+  position: relative;
+  width: fit-content;
   max-width: 100%;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-subtle);
+}
+
+.periodTabs::before {
+  position: absolute;
+  inset: var(--space-1) auto var(--space-1) var(--space-1);
+  width: calc((100% - var(--space-4)) / 3);
+  border-radius: var(--radius-pill);
+  background: var(--color-wine-900);
+  content: "";
+  transition: transform var(--motion-page) var(--motion-ease);
+}
+
+.periodAll::before {
+  transform: translateX(calc(100% + var(--space-1)));
+}
+
+.periodDynamics::before {
+  transform: translateX(calc((100% + var(--space-1)) * 2));
 }
 
 .periodTab {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
   min-height: var(--size-touch);
   padding: var(--space-2) var(--space-3);
-  border: 1px solid transparent;
+  border: 0;
   border-radius: var(--radius-pill);
-  background: var(--color-subtle);
+  background: transparent;
   color: var(--color-muted);
   font: inherit;
   font-size: var(--font-size-caption);
   cursor: pointer;
+  transition: color var(--motion-page) var(--motion-ease);
 }
 
 .periodTab[aria-selected="true"] {
-  border-color: var(--color-danger-bg);
-  background: var(--color-danger-bg);
-  color: var(--color-danger-text);
+  color: var(--color-surface);
 }
 
 .semesterSelect {
@@ -254,7 +322,7 @@
 
 .semesterSelect select {
   max-width: min(260px, 60vw);
-  min-height: 42px;
+  min-height: var(--size-field);
   appearance: none;
   padding-right: var(--space-4);
   border: 0;
@@ -343,6 +411,14 @@
   border-bottom: 0;
 }
 
+.subjectTable tbody tr {
+  transition: background-color var(--motion-fast) var(--motion-ease);
+}
+
+.subjectTable tbody tr:hover {
+  background: var(--color-wine-100);
+}
+
 .subjectTable th:first-child,
 .subjectTable td:first-child {
   width: 56%;
@@ -392,7 +468,7 @@
 .subjectText {
   min-width: 0;
   display: grid;
-  gap: 2px;
+  gap: var(--space-1);
 }
 
 .subjectText strong {
@@ -419,8 +495,21 @@
   font-weight: 600;
 }
 
+.gradeCell {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  white-space: normal;
+}
+
+.currentContribution {
+  color: var(--color-muted);
+  font-size: 10px;
+  line-height: 1.3;
+}
+
 .statusBadge {
-  min-height: 28px;
+  min-height: 26px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -429,6 +518,7 @@
   border-radius: var(--radius-pill);
   font-size: var(--font-size-caption);
   font-weight: 500;
+  line-height: 18px;
   white-space: nowrap;
 }
 
@@ -529,6 +619,36 @@
   line-height: 1.5;
 }
 
+.gradesSkeleton {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+.gradesSkeleton span {
+  min-height: 120px;
+  display: block;
+  border-radius: var(--radius-card);
+  background: linear-gradient(
+    100deg,
+    var(--color-subtle) 25%,
+    var(--color-surface) 45%,
+    var(--color-subtle) 65%
+  );
+  background-size: 220% 100%;
+  animation: grades-shimmer 1.6s ease-in-out infinite;
+}
+
+.gradesSkeleton span:first-child {
+  min-height: 238px;
+}
+
+@keyframes grades-shimmer {
+  to {
+    background-position-x: -220%;
+  }
+}
+
 .empty strong {
   display: block;
   margin-bottom: var(--space-2);
@@ -587,13 +707,9 @@
   }
 
   .periodTabs {
+    width: 100%;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: var(--space-1);
-    padding: var(--space-1);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-card);
-    background: var(--color-subtle);
   }
 
   .periodTab {
@@ -700,9 +816,22 @@
   .semesterTables {
     gap: var(--space-4);
   }
+
+  .gradesSkeleton {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .tabs::before,
+  .periodTabs::before,
+  .summaryCard,
+  .subjectTable tbody tr,
+  .gradesSkeleton span {
+    transition: none;
+    animation: none;
+  }
+
   .progressTrack span,
   .dynamicsTrack span {
     transition: none;

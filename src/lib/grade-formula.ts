@@ -1,14 +1,13 @@
-export type GradeComponentStatus = "RECEIVED" | "NOT_RECEIVED";
-
 export type GradeFormulaComponent = {
-  id: string;
+  code: string;
   name: string;
   weight: number;
   maxPoints: number;
-  status: GradeComponentStatus;
-  baselineScore?: number;
+  order: number;
   requiredForFinal: boolean;
 };
+
+export type GradeFormulaSource = "PUBLISHED" | "DEMONSTRATION";
 
 export type GradeScaleBand = {
   minimumPoints: number;
@@ -19,7 +18,9 @@ export type GradeScaleBand = {
 
 export type GradeFormula = {
   subjectId: string;
+  semesterCode: string;
   subjectName: string;
+  source: GradeFormulaSource;
   roundingMode: "HALF_UP_TO_INTEGER";
   components: readonly GradeFormulaComponent[];
   scale: readonly GradeScaleBand[];
@@ -34,71 +35,221 @@ export type GradeCalculation = {
   notes: string[];
 };
 
+export const standardGradeScale = [
+  { minimumPoints: 0, maximumPoints: 54, grade: 2, passed: false },
+  { minimumPoints: 55, maximumPoints: 74, grade: 3, passed: true },
+  { minimumPoints: 75, maximumPoints: 89, grade: 4, passed: true },
+  { minimumPoints: 90, maximumPoints: 100, grade: 5, passed: true },
+] as const satisfies readonly GradeScaleBand[];
+
 export const computerNetworksFormula = {
   subjectId: "pi31-s5-networks",
+  semesterCode: "2026-2027-1",
   subjectName: "Компьютерные сети",
+  source: "DEMONSTRATION",
   roundingMode: "HALF_UP_TO_INTEGER",
   components: [
     {
-      id: "midterm-1",
+      code: "midterm-1",
       name: "Контрольная работа 1",
       weight: 20,
       maxPoints: 20,
-      status: "RECEIVED",
-      baselineScore: 18,
+      order: 1,
       requiredForFinal: false,
     },
     {
-      id: "midterm-2",
+      code: "midterm-2",
       name: "Контрольная работа 2",
       weight: 20,
       maxPoints: 20,
-      status: "RECEIVED",
-      baselineScore: 18,
+      order: 2,
       requiredForFinal: false,
     },
     {
-      id: "labs",
+      code: "labs",
       name: "Лабораторные работы",
       weight: 30,
       maxPoints: 30,
-      status: "RECEIVED",
-      baselineScore: 27,
+      order: 3,
       requiredForFinal: false,
     },
     {
-      id: "activity",
+      code: "activity",
       name: "Посещаемость и активность",
       weight: 10,
       maxPoints: 10,
-      status: "RECEIVED",
-      baselineScore: 9,
+      order: 4,
       requiredForFinal: false,
     },
     {
-      id: "exam",
+      code: "exam",
       name: "Экзамен",
       weight: 20,
       maxPoints: 20,
-      status: "NOT_RECEIVED",
+      order: 5,
       requiredForFinal: true,
     },
   ],
-  scale: [
-    { minimumPoints: 0, maximumPoints: 54, grade: 2, passed: false },
-    { minimumPoints: 55, maximumPoints: 74, grade: 3, passed: true },
-    { minimumPoints: 75, maximumPoints: 89, grade: 4, passed: true },
-    { minimumPoints: 90, maximumPoints: 100, grade: 5, passed: true },
-  ],
+  scale: standardGradeScale,
   sourceNote:
-    "Баллы компонентов приведены только для демонстрации формулы; фикстура хранит итоговые оценки, но не баллы контрольных и лабораторных.",
+    "Демонстрационная формула. Она нужна для показа расчёта и не является опубликованной методикой университета.",
 } as const satisfies GradeFormula;
+
+export const algorithmsFormula = {
+  subjectId: "pi31-s5-algorithms",
+  semesterCode: "2026-2027-1",
+  subjectName: "Алгоритмы анализа данных",
+  source: "DEMONSTRATION",
+  roundingMode: "HALF_UP_TO_INTEGER",
+  components: [
+    {
+      code: "midterm-1",
+      name: "Контрольная работа",
+      weight: 20,
+      maxPoints: 20,
+      order: 1,
+      requiredForFinal: false,
+    },
+    {
+      code: "labs",
+      name: "Лабораторные работы",
+      weight: 30,
+      maxPoints: 30,
+      order: 2,
+      requiredForFinal: false,
+    },
+    {
+      code: "project",
+      name: "Проект",
+      weight: 30,
+      maxPoints: 30,
+      order: 3,
+      requiredForFinal: false,
+    },
+    {
+      code: "exam",
+      name: "Экзамен",
+      weight: 20,
+      maxPoints: 20,
+      order: 4,
+      requiredForFinal: true,
+    },
+  ],
+  scale: standardGradeScale,
+  sourceNote:
+    "Демонстрационная формула. Она нужна для показа расчёта и не является опубликованной методикой университета.",
+} as const satisfies GradeFormula;
+
+export const databasesFormula = {
+  subjectId: "pi31-s5-databases",
+  semesterCode: "2026-2027-1",
+  subjectName: "Проектирование баз данных",
+  source: "DEMONSTRATION",
+  roundingMode: "HALF_UP_TO_INTEGER",
+  components: [
+    {
+      code: "midterm-1",
+      name: "Контрольная работа",
+      weight: 20,
+      maxPoints: 20,
+      order: 1,
+      requiredForFinal: false,
+    },
+    {
+      code: "labs",
+      name: "Лабораторные работы",
+      weight: 35,
+      maxPoints: 35,
+      order: 2,
+      requiredForFinal: false,
+    },
+    {
+      code: "project",
+      name: "Проект базы данных",
+      weight: 25,
+      maxPoints: 25,
+      order: 3,
+      requiredForFinal: false,
+    },
+    {
+      code: "exam",
+      name: "Защита проекта",
+      weight: 20,
+      maxPoints: 20,
+      order: 4,
+      requiredForFinal: true,
+    },
+  ],
+  scale: standardGradeScale,
+  sourceNote:
+    "Демонстрационная формула. Она нужна для показа расчёта и не является опубликованной методикой университета.",
+} as const satisfies GradeFormula;
+
+export const distributedApplicationsFormula = {
+  subjectId: "pi31-s5-distributed",
+  semesterCode: "2026-2027-1",
+  subjectName: "Распределённые приложения",
+  source: "DEMONSTRATION",
+  roundingMode: "HALF_UP_TO_INTEGER",
+  components: [
+    {
+      code: "midterm-1",
+      name: "Контрольная работа 1",
+      weight: 20,
+      maxPoints: 20,
+      order: 1,
+      requiredForFinal: false,
+    },
+    {
+      code: "midterm-2",
+      name: "Контрольная работа 2",
+      weight: 20,
+      maxPoints: 20,
+      order: 2,
+      requiredForFinal: false,
+    },
+    {
+      code: "labs",
+      name: "Лабораторные работы",
+      weight: 30,
+      maxPoints: 30,
+      order: 3,
+      requiredForFinal: false,
+    },
+    {
+      code: "activity",
+      name: "Посещаемость и активность",
+      weight: 10,
+      maxPoints: 10,
+      order: 4,
+      requiredForFinal: false,
+    },
+    {
+      code: "exam",
+      name: "Экзамен",
+      weight: 20,
+      maxPoints: 20,
+      order: 5,
+      requiredForFinal: true,
+    },
+  ],
+  scale: standardGradeScale,
+  sourceNote:
+    "Демонстрационная формула. Она нужна для показа расчёта и не является опубликованной методикой университета.",
+} as const satisfies GradeFormula;
+
+export const gradeFormulas = [
+  computerNetworksFormula,
+  algorithmsFormula,
+  databasesFormula,
+  distributedApplicationsFormula,
+] as const satisfies readonly GradeFormula[];
 
 export function calculateGrade(
   formula: GradeFormula,
   scores: Readonly<Record<string, number | undefined>> = {},
 ): GradeCalculation {
-  validateFormula(formula);
+  validateGradeFormula(formula);
   validateScores(formula, scores);
 
   const missingComponents: string[] = [];
@@ -107,24 +258,27 @@ export function calculateGrade(
   for (const component of formula.components) {
     const hasOverride = Object.prototype.hasOwnProperty.call(
       scores,
-      component.id,
+      component.code,
     );
-    const score = hasOverride ? scores[component.id] : component.baselineScore;
+    const score = hasOverride ? scores[component.code] : undefined;
 
     if (score === undefined) {
-      missingComponents.push(component.id);
+      missingComponents.push(component.code);
       continue;
     }
 
     weightedTotal += (score / component.maxPoints) * component.weight;
   }
 
-  const totalPoints = Math.floor(weightedTotal + 0.5);
+  // Compensate only for one-ULP drift at a half-up boundary.
+  const roundingTolerance =
+    Number.EPSILON * Math.max(1, Math.abs(weightedTotal));
+  const totalPoints = Math.floor(weightedTotal + 0.5 + roundingTolerance);
   const notes: string[] = [];
   const missingRequired = formula.components.filter(
     (component) =>
       component.requiredForFinal &&
-      missingComponents.includes(component.id),
+      missingComponents.includes(component.code),
   );
 
   if (missingComponents.length > 0) {
@@ -170,47 +324,50 @@ export function calculateGrade(
   };
 }
 
-function validateFormula(formula: GradeFormula): void {
-  if (!formula || !Array.isArray(formula.components) || !formula.components.length) {
+export function validateGradeFormula(formula: GradeFormula): void {
+  if (
+    !formula ||
+    !formula.subjectId ||
+    !formula.semesterCode ||
+    !formula.subjectName ||
+    !formula.sourceNote ||
+    !["PUBLISHED", "DEMONSTRATION"].includes(formula.source) ||
+    formula.roundingMode !== "HALF_UP_TO_INTEGER" ||
+    !Array.isArray(formula.components) ||
+    !formula.components.length
+  ) {
     throw new TypeError("Формула должна содержать хотя бы один компонент.");
   }
 
-  const componentIds = new Set<string>();
+  const componentCodes = new Set<string>();
+  const componentOrders = new Set<number>();
   let weightTotal = 0;
 
   for (const component of formula.components) {
-    if (!component.id || componentIds.has(component.id)) {
-      throw new TypeError(`Пустой или повторяющийся id компонента: "${component.id}".`);
+    if (!component.code || componentCodes.has(component.code)) {
+      throw new TypeError(
+        `Пустой или повторяющийся код компонента: "${component.code}".`,
+      );
     }
-    componentIds.add(component.id);
+    componentCodes.add(component.code);
 
     if (
+      !component.name ||
       !Number.isFinite(component.weight) ||
       component.weight < 0 ||
       !Number.isFinite(component.maxPoints) ||
-      component.maxPoints <= 0
+      component.maxPoints <= 0 ||
+      !Number.isInteger(component.order) ||
+      component.order < 1 ||
+      componentOrders.has(component.order) ||
+      typeof component.requiredForFinal !== "boolean"
     ) {
       throw new RangeError(
-        `Некорректный вес или максимум баллов компонента "${component.id}".`,
+        `Некорректный вес, максимум или порядок компонента "${component.code}".`,
       );
     }
+    componentOrders.add(component.order);
     weightTotal += component.weight;
-
-    if (component.status === "RECEIVED") {
-      if (component.baselineScore === undefined) {
-        throw new TypeError(
-          `Для полученного компонента "${component.id}" не указаны баллы.`,
-        );
-      }
-      validateScore(component, component.baselineScore);
-    } else if (
-      component.status !== "NOT_RECEIVED" ||
-      component.baselineScore !== undefined
-    ) {
-      throw new TypeError(
-        `Статус и исходные баллы компонента "${component.id}" не согласованы.`,
-      );
-    }
   }
 
   if (weightTotal !== 100) {
@@ -246,20 +403,22 @@ function validateScores(
   scores: Readonly<Record<string, number | undefined>>,
 ): void {
   if (!scores || typeof scores !== "object" || Array.isArray(scores)) {
-    throw new TypeError("Оценки должны быть объектом с id компонентов и баллами.");
+    throw new TypeError(
+      "Оценки должны быть объектом с кодами компонентов и баллами.",
+    );
   }
 
-  const componentsById = new Map(
-    formula.components.map((component) => [component.id, component]),
+  const componentsByCode = new Map(
+    formula.components.map((component) => [component.code, component]),
   );
 
-  for (const id of Object.keys(scores)) {
-    const component = componentsById.get(id);
+  for (const code of Object.keys(scores)) {
+    const component = componentsByCode.get(code);
     if (!component) {
-      throw new RangeError(`Неизвестный компонент оценки: "${id}".`);
+      throw new RangeError(`Неизвестный компонент оценки: "${code}".`);
     }
 
-    const score = scores[id];
+    const score = scores[code];
     if (score !== undefined) {
       validateScore(component, score);
     }
@@ -277,7 +436,7 @@ function validateScore(
     score > component.maxPoints
   ) {
     throw new RangeError(
-      `Баллы компонента "${component.id}" должны быть числом от 0 до ${component.maxPoints}.`,
+      `Баллы компонента "${component.code}" должны быть числом от 0 до ${component.maxPoints}.`,
     );
   }
 }

@@ -2,7 +2,7 @@
   min-width: 0;
   display: grid;
   gap: var(--space-6);
-  padding: var(--space-6) 0 var(--space-12);
+  padding: var(--space-6) 0 var(--space-8);
 }
 
 .subjectHero {
@@ -61,6 +61,302 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: stretch;
   gap: var(--space-4);
+}
+
+.formulaCard,
+.formulaUnavailable,
+.eventsCard {
+  min-width: 0;
+  padding: var(--space-6);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.formulaStatus,
+.formulaUnavailable h2,
+.eventsCard .cardHeading > span {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+}
+
+.formulaStatus[data-source="DEMONSTRATION"] {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.formulaSource {
+  margin: calc(var(--space-4) * -0.25) 0 var(--space-4);
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+  line-height: 1.5;
+}
+
+.formulaExplanation {
+  margin: 0 0 var(--space-4);
+  color: var(--color-ink);
+  font-size: var(--font-size-caption);
+  line-height: 1.55;
+}
+
+.formulaGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(240px, 0.6fr);
+  align-items: start;
+  gap: var(--space-4);
+}
+
+.componentTableWrap {
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.componentTable {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.componentTable th,
+.componentTable td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--font-size-label);
+  line-height: 1.4;
+  vertical-align: middle;
+}
+
+.componentTable thead th {
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+  font-weight: 500;
+}
+
+.componentTable tbody th {
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+.componentTable td {
+  color: var(--color-muted);
+}
+
+.componentTableTotal {
+  background: var(--color-wine-100);
+}
+
+.componentTableTotal th,
+.componentTableTotal td {
+  color: var(--color-wine-900);
+  font-weight: 700;
+}
+
+.forecastCard {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-blue-300);
+  border-radius: var(--radius-card);
+  background: var(--color-blue-100);
+}
+
+.forecastCard > p {
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+}
+
+.ungradedBlock,
+.minimumScores,
+.forecastSummary,
+.officialSummary {
+  display: grid;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px solid rgb(23 39 61 / 12%);
+}
+
+.ungradedBlock h3,
+.minimumScores h3,
+.forecastSummary h3,
+.officialSummary h3 {
+  color: var(--color-ink);
+  font-size: var(--font-size-label);
+  font-weight: 700;
+}
+
+.ungradedBlock p,
+.minimumScores p,
+.forecastSummary p,
+.officialSummary p,
+.ungradedBlock li,
+.minimumScores li {
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.ungradedBlock ul,
+.minimumScores ul {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ungradedBlock li,
+.minimumScores li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.ungradedBlock li strong,
+.minimumScores li strong {
+  flex: 0 0 auto;
+  color: var(--color-ink);
+  font-weight: 600;
+  text-align: right;
+}
+
+.officialSummary,
+.forecastSummary {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: rgb(255 255 255 / 62%);
+}
+
+.officialSummary {
+  border: 1px solid var(--color-success-bg);
+}
+
+.minimumScores > p {
+  font-size: 11px !important;
+}
+
+.forecastCard > strong {
+  color: var(--color-ink);
+  font-size: clamp(32px, 4vw, 44px);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.forecastTrack {
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 72%);
+}
+
+.forecastTrack span {
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  background: var(--color-wine-900);
+  transition: width var(--motion-page) var(--motion-ease);
+}
+
+.remainingWeight {
+  color: var(--color-ink) !important;
+  font-weight: 600;
+}
+
+.formulaUnavailable {
+  display: grid;
+  gap: var(--space-2);
+  border-style: dashed;
+  background: var(--color-surface);
+}
+
+.formulaUnavailable h2 {
+  width: fit-content;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.formulaUnavailable p,
+.eventsCard .noResult {
+  color: var(--color-muted);
+  font-size: var(--font-size-body-compact);
+  line-height: 1.55;
+}
+
+.eventsCard {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.eventsCard .cardHeading {
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+
+.eventsCard .cardHeading > span {
+  background: var(--color-subtle);
+  color: var(--color-muted);
+}
+
+.eventList {
+  display: grid;
+  gap: var(--space-2);
+  list-style: none;
+}
+
+.eventList li {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.eventList li > div {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.eventList strong {
+  font-size: var(--font-size-body-compact);
+}
+
+.eventList li span {
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+  overflow-wrap: anywhere;
+}
+
+.completedEvent,
+.plannedEvent {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+
+.completedEvent {
+  background: var(--color-success-bg);
+  color: var(--color-success-text) !important;
+}
+
+.plannedEvent {
+  background: var(--color-blue-100);
+  color: var(--color-blue-700) !important;
 }
 
 .detailCard {
@@ -286,6 +582,10 @@
   .detailGrid {
     grid-template-columns: minmax(0, 1fr);
   }
+
+  .formulaGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 560px) {
@@ -323,5 +623,19 @@
 
   .calculateButton {
     width: 100%;
+  }
+
+  .formulaCard,
+  .formulaUnavailable,
+  .eventsCard {
+    padding: var(--space-4);
+  }
+
+  .componentTable {
+    min-width: 900px;
+  }
+
+  .eventList li {
+    align-items: flex-start;
   }
 }
