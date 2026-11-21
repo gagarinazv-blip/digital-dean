@@ -88,11 +88,23 @@
   font-weight: 600;
 }
 
+.formulaStatus[data-source="DEMONSTRATION"] {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
 .formulaSource {
   margin: calc(var(--space-4) * -0.25) 0 var(--space-4);
   color: var(--color-muted);
   font-size: var(--font-size-caption);
   line-height: 1.5;
+}
+
+.formulaExplanation {
+  margin: 0 0 var(--space-4);
+  color: var(--color-ink);
+  font-size: var(--font-size-caption);
+  line-height: 1.55;
 }
 
 .formulaGrid {
@@ -109,7 +121,7 @@
 
 .componentTable {
   width: 100%;
-  min-width: 620px;
+  min-width: 900px;
   border-collapse: collapse;
   text-align: left;
 }
@@ -138,6 +150,16 @@
   color: var(--color-muted);
 }
 
+.componentTableTotal {
+  background: var(--color-wine-100);
+}
+
+.componentTableTotal th,
+.componentTableTotal td {
+  color: var(--color-wine-900);
+  font-weight: 700;
+}
+
 .forecastCard {
   display: grid;
   gap: var(--space-3);
@@ -150,6 +172,76 @@
 .forecastCard > p {
   color: var(--color-muted);
   font-size: var(--font-size-caption);
+}
+
+.ungradedBlock,
+.minimumScores,
+.forecastSummary,
+.officialSummary {
+  display: grid;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px solid rgb(23 39 61 / 12%);
+}
+
+.ungradedBlock h3,
+.minimumScores h3,
+.forecastSummary h3,
+.officialSummary h3 {
+  color: var(--color-ink);
+  font-size: var(--font-size-label);
+  font-weight: 700;
+}
+
+.ungradedBlock p,
+.minimumScores p,
+.forecastSummary p,
+.officialSummary p,
+.ungradedBlock li,
+.minimumScores li {
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.ungradedBlock ul,
+.minimumScores ul {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ungradedBlock li,
+.minimumScores li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.ungradedBlock li strong,
+.minimumScores li strong {
+  flex: 0 0 auto;
+  color: var(--color-ink);
+  font-weight: 600;
+  text-align: right;
+}
+
+.officialSummary,
+.forecastSummary {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: rgb(255 255 255 / 62%);
+}
+
+.officialSummary {
+  border: 1px solid var(--color-success-bg);
+}
+
+.minimumScores > p {
+  font-size: 11px !important;
 }
 
 .forecastCard > strong {
@@ -540,7 +632,7 @@
   }
 
   .componentTable {
-    min-width: 560px;
+    min-width: 900px;
   }
 
   .eventList li {

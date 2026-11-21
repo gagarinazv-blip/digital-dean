@@ -5,10 +5,8 @@ import type { AcademicResultStatus } from "@/generated/prisma/enums";
 import { controlTypeLabels } from "@/lib/campus-labels";
 import { formatCampusDate, formatCampusTime } from "@/lib/campus-time";
 import { getAcademicRecords } from "@/lib/academic-records";
-import {
-  calculateGrade,
-  computerNetworksFormula,
-} from "@/lib/grade-formula";
+import { analyzeGrade } from "@/lib/grade-analysis";
+import { getGradebookEntry } from "@/lib/gradebook-data";
 import styles from "./subject.module.css";
 
 type SubjectPageProps = {
@@ -20,10 +18,17 @@ const resultStatusLabels: Record<AcademicResultStatus, string> = {
   ACADEMIC_DEBT: "Академическая задолженность",
 };
 
+function formatGradePoints(value: number) {
+  return new Intl.NumberFormat("ru-RU", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
 export default async function SubjectPage({ params }: SubjectPageProps) {
   await connection();
   const { subjectId } = await params;
-  const { dataset } = await getAcademicRecords();
+  const { dataset, login } = await getAcademicRecords();
   const semester = dataset?.semesters.find((item) =>
     item.planItems.some((planItem) => planItem.id === subjectId),
   );
@@ -38,12 +43,15 @@ export default async function SubjectPage({ params }: SubjectPageProps) {
     subject.controlType === "EXAM"
       ? "Экзамен"
       : controlTypeLabels[subject.controlType];
-  const formula =
-    subjectId === computerNetworksFormula.subjectId
-      ? computerNetworksFormula
-      : null;
-  const formulaCalculation = formula
-    ? calculateGrade(formula)
+  const gradebookEntry = getGradebookEntry(login, semester.code, subjectId);
+  const gradeAnalysis = gradebookEntry
+    ? analyzeGrade(
+        gradebookEntry.formula,
+        gradebookEntry.scores,
+        {},
+        subject.result?.value ?? null,
+        gradebookEntry.components,
+      )
     : null;
 
   return (
@@ -162,22 +170,48 @@ export default async function SubjectPage({ params }: SubjectPageProps) {
             <p className={styles.noResult}>Оценка ещё не выставлена.</p>
           )}
 
-          <Link className={styles.calculateButton} href="/grades?tab=calculator">
-            Рассчитать итоговую оценку
-          </Link>
+          {gradebookEntry && (
+            <Link
+              className={styles.calculateButton}
+              href={`/grades?tab=calculator&subject=${encodeURIComponent(subjectId)}`}
+            >
+              Открыть калькулятор прогноза
+            </Link>
+          )}
         </section>
       </div>
 
-      {formula && formulaCalculation ? (
+      {gradebookEntry && gradeAnalysis ? (
         <section
           aria-labelledby="formula-title"
           className={styles.formulaCard}
         >
           <div className={styles.cardHeading}>
             <h2 id="formula-title">Формула итоговой оценки</h2>
-            <span className={styles.formulaStatus}>Формула опубликована</span>
+            <span
+              className={styles.formulaStatus}
+              data-source={gradebookEntry.formula.source}
+            >
+              {gradebookEntry.formula.source === "DEMONSTRATION"
+                ? "Демонстрационная формула"
+                : "Формула опубликована"}
+            </span>
           </div>
-          <p className={styles.formulaSource}>{formula.sourceNote}</p>
+          <p className={styles.formulaSource}>
+            {gradebookEntry.formula.sourceNote}
+          </p>
+          <p className={styles.formulaExplanation}>
+            Итог = сумма (балл за компонент ÷ максимум × вес компонента).
+            Полученные компоненты формируют текущий вклад; неоценённые не
+            считаются нулями. Полный расчёт округляется до целого по правилу
+            half-up. Шкала:{" "}
+            {gradebookEntry.formula.scale
+              .map(
+                (band) =>
+                  `${band.minimumPoints}–${band.maximumPoints}: ${band.grade}`,
+              )
+              .join(" · ")}.
+          </p>
           <div className={styles.formulaGrid}>
             <div className={styles.componentTableWrap}>
               <table className={styles.componentTable}>
@@ -185,70 +219,163 @@ export default async function SubjectPage({ params }: SubjectPageProps) {
                   <tr>
                     <th scope="col">Компонент</th>
                     <th scope="col">Статус</th>
+                    <th scope="col">Дата</th>
                     <th scope="col">Баллы</th>
                     <th scope="col">Вес</th>
                     <th scope="col">Вклад сейчас</th>
+                    <th scope="col">Комментарий</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {formula.components.map((component) => {
-                    const received =
-                      component.status === "RECEIVED" &&
-                      component.baselineScore !== undefined;
-                    const contribution = received
-                      ? (component.baselineScore! / component.maxPoints) *
-                        component.weight
-                      : null;
+                  {gradeAnalysis.components.map((component) => {
                     return (
-                      <tr key={component.id}>
+                      <tr key={component.code}>
                         <th scope="row">{component.name}</th>
                         <td data-label="Статус">
-                          {received ? "Оценено" : "Не оценено"}
+                          {component.status === "RECEIVED"
+                            ? "Оценено"
+                            : "Не получено"}
+                        </td>
+                        <td data-label="Дата">
+                          {component.date
+                            ? formatCampusDate(
+                                new Date(`${component.date}T12:00:00`),
+                              )
+                            : "—"}
                         </td>
                         <td data-label="Баллы">
-                          {received
-                            ? `${component.baselineScore} / ${component.maxPoints}`
+                          {component.status === "RECEIVED"
+                            ? `${formatGradePoints(component.score ?? 0)} / ${component.maxPoints}`
                             : `— / ${component.maxPoints}`}
                         </td>
                         <td data-label="Вес">{component.weight}%</td>
                         <td data-label="Вклад сейчас">
-                          {contribution === null
-                            ? "0 баллов до оценки"
-                            : `${contribution.toFixed(1)} / ${component.weight}`}
+                          {component.currentContribution === null
+                            ? "Не включён"
+                            : `${formatGradePoints(component.currentContribution)} / ${component.weight}`}
+                        </td>
+                        <td data-label="Комментарий">
+                          {component.comment ?? "—"}
                         </td>
                       </tr>
                     );
                   })}
+                  <tr className={styles.componentTableTotal}>
+                    <th scope="row" colSpan={4}>
+                      Накоплено
+                    </th>
+                    <td>{gradeAnalysis.remainingWeight}% ещё не оценено</td>
+                    <td>
+                      {formatGradePoints(gradeAnalysis.accumulatedContribution)} / 100
+                    </td>
+                    <td>Без гипотез</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
             <aside className={styles.forecastCard}>
-              <p>Накопленный вклад</p>
-              <strong>{formulaCalculation.totalPoints} / 100</strong>
+              <p>Текущий накопленный вклад</p>
+              <strong>
+                {formatGradePoints(gradeAnalysis.accumulatedContribution)} / 100
+              </strong>
               <div
-                aria-label={`Накопленный вклад ${formulaCalculation.totalPoints} из 100`}
+                aria-label={`Накопленный вклад ${gradeAnalysis.accumulatedContribution} из 100`}
                 aria-valuemax={100}
                 aria-valuemin={0}
-                aria-valuenow={formulaCalculation.totalPoints}
+                aria-valuenow={gradeAnalysis.accumulatedContribution}
                 className={styles.forecastTrack}
                 role="progressbar"
               >
                 <span
-                  style={{ width: `${formulaCalculation.totalPoints}%` }}
+                  style={{
+                    width: `${gradeAnalysis.accumulatedContribution}%`,
+                  }}
                 />
               </div>
               <p className={styles.remainingWeight}>
-                Ещё не оценено:{" "}
-                {formula.components
-                  .filter((component) => component.status === "NOT_RECEIVED")
-                  .reduce((total, component) => total + component.weight, 0)}
-                % веса
+                Остаётся набрать до {gradeAnalysis.remainingMaximumPoints} баллов
+                по {gradeAnalysis.remainingWeight}% веса.
               </p>
+              <div className={styles.ungradedBlock}>
+                <h3>Не получено</h3>
+                {gradeAnalysis.remainingComponents.length ? (
+                  <ul>
+                    {gradeAnalysis.remainingComponents.map((component) => (
+                      <li key={component.code}>
+                        <span>{component.name}</span>
+                        <strong>
+                          До {component.maxPoints} баллов · вес{" "}
+                          {component.weight}%
+                        </strong>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p>
+                    Все компоненты оценены; расчёт не заменяет официальный итог.
+                  </p>
+                )}
+              </div>
+              <div className={styles.minimumScores}>
+                <h3>Минимальный балл по каждому оставшемуся компоненту</h3>
+                <p>
+                  Для расчёта предполагается, что другие неоценённые компоненты
+                  дадут 0 баллов.
+                </p>
+                {gradeAnalysis.minimumScores.length > 0 && (
+                  <ul>
+                    {gradeAnalysis.minimumScores.map((item) => {
+                      const component = gradeAnalysis.remainingComponents.find(
+                        (candidate) =>
+                          candidate.code === item.componentCode,
+                      );
+                      return (
+                        <li key={`${item.componentCode}-${item.grade}`}>
+                          <span>
+                            {component?.name ?? item.componentCode} · оценка{" "}
+                            {item.grade}
+                          </span>
+                          <strong>
+                            {item.score === null
+                              ? "Недостижимо"
+                              : `${formatGradePoints(item.score)} баллов`}
+                          </strong>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+              <div className={styles.forecastSummary}>
+                <h3>Прогноз</h3>
+                <p>Это прогноз, а не официальная оценка.</p>
+                {gradeAnalysis.forecastComplete ? (
+                  <p>
+                    По оценённым компонентам:{" "}
+                    {gradeAnalysis.forecastCalculation.totalPoints} / 100
+                    {gradeAnalysis.forecastCalculation.grade !== null
+                      ? ` · оценка ${gradeAnalysis.forecastCalculation.grade}`
+                      : ""}
+                  </p>
+                ) : (
+                  <p>
+                    Добавьте гипотезы в калькулятор, чтобы оценить будущий
+                    результат.
+                  </p>
+                )}
+              </div>
+              <div className={styles.officialSummary}>
+                <h3>Официальный итог</h3>
+                <p>
+                  {gradeAnalysis.officialResult ??
+                    "Не выставлен; расчёт по формуле его не заменяет."}
+                </p>
+              </div>
               <Link
                 className={styles.calculateButton}
-                href="/grades?tab=calculator"
+                href={`/grades?tab=calculator&subject=${encodeURIComponent(subjectId)}`}
               >
-                Открыть прогноз
+                Рассчитать прогноз
               </Link>
             </aside>
           </div>
@@ -259,12 +386,11 @@ export default async function SubjectPage({ params }: SubjectPageProps) {
           className={styles.formulaUnavailable}
         >
           <h2 id="formula-unavailable-title">
-            Весовая формула не опубликована
+            Формула оценивания не опубликована
           </h2>
           <p>
-            Для этой дисциплины проект хранит итог и попытки, но не содержит
-            баллы работ или правила агрегации категорий. Точный прогноз или
-            вычисление работ по весу не применяются.
+            Показываем только официальные результаты и попытки из зачётной
+            книжки. Веса и прогноз не рассчитываются без опубликованной формулы.
           </p>
         </section>
       )}

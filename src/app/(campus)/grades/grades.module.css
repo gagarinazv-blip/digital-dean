@@ -494,6 +494,19 @@
   font-weight: 600;
 }
 
+.gradeCell {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  white-space: normal;
+}
+
+.currentContribution {
+  color: var(--color-muted);
+  font-size: 10px;
+  line-height: 1.3;
+}
+
 .statusBadge {
   min-height: 28px;
   display: inline-flex;

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, type KeyboardEvent } from "react";
+import type { GradeFormulaSource } from "@/lib/grade-formula";
 import styles from "./grades.module.css";
 
 export type GradeSubjectSummary = {
@@ -11,6 +12,8 @@ export type GradeSubjectSummary = {
   credits: number;
   resultValue: string | null;
   resultStatus: "PASSED" | "ACADEMIC_DEBT" | null;
+  formulaSource: GradeFormulaSource | null;
+  currentContribution: number | null;
 };
 
 export type GradeSemesterSummary = {
@@ -41,6 +44,13 @@ function formatAverage(value: number | null) {
       }).format(value);
 }
 
+function formatContribution(value: number) {
+  return new Intl.NumberFormat("ru-RU", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
 function getStatus(subject: GradeSubjectSummary) {
   if (subject.resultStatus === "PASSED") {
     return { label: "Зачтено", className: styles.passed };
@@ -48,7 +58,7 @@ function getStatus(subject: GradeSubjectSummary) {
   if (subject.resultStatus === "ACADEMIC_DEBT") {
     return { label: "Долг", className: styles.debtStatus };
   }
-  return { label: "Запланировано", className: styles.pending };
+  return { label: "В процессе", className: styles.pending };
 }
 
 function SubjectTable({
@@ -64,7 +74,7 @@ function SubjectTable({
         <thead>
           <tr>
             <th scope="col">Дисциплина</th>
-            <th scope="col">Оценка</th>
+            <th scope="col">Официальный итог / накоплено</th>
             <th scope="col">Кредиты</th>
             <th scope="col">Статус</th>
             <th scope="col">
@@ -104,17 +114,26 @@ function SubjectTable({
                       <strong>{subject.name}</strong>
                       <small>{subject.controlLabel}</small>
                       <small>
-                        {subject.id === "pi31-s5-networks"
-                          ? "Прогноз по формуле доступен"
-                          : "Весовой прогноз не опубликован"}
+                        {subject.formulaSource === "DEMONSTRATION"
+                          ? "Демонстрационная формула"
+                          : subject.formulaSource === "PUBLISHED"
+                            ? "Формула опубликована"
+                            : "Формула оценивания не опубликована"}
                       </small>
                     </span>
                   </Link>
                 </td>
-                <td data-label="Оценка">
-                  <strong className={styles.gradeValue}>
-                    {subject.resultValue ?? "—"}
-                  </strong>
+                <td data-label="Официальный итог / накоплено">
+                  <span className={styles.gradeCell}>
+                    <strong className={styles.gradeValue}>
+                      {subject.resultValue ?? "—"}
+                    </strong>
+                    {subject.currentContribution !== null && (
+                      <small className={styles.currentContribution}>
+                        Накоплено {formatContribution(subject.currentContribution)} / 100
+                      </small>
+                    )}
+                  </span>
                 </td>
                 <td data-label="Кредиты">{subject.credits}</td>
                 <td data-label="Статус">

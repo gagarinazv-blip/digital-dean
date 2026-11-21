@@ -42,52 +42,77 @@ describe("grade calculator input", () => {
     });
   });
 
-  it("rounds a 74.5 hypothesis to 75 and moves it to grade 4", () => {
-    const { scores, errors } = prepareGradeInputs(computerNetworksFormula, {
+  it("keeps received scores fixed and uses only missing-component inputs as hypotheses", () => {
+    const actualScores = Object.freeze({
+      "midterm-1": 19,
+      "midterm-2": 18,
+      labs: 28,
+      activity: 9,
+    });
+    const prepared = prepareGradeInputs(computerNetworksFormula, actualScores, {
+      "midterm-1": "0",
       exam: "2,5",
     });
-    const result = calculateGrade(computerNetworksFormula, scores);
 
-    expect(errors).toEqual({});
-    expect(result).toMatchObject({
-      totalPoints: 75,
+    expect(prepared.errors).toEqual({});
+    expect(prepared.hypotheses).toEqual({ exam: 2.5 });
+    expect(prepared.scores).toMatchObject({
+      "midterm-1": 19,
+      "midterm-2": 18,
+      labs: 28,
+      activity: 9,
+      exam: 2.5,
+    });
+    expect(calculateGrade(computerNetworksFormula, prepared.scores)).toMatchObject({
+      totalPoints: 77,
       grade: 4,
       passed: true,
     });
+    expect(actualScores["midterm-1"]).toBe(19);
   });
 
-  it("allows changing received component scores while defaulting to their baseline", () => {
-    const { scores, errors } = prepareGradeInputs(computerNetworksFormula, {
-      "midterm-1": "12",
-    });
+  it("leaves blank hypotheses empty instead of filling baseline scores", () => {
+    const prepared = prepareGradeInputs(computerNetworksFormula, {}, {});
 
-    expect(errors).toEqual({});
-    expect(scores).toMatchObject({
-      "midterm-1": 12,
-      "midterm-2": 18,
-      labs: 27,
-      activity: 9,
-      exam: undefined,
-    });
-
-    expect(calculateGrade(computerNetworksFormula, scores)).toMatchObject({
-      totalPoints: 66,
-      grade: null,
+    expect(prepared).toEqual({
+      scores: {
+        "midterm-1": undefined,
+        "midterm-2": undefined,
+        labs: undefined,
+        activity: undefined,
+        exam: undefined,
+      },
+      hypotheses: {},
+      errors: {},
     });
   });
 
-  it("keeps a field error out of calculation while passing other hypothetical values", () => {
+  it("excludes invalid hypotheses but keeps other valid hypotheses", () => {
     const formula = formulaWithTwoPendingComponents();
-    const { scores, errors } = prepareGradeInputs(formula, {
+    const actualScores = {
+      "midterm-1": 19,
+      "midterm-2": 18,
+      labs: 28,
+      activity: 9,
+    };
+    const prepared = prepareGradeInputs(formula, actualScores, {
       exam: "21",
       project: "5",
     });
-    const result = calculateGrade(formula, scores);
+    const result = calculateGrade(formula, prepared.scores);
 
-    expect(errors).toEqual({
+    expect(prepared.errors).toEqual({
       exam: "Максимум за компонент — 20 баллов.",
     });
-    expect(scores).toMatchObject({ exam: undefined, project: 5 });
+    expect(prepared.hypotheses).toEqual({ project: 5 });
+    expect(prepared.scores).toMatchObject({
+      "midterm-1": 19,
+      "midterm-2": 18,
+      labs: 28,
+      activity: 9,
+      exam: undefined,
+      project: 5,
+    });
     expect(result).toMatchObject({
       grade: null,
       passed: null,
@@ -97,23 +122,20 @@ describe("grade calculator input", () => {
 });
 
 function formulaWithTwoPendingComponents(): GradeFormula {
-  const components = computerNetworksFormula.components.map((component) => {
-    if (component.id === "exam") {
-      return { ...component, weight: 10 };
-    }
-    return component;
-  });
+  const components = computerNetworksFormula.components.map((component) =>
+    component.code === "exam" ? { ...component, weight: 10 } : component,
+  );
 
   return {
     ...computerNetworksFormula,
     components: [
       ...components,
       {
-        id: "project",
+        code: "project",
         name: "Мини-проект",
         weight: 10,
         maxPoints: 10,
-        status: "NOT_RECEIVED",
+        order: 6,
         requiredForFinal: false,
       },
     ],

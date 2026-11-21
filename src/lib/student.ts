@@ -36,7 +36,7 @@ export async function requireStudentContext() {
     notFound();
   }
 
-  return { userId: user.id, student };
+  return { userId: user.id, login: user.login, student };
 }
 
 export async function requireStudent() {

@@ -9,6 +9,7 @@ import { academicRecordsSeedData } from "./academic-records-seed-data";
 import { buildTargetScheduleSeed } from "./schedule-seed-data";
 import { buildDeadlineSeedData } from "./deadline-seed-data";
 import { getDemoNow } from "../src/lib/demo-date";
+import { validateGradebookSeedData } from "../src/lib/gradebook-data";
 
 type SeedAccount = {
   login: string;
@@ -281,6 +282,8 @@ async function main() {
   if (process.env.NODE_ENV === "production") {
     throw new Error("The test seed cannot be run in production.");
   }
+
+  validateGradebookSeedData(academicRecordsSeedData);
 
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
