@@ -1,10 +1,10 @@
 .page {
   display: grid;
-  gap: var(--space-6);
+  gap: var(--space-4);
   min-width: 0;
   width: min(100%, 1280px);
   margin-inline: auto;
-  padding: var(--space-6) 0 var(--space-8);
+  padding: var(--space-4) 0 var(--space-8);
 }
 
 .welcome {
@@ -82,7 +82,7 @@
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   align-items: start;
-  gap: var(--space-6);
+  gap: var(--space-4);
   min-width: 0;
 }
 
@@ -91,7 +91,7 @@
   min-width: 0;
   display: grid;
   align-content: start;
-  gap: var(--space-6);
+  gap: var(--space-4);
 }
 
 .secondaryStack {
@@ -99,17 +99,17 @@
   min-width: 0;
   display: grid;
   align-content: start;
-  gap: var(--space-6);
+  gap: var(--space-4);
 }
 
 .nextLesson {
   position: relative;
   min-width: 0;
-  min-height: 220px;
+  min-height: 190px;
   display: grid;
   align-items: start;
   overflow: hidden;
-  padding: var(--space-6);
+  padding: var(--space-5);
   border: 1px solid var(--color-blue-300);
   border-radius: var(--radius-card);
   background: linear-gradient(110deg, #dce5f0 0%, #dce5f0 52%, #e8edf4 100%);
@@ -367,7 +367,7 @@
 .card,
 .quickActionsSection {
   min-width: 0;
-  padding: var(--space-5);
+  padding: var(--space-4);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   background: var(--color-surface);
@@ -378,7 +378,7 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: var(--space-4);
+  gap: var(--space-3);
 }
 
 .cardHeading {
@@ -483,7 +483,7 @@
 
 .cardEmptyState {
   flex: 1 1 auto;
-  min-height: 150px;
+  min-height: 120px;
   padding: var(--space-3);
 }
 
@@ -634,7 +634,7 @@
 
 .timeline {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-2);
   margin-top: 0;
   padding: 0;
   list-style: none;
@@ -964,7 +964,7 @@
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   align-items: start;
-  gap: var(--space-6);
+  gap: var(--space-4);
 }
 
 .skeletonPrimaryStack,

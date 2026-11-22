@@ -2,6 +2,7 @@
 
 import { useActionState, useRef, useState } from "react";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
+import { PhoneInput } from "@/components/phone-input";
 import {
   createStaffStudentAction,
   resetStudentAccessAction,
@@ -121,18 +122,16 @@ export function CreateStudentForm({ groups }: { groups: GroupOption[] }) {
 
         <label className={styles.field} htmlFor="create-student-phone">
           Номер телефона
-          <input
+          <PhoneInput
             aria-describedby={
               state.fieldErrors?.phone ? "create-phone-error" : undefined
             }
             aria-invalid={Boolean(state.fieldErrors?.phone)}
             autoComplete="tel"
             id="create-student-phone"
-            inputMode="tel"
             name="phone"
             placeholder="+7 900 000-00-01"
             required
-            type="tel"
           />
           {state.fieldErrors?.phone ? (
             <span className={styles.fieldError} id="create-phone-error">
@@ -391,7 +390,7 @@ export function UpdateStudentForm({
 
           <label className={styles.field} htmlFor={`student-phone-${student.id}`}>
             Номер телефона
-            <input
+            <PhoneInput
               aria-describedby={
                 state.fieldErrors?.phone
                   ? `phone-error-${student.id}`
@@ -401,12 +400,10 @@ export function UpdateStudentForm({
               autoComplete="tel"
               defaultValue={student.phone ?? ""}
               id={`student-phone-${student.id}`}
-              inputMode="tel"
               name="phone"
-              onChange={(event) => handlePhoneChange(event.target.value)}
+              onValueChange={handlePhoneChange}
               placeholder="+7 900 000-00-01"
               required
-              type="tel"
             />
             {state.fieldErrors?.phone ? (
               <span

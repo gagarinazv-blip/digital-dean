@@ -38,15 +38,18 @@ export function StaffNavigation({
             pathname.startsWith("/staff/students/")) ||
           (item.href === "/staff/achievements" &&
             pathname.startsWith("/staff/achievements")) ||
-          (item.href === "/staff/achievements" &&
-            pathname.startsWith("/staff/achievements")) ||
           (item.href === "/staff/events" &&
             pathname.startsWith("/staff/events/")) ||
+          (item.href === "/staff/opportunities" &&
+            pathname.startsWith("/staff/opportunities/")) ||
+          (item.href === "/staff/certificate-forms" &&
+            pathname.startsWith("/staff/certificate-forms/")) ||
           (item.href === "/staff" &&
             (pathname.startsWith("/staff/requests") ||
               pathname === "/staff"));
         return (
           <Link
+            aria-label={item.label}
             aria-current={isCurrent ? "page" : undefined}
             className={styles.navigationLink}
             href={item.href}
