@@ -235,6 +235,8 @@ enum StudentDocumentType {
   CONTRACT
   REFERENCE
   OTHER
+}
+
 enum DeadlineFormat {
   ONLINE
   OFFLINE
