@@ -1,4 +1,3 @@
-/* Лента лежит на бордовой заливке карточки. */
 .timeline {
   min-width: 0;
   display: grid;
@@ -12,7 +11,7 @@
   justify-content: space-between;
   margin: 0;
   padding: 0;
-  color: var(--color-on-wine-muted);
+  color: var(--color-hero-muted);
   font-size: var(--font-size-body-compact);
   line-height: 20px;
   font-variant-numeric: tabular-nums;
@@ -35,7 +34,7 @@
   );
   background: repeating-linear-gradient(
     to right,
-    var(--color-on-wine-line) 0 1px,
+    var(--color-hero-line) 0 1px,
     transparent 1px calc((100% - 1px) / var(--hours))
   );
 }
@@ -60,8 +59,8 @@
   align-items: center;
   padding-inline: var(--space-3);
   border-radius: var(--radius-sm);
-  background: var(--color-on-wine-block);
-  color: var(--color-surface);
+  background: var(--color-surface);
+  color: var(--color-ink);
   font-size: var(--font-size-body-compact);
   line-height: 20px;
 }
@@ -73,45 +72,53 @@
 }
 
 .event:hover {
-  background: var(--color-on-wine-block-hover);
+  background: var(--color-wine-100);
 }
 
 .event[data-kind="session"] {
   background: var(--color-accent-yellow);
-  color: var(--color-ink);
+  box-shadow: inset 0 0 0 1px var(--color-warning-border);
+}
+
+.event[data-kind="session"]:hover {
+  background: var(--color-warning-border);
 }
 
 .event[data-main] {
-  background: var(--color-surface);
-  color: var(--color-wine-900);
+  background: var(--color-wine-900);
+  box-shadow: none;
+  color: var(--color-surface);
   font-weight: 600;
 }
 
-.event[data-past] {
-  background: var(--color-wine-900);
-  box-shadow: inset 0 0 0 1px var(--color-on-wine-line);
-  color: var(--color-on-wine-muted);
+.event[data-main]:hover {
+  background: var(--color-wine-700);
+}
+
+.event[data-past],
+.event[data-cancelled] {
+  background: var(--color-hero-sand);
+  box-shadow: inset 0 0 0 1px var(--color-hero-line);
+  color: var(--color-hero-muted);
+  font-weight: 400;
 }
 
 .event[data-cancelled] {
-  background: var(--color-ink);
-  box-shadow: inset 0 0 0 1px var(--color-on-wine-muted);
-  color: var(--color-on-wine-muted);
   text-decoration: line-through;
 }
 
 .event:focus-visible {
-  outline: 3px solid var(--color-focus-on-dark);
+  outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }
 
 /* «Сейчас» идёт позади блоков, чтобы не резать названия; в самом блоке
-   прошедшая часть чуть темнее. */
+   прошедшая часть чуть светлее. */
 .event[data-running][data-main] {
   background: linear-gradient(
     to right,
-    var(--color-on-wine-done) var(--done),
-    var(--color-surface) var(--done)
+    var(--color-wine-700) var(--done),
+    var(--color-wine-900) var(--done)
   );
 }
 
@@ -122,7 +129,7 @@
   width: 2px;
   margin-left: -1px;
   border-radius: var(--radius-pill);
-  background: var(--color-accent-yellow);
+  background: var(--color-wine-900);
   pointer-events: none;
 }
 

@@ -1,26 +1,27 @@
-/* Заливка показывает состояние: бордовая — занятие будет, тёмная — отменено,
-   светлая — занятий нет. Размеры текста: 32 (28, 24), 18 и 14. */
+/* Заливка показывает состояние: песочная с цветным отсветом — занятие будет,
+   ровная серая — отменено, белая — занятий нет. Текст всегда тёмный.
+   Размеры текста: 32 (28, 24), 18 и 14. */
 .card {
   min-width: 0;
   display: grid;
   gap: var(--space-3);
   padding: var(--space-4) var(--space-6) var(--space-5);
   border-radius: var(--radius-surface);
-  background: var(--fill-hero);
+  background-color: var(--color-hero-sand);
+  background-image: var(--fill-hero);
   box-shadow: var(--shadow-card);
-  color: var(--color-surface);
+  color: var(--color-ink);
   font-size: var(--font-size-body-compact);
   line-height: 20px;
   container: next-lesson / inline-size;
 }
 
 .card[data-state="cancelled"] {
-  background: var(--color-ink);
+  background: var(--color-border);
 }
 
 .card[data-state="none"] {
   background: var(--color-surface);
-  color: var(--color-ink);
 }
 
 .card p {
@@ -39,20 +40,20 @@
 .label,
 .previous,
 .details {
-  color: var(--color-on-wine-muted);
+  color: var(--color-hero-muted);
 }
 
 .chip {
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-pill);
-  background: var(--color-on-wine-fill);
+  background: var(--color-surface);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
 .chip[data-strong] {
-  background: var(--color-surface);
-  color: var(--color-wine-900);
+  background: var(--color-wine-900);
+  color: var(--color-surface);
   font-weight: 600;
 }
 
@@ -60,14 +61,14 @@
   height: 4px;
   overflow: hidden;
   border-radius: var(--radius-pill);
-  background: var(--color-on-wine-fill);
+  background: var(--color-surface);
 }
 
 .progress > span {
   height: 100%;
   display: block;
   border-radius: inherit;
-  background: var(--color-accent-yellow);
+  background: var(--color-wine-900);
   transition: width var(--motion-page) var(--motion-ease);
 }
 
@@ -102,6 +103,7 @@
 }
 
 .time {
+  color: var(--color-wine-900);
   font-size: var(--font-size-title);
   font-weight: 600;
   line-height: 32px;
@@ -147,14 +149,14 @@
   justify-content: center;
   padding: var(--space-2) var(--space-5);
   border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: var(--color-wine-900);
+  background: var(--color-wine-900);
+  color: var(--color-surface);
   font-weight: 600;
   white-space: nowrap;
 }
 
 .button:hover {
-  background: var(--color-wine-100);
+  background: var(--color-wine-700);
 }
 
 .link {
@@ -162,6 +164,7 @@
   display: inline-flex;
   align-items: center;
   border-radius: var(--radius-sm);
+  color: var(--color-wine-900);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -184,7 +187,7 @@
 }
 
 .next[data-overlap] {
-  color: var(--color-accent-yellow);
+  color: var(--color-wine-900);
 }
 
 .next::before {
@@ -193,6 +196,7 @@
   flex: 0 0 auto;
   border-radius: var(--radius-pill);
   background: var(--color-accent-yellow);
+  box-shadow: 0 0 0 2px var(--color-warning-text);
   content: "";
 }
 
@@ -214,7 +218,7 @@
 .button:focus-visible,
 .link:focus-visible,
 .next:focus-visible {
-  outline: 3px solid var(--color-focus-on-dark);
+  outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }
 
@@ -301,4 +305,8 @@
   .progress > span {
     transition: none;
   }
+}
+
+.card[data-state="cancelled"] .time {
+  color: var(--color-hero-muted);
 }
