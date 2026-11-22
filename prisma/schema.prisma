@@ -194,6 +194,7 @@ enum StudentDocumentType {
   SNILS
   INSURANCE
   CONTRACT
+  REFERENCE
   OTHER
 }
 

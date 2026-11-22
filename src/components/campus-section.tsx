@@ -5,19 +5,30 @@ export function CampusSection({
   eyebrow,
   title,
   description,
+  headerAction,
   children,
 }: {
   eyebrow: string;
   title: string;
   description: string;
+  headerAction?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <main className={styles.page}>
-      <div className={styles.heading}>
-        <p className={styles.eyebrow}>{eyebrow}</p>
-        <h1>{title}</h1>
-        <p className={styles.description}>{description}</p>
+      <div
+        className={`${styles.heading} ${
+          headerAction ? styles.headingWithAction : ""
+        }`}
+      >
+        <div className={styles.headingCopy}>
+          <p className={styles.eyebrow}>{eyebrow}</p>
+          <h1>{title}</h1>
+          <p className={styles.description}>{description}</p>
+        </div>
+        {headerAction ? (
+          <div className={styles.headingAction}>{headerAction}</div>
+        ) : null}
       </div>
       {children}
     </main>

@@ -8,7 +8,7 @@ import { requireStudentContext } from "@/lib/student";
 import { requireStaffContext } from "@/lib/staff";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
@@ -33,10 +33,14 @@ export async function GET(
   if (!document) notFound();
   if (studentId !== null && document.studentId !== studentId) notFound();
   const data = await fileStorage.read(document.storedName);
+  const disposition =
+    request.nextUrl.searchParams.get("download") === "1"
+      ? "attachment"
+      : "inline";
   return new NextResponse(new Uint8Array(data), {
     headers: {
       "Content-Type": document.mimeType,
-      "Content-Disposition": `inline; filename*=UTF-8''${encodeURIComponent(document.originalName)}`,
+      "Content-Disposition": `${disposition}; filename*=UTF-8''${encodeURIComponent(document.originalName)}`,
       "Cache-Control": "private, no-store",
       "X-Content-Type-Options": "nosniff",
     },
