@@ -5,6 +5,7 @@ import { NavArrowRight } from "iconoir-react";
 import { DateTimeStack } from "@/components/date-time-stack";
 import { useDemoNow } from "@/components/demo-now";
 import { EmptyState } from "@/components/empty-state";
+import { getDayTimeline } from "@/lib/day-timeline";
 import { formatRoom, joinDetails } from "@/lib/room-format";
 import {
   getLessonsAfterFocus,
@@ -14,7 +15,22 @@ import {
 import { FitList } from "./fit-list";
 import styles from "./today-lists.module.css";
 
-const MAX_ROWS = 8;
+const MAX_ROWS = 10;
+
+/**
+ * Занятия, которые уже стоят на ленте дня: там, где лента видна, список их не
+ * повторяет. Если кроме них показать нечего, список остаётся полным.
+ */
+function getTimelineIds(
+  events: readonly TodayEvent[],
+  main: TodayEvent | null,
+  lessons: readonly TodayEvent[],
+  now: Date,
+): Set<string> {
+  const timeline = main ? getDayTimeline(events, main, now) : null;
+  const ids = new Set(timeline?.items.map((item) => item.event.id));
+  return lessons.every((lesson) => ids.has(lesson.id)) ? new Set() : ids;
+}
 
 /** «Ближайшие занятия»: всё, что идёт после главной карточки. */
 export function LessonList({
@@ -25,11 +41,9 @@ export function LessonList({
   serverNow: Date;
 }) {
   const now = useDemoNow() ?? serverNow;
-  const lessons = getLessonsAfterFocus(
-    events,
-    getTodayFocus(events, now),
-    now,
-  ).slice(0, MAX_ROWS);
+  const focus = getTodayFocus(events, now);
+  const lessons = getLessonsAfterFocus(events, focus, now).slice(0, MAX_ROWS);
+  const timelineIds = getTimelineIds(events, focus.main, lessons, now);
 
   if (lessons.length === 0) {
     return (
@@ -52,7 +66,11 @@ export function LessonList({
         const details = joinDetails(lesson.typeLabel, formatRoom(lesson.room));
         const isCancelled = lesson.status === "CANCELLED";
         return (
-          <li className={styles.row} key={lesson.id}>
+          <li
+            className={styles.row}
+            data-on-timeline={timelineIds.has(lesson.id) || undefined}
+            key={lesson.id}
+          >
             <Link className={styles.rowLink} href={lesson.detailsHref}>
               <span className={styles.rowText}>
                 <span
@@ -66,7 +84,7 @@ export function LessonList({
                   <DateTimeStack
                     end={lesson.endsAt}
                     value={lesson.startsAt}
-                    variant={isCancelled ? "moment" : "inline"}
+                    variant="moment"
                   />
                   <span className={styles.details} title={details}>
                     {details}

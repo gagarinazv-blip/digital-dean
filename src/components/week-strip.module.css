@@ -81,6 +81,7 @@
 }
 
 .link {
+  display: inline-block;
   flex: 0 0 auto;
   border-radius: var(--radius-sm);
   color: var(--color-wine-900);
@@ -88,6 +89,10 @@
   font-weight: 600;
   line-height: 24px;
   white-space: nowrap;
+}
+
+.link::first-letter {
+  text-transform: uppercase;
 }
 
 .link:hover {

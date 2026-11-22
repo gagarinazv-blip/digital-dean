@@ -80,7 +80,6 @@ describe("next lesson card", () => {
     expect(
       [...container.querySelectorAll("a")].map((link) => link.getAttribute("href")),
     ).toEqual([
-      lesson.scheduleHref,
       lesson.detailsHref,
       exam.detailsHref,
       // Лента дня: пара и экзамен.
@@ -177,8 +176,8 @@ describe("deadline chip", () => {
     getDeadlineChip({ kind, dueAt: new Date(dueAt) }, now);
 
   it("names urgency once and stays silent for exams and distant dates", () => {
-    expect(deadline("2026-11-22T20:59:00Z")?.label).toBe("Сегодня · срочно");
-    expect(deadline("2026-11-22T21:00:00Z")?.label).toBe("Завтра · срочно");
+    expect(deadline("2026-11-22T20:59:00Z")?.label).toBe("Сегодня");
+    expect(deadline("2026-11-22T21:00:00Z")?.label).toBe("Завтра");
     expect(deadline("2026-11-22T14:00:00Z")?.label).toBe("Просрочено");
     expect(deadline("2026-11-24T14:30:00Z")).toBeNull();
     expect(deadline("2026-11-23T06:00:00Z", "session")).toBeNull();

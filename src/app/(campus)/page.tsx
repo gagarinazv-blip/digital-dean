@@ -6,7 +6,6 @@ import type { ScheduleKind } from "@/generated/prisma/enums";
 import { getCampusTodayData } from "@/lib/campus-data";
 import {
   controlTypeLabels,
-  getStudentFacingGroupName,
 } from "@/lib/campus-labels";
 import {
   getUniversityDateTimeFormatter,
@@ -49,19 +48,16 @@ const quickActions = [
   {
     href: "/requests/new",
     label: "Заказать справку",
-    description: "Подать новую заявку",
     name: "help",
   },
   {
     href: "/grades",
     label: "Рассчитать оценку",
-    description: "Проверить итоговый балл",
     name: "grades",
   },
   {
     href: "/schedule",
     label: "Моё расписание",
-    description: "Пары и сессия на неделе",
     name: "schedule",
   },
 ] as const;
@@ -69,12 +65,6 @@ const quickActions = [
 const monthFormatter = getUniversityDateTimeFormatter({
   month: "long",
   year: "numeric",
-});
-
-const welcomeDateFormatter = getUniversityDateTimeFormatter({
-  weekday: "long",
-  day: "numeric",
-  month: "long",
 });
 
 type QuickActionName = keyof typeof quickActionIcons;
@@ -265,10 +255,6 @@ async function CampusToday() {
           <h1 id="welcome-title">
             {getCampusGreeting(data.now)}, {firstName}
           </h1>
-          <p className={styles.welcomeDate}>
-            {welcomeDateFormatter.format(todayDate)} · группа{" "}
-            {getStudentFacingGroupName(data.student.group.name)}
-          </p>
         </section>
         <WeekStrip
           days={data.weekDays.map((day) => ({
@@ -297,14 +283,9 @@ async function CampusToday() {
               href={action.href}
               key={action.name}
             >
-              <span className={styles.actionText}>
-                <span className={styles.actionLabel}>
-                  <QuickActionIcon name={action.name} />
-                  {action.label}
-                </span>
-                <span className={styles.actionDescription}>
-                  {action.description}
-                </span>
+              <span className={styles.actionLabel}>
+                <QuickActionIcon name={action.name} />
+                {action.label}
               </span>
               <span className={styles.actionMetric}>
                 <strong>{actionMetrics[action.name].value}</strong>

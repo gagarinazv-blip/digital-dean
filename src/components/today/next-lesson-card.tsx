@@ -103,12 +103,14 @@ export function NextLessonCard({
       aria-labelledby="next-lesson-title"
       className={styles.card}
       data-state={state}
+      data-timeline={timeline ? true : undefined}
     >
       <div className={styles.body}>
         <div className={styles.heading}>
           <div className={styles.topline}>
             <p className={styles.label}>
-              {label} · {main.typeLabel}
+              {label}
+              <span className={styles.type}> · {main.typeLabel}</span>
             </p>
             {chips.map((chip) => (
               <span
@@ -161,7 +163,7 @@ export function NextLessonCard({
               Было: <s>{previousTime}</s>
             </p>
           ) : null}
-  <div className={styles.actions}>
+          <div className={styles.actions}>
             {main.onlineUrl && state !== "cancelled" ? (
               <>
                 <a
@@ -181,16 +183,10 @@ export function NextLessonCard({
                 </Link>
               </>
             ) : (
-              <>
-                <Link className={styles.button} href={main.scheduleHref}>
-                  Открыть в расписании
-                </Link>
-                {main.detailsHref !== main.scheduleHref ? (
-                  <Link className={styles.link} href={main.detailsHref}>
-                    Подробнее →
-                  </Link>
-                ) : null}
-              </>
+              // Откроется неделя с карточкой этого занятия.
+              <Link className={styles.button} href={main.detailsHref}>
+                Открыть в расписании
+              </Link>
             )}
           </div>
         </div>
@@ -240,6 +236,7 @@ export function NextLessonCard({
         <DayTimeline
           label={`События дня: ${formatStackDay(main.startsAt, now)}`}
           mainId={main.id}
+          overlapId={isOverlapping ? next?.id : undefined}
           now={now}
           timeline={timeline}
         />

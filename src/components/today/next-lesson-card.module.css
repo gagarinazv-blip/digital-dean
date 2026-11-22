@@ -1,5 +1,5 @@
-/* Заливка показывает состояние: песочная с цветным отсветом — занятие будет,
-   ровная серая — отменено, белая — занятий нет. Текст всегда тёмный.
+/* Однотонная заливка, как у плиток, показывает состояние: шалфейная — занятие
+   будет, серая — отменено, белая — занятий нет. Текст всегда тёмный.
    Размеры текста: 32 (28, 24), 18 и 14. */
 .card {
   min-width: 0;
@@ -7,8 +7,7 @@
   gap: var(--space-3);
   padding: var(--space-4) var(--space-6) var(--space-5);
   border-radius: var(--radius-surface);
-  background-color: var(--color-hero-sand);
-  background-image: var(--fill-hero);
+  background: var(--color-hero-sage);
   box-shadow: var(--shadow-card);
   color: var(--color-ink);
   font-size: var(--font-size-body-compact);
@@ -260,6 +259,7 @@
   }
 
   /* Экзамен уже стоит на ленте: повторять название и время незачем. */
+  .card[data-timeline] .type,
   .next[data-on-timeline] .nextName,
   .next[data-on-timeline] .nextMoment,
   .next[data-on-timeline]:not([data-overlap]) {

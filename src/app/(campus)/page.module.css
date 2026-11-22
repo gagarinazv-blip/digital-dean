@@ -23,7 +23,6 @@
 
 .welcome {
   min-width: 0;
-  display: grid;
 }
 
 .welcome h1 {
@@ -32,12 +31,6 @@
   font-weight: 600;
   line-height: 32px;
   letter-spacing: -0.015em;
-}
-
-.welcomeDate {
-  color: var(--color-muted);
-  font-size: var(--font-size-body-compact);
-  line-height: 20px;
 }
 
 .quickActionsSection {
@@ -57,7 +50,7 @@
   position: relative;
   min-width: 0;
   height: 100%;
-  min-height: 112px;
+  min-height: 104px;
   display: grid;
   align-content: space-between;
   gap: var(--space-2);
@@ -78,12 +71,6 @@
   --tile-ink: var(--color-wine-900);
 }
 
-.actionText {
-  min-width: 0;
-  display: grid;
-  gap: 2px;
-}
-
 .actionLabel {
   min-width: 0;
   display: flex;
@@ -99,12 +86,6 @@
   height: 20px;
   flex: 0 0 auto;
   color: var(--tile-ink);
-}
-
-.actionDescription {
-  color: var(--color-muted);
-  font-size: var(--font-size-caption);
-  line-height: 16px;
 }
 
 .actionMetric {
@@ -198,6 +179,7 @@
 
 .lists {
   min-width: 0;
+  container: today-lists / inline-size;
   display: grid;
   gap: var(--space-4);
 }
@@ -332,8 +314,7 @@
   }
 
   .actionTile {
-    min-height: 100px;
-    padding-block: var(--space-3);
+    min-height: 96px;
   }
 
   .card {

@@ -2,7 +2,6 @@
 
 import { useDemoNow } from "@/components/demo-now";
 import { getDateStackLabels, parseStackDate } from "@/lib/date-stack";
-import { joinDetails } from "@/lib/room-format";
 import styles from "./date-time-stack.module.css";
 
 export function DateTimeStack({
@@ -24,10 +23,9 @@ export function DateTimeStack({
   done?: boolean;
   align?: "start" | "end";
   /**
-   * stack — день и под ним время; inline — всё в одну строку для списков;
-   * moment — день и время без отсчёта; relative — только «41 мин назад».
+   * stack — день и под ним время с отсчётом; moment — день и время в строку.
    */
-  variant?: "stack" | "inline" | "moment" | "relative";
+  variant?: "stack" | "moment";
   /** День уже назван рядом, например в чипе срочности. */
   hideDay?: boolean;
   now?: Date | string;
@@ -42,13 +40,10 @@ export function DateTimeStack({
     done,
   });
 
-  if (variant !== "stack") {
-    const text =
-      variant === "relative"
-        ? (labels.relative ?? labels.day)
-        : variant === "moment"
-          ? [labels.day, labels.time].filter(Boolean).join(", ")
-          : joinDetails(hideDay ? null : labels.day, labels.time, labels.relative);
+  if (variant === "moment") {
+    const text = [hideDay ? null : labels.day, labels.time]
+      .filter(Boolean)
+      .join(", ");
     return (
       <time
         className={[styles.inline, className].filter(Boolean).join(" ")}

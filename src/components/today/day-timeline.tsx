@@ -18,15 +18,30 @@ function describe(event: TodayEvent, isMain: boolean): string {
     .join(", ");
 }
 
+/** Название главного занятия и слово «экзамен» уже стоят в карточке. */
+function getBlockLabel(
+  event: TodayEvent,
+  mainId: string,
+  overlapId: string | undefined,
+): string {
+  if (event.id === mainId) return event.typeLabel;
+  return event.kind === "session" && event.id !== overlapId
+    ? `${event.typeLabel} · ${event.title}`
+    : event.title;
+}
+
 /** День целиком: где пары, где окна и что накладывается друг на друга. */
 export function DayTimeline({
   timeline,
   mainId,
+  overlapId,
   now,
   label,
 }: {
   timeline: Timeline;
   mainId: string;
+  /** Экзамен, о накладке с которым карточка уже сказала словами. */
+  overlapId?: string;
   now: Date;
   label: string;
 }) {
@@ -87,9 +102,7 @@ export function DayTimeline({
                   title={description}
                 >
                   <span>
-                    {event.kind === "session"
-                      ? `${event.typeLabel} · ${event.title}`
-                      : event.title}
+                    {getBlockLabel(event, mainId, overlapId)}
                   </span>
                 </Link>
               </li>

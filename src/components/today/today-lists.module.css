@@ -17,7 +17,7 @@
   display: grid;
 }
 
-.row + .row {
+.row:not([data-on-timeline]) ~ .row {
   box-shadow: inset 0 1px 0 var(--color-border);
 }
 
@@ -183,6 +183,25 @@
 @media (max-width: 1199px) {
   .row:nth-child(n + 5) {
     display: none;
+  }
+}
+
+/* Лента дня видна в карточке от 640 px: её занятия в списке не повторяются. */
+@container today-lists (min-width: 640px) {
+  .row[data-on-timeline] {
+    display: none;
+  }
+}
+
+@media (max-width: 1199px) {
+  @container today-lists (min-width: 640px) {
+    .row:not([data-on-timeline]) {
+      display: grid;
+    }
+
+    .row:nth-child(n + 5 of :not([data-on-timeline])) {
+      display: none;
+    }
   }
 }
 

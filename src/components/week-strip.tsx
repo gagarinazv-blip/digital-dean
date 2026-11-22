@@ -54,8 +54,12 @@ export function WeekStrip({
           );
         })}
       </ol>
-      <Link className={styles.link} href="/schedule?view=month">
-        Месяц →
+      <Link
+        aria-label={`Открыть месяц: ${title}`}
+        className={styles.link}
+        href="/schedule?view=month"
+      >
+        {title} →
       </Link>
     </section>
   );

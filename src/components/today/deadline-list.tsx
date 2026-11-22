@@ -29,7 +29,7 @@ export function getDeadlineChip(
     return { label: "Просрочено", tone: "danger" };
   }
   return labels.urgency === "urgent"
-    ? { label: `${labels.day} · срочно`, tone: "accent" }
+    ? { label: labels.day, tone: "accent" }
     : null;
 }
 
@@ -58,7 +58,7 @@ export function DeadlineList({
                     hideDay={chip?.tone === "accent"}
                     kind={deadline.kind === "deadline" ? "deadline" : "event"}
                     value={deadline.dueAt}
-                    variant="inline"
+                    variant="moment"
                   />
                   <span className={styles.details} title={deadline.subject}>
                     {deadline.subject}
