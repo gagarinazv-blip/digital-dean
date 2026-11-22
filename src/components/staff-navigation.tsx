@@ -7,6 +7,7 @@ import styles from "./staff-layout.module.css";
 const navigationItems = [
   { href: "/staff", label: "Заявки", icon: "requests" },
   { href: "/staff/students", label: "Студенты", icon: "students" },
+  { href: "/staff/achievements", label: "Достижения", icon: "achievements" },
 ] as const;
 
 export function StaffNavigation() {
@@ -20,6 +21,8 @@ export function StaffNavigation() {
           pathname === item.href ||
           (item.href === "/staff/students" &&
             pathname.startsWith("/staff/students/")) ||
+          (item.href === "/staff/achievements" &&
+            pathname.startsWith("/staff/achievements")) ||
           (item.href === "/staff" &&
             (pathname.startsWith("/staff/requests") ||
               pathname === "/staff"));
@@ -45,10 +48,15 @@ export function StaffNavigation() {
                   <rect x="5" y="5" width="14" height="16" rx="2" />
                   <path d="M9 5V3h6v2M8 12l2 2 5-5" />
                 </>
-              ) : (
+              ) : item.icon === "students" ? (
                 <>
                   <circle cx="9" cy="8" r="3" />
                   <path d="M3 20v-1a6 6 0 0 1 12 0v1M16 5a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 5v1" />
+                </>
+              ) : (
+                <>
+                  <path d="M4 5h16v14H4z" />
+                  <path d="m8 15 2.5-3 2 2 2.5-4 3 5M8 8h.01" />
                 </>
               )}
             </svg>

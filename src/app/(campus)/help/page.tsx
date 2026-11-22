@@ -11,6 +11,9 @@ import {
   getStudentRequest,
   getStudentRequests,
 } from "@/lib/student-request-data";
+import { getStudentPortfolio } from "@/lib/portfolio";
+import { requireStudent } from "@/lib/student";
+import { PortfolioView } from "@/app/(campus)/documents/portfolio-view";
 import { RequestSearchForm } from "./request-search-form";
 import styles from "./help.module.css";
 
@@ -319,8 +322,11 @@ type HelpWorkspaceProps = {
     q?: string | string[];
     status?: string | string[];
     selected?: string | string[];
+    category?: string | string[];
+    year?: string | string[];
+    folder?: string | string[];
   }>;
-  defaultTab?: "catalog" | "documents" | "requests";
+  defaultTab?: "catalog" | "documents" | "requests" | "portfolio";
 };
 
 export async function HelpWorkspace({
@@ -329,7 +335,10 @@ export async function HelpWorkspace({
 }: HelpWorkspaceProps) {
   const query = await searchParams;
   const activeTab =
-    query.tab === "requests" || query.tab === "documents" || query.tab === "catalog"
+    query.tab === "requests" ||
+    query.tab === "documents" ||
+    query.tab === "portfolio" ||
+    query.tab === "catalog"
       ? query.tab
       : defaultTab;
   const search = typeof query.q === "string" ? query.q.trim() : "";
@@ -343,6 +352,10 @@ export async function HelpWorkspace({
   const requests = await getStudentRequests();
   const documents =
     activeTab === "documents" ? await getStudentDocuments() : [];
+  const portfolio =
+    activeTab === "portfolio"
+      ? await getStudentPortfolio((await requireStudent()).id)
+      : { folders: [], items: [] };
   const visibleRequests = requests.filter((request) => {
     if (selectedStatus && request.status !== selectedStatus) {
       return false;
@@ -393,16 +406,20 @@ export async function HelpWorkspace({
       title={
         activeTab === "requests"
           ? "Мои заявки"
-          : activeTab === "documents"
-            ? "Документы"
-            : "Документы и заявки"
+          : activeTab === "portfolio"
+            ? "Портфолио"
+            : activeTab === "documents"
+              ? "Документы"
+              : "Документы и заявки"
       }
       description={
         activeTab === "requests"
           ? "История обращений и ход их обработки."
           : activeTab === "documents"
             ? "Готовые документы по обработанным заявкам."
-            : "Справки и услуги деканата — подайте заявку и следите за её обработкой."
+            : activeTab === "portfolio"
+              ? "Ваши дипломы, сертификаты и другие достижения."
+              : "Справки и услуги деканата — подайте заявку и следите за её обработкой."
       }
     >
       <div className={styles.pageContent}>
@@ -430,6 +447,13 @@ export async function HelpWorkspace({
             href="/documents?tab=documents"
           >
             Мои документы
+          </Link>
+          <Link
+            aria-current={activeTab === "portfolio" ? "page" : undefined}
+            className={activeTab === "portfolio" ? styles.activeTab : ""}
+            href="/documents?tab=portfolio"
+          >
+            Портфолио
           </Link>
           <Link
             aria-current={activeTab === "catalog" ? "page" : undefined}
@@ -593,6 +617,17 @@ export async function HelpWorkspace({
               </div>
             )}
           </section>
+        ) : activeTab === "portfolio" ? (
+          <PortfolioView
+            folders={portfolio.folders}
+            items={portfolio.items}
+            searchParams={{
+              q: query.q,
+              category: query.category,
+              year: query.year,
+              folder: query.folder,
+            }}
+          />
         ) : (
           <div className={styles.requestWorkspace}>
             <section

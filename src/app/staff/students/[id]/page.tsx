@@ -4,6 +4,8 @@ import type { StudentAuditAction } from "@/generated/prisma/enums";
 import { getCorporateMailDomain } from "@/lib/corporate-mail";
 import { getPrisma } from "@/lib/prisma";
 import { requireStaffContext } from "@/lib/staff";
+import { portfolioCategoryLabels } from "@/lib/portfolio-constants";
+import { PortfolioItemControls } from "@/app/(campus)/documents/portfolio-controls";
 import {
   ResetStudentAccessForm,
   UpdateStudentForm,
@@ -21,6 +23,10 @@ const auditActionLabels: Record<StudentAuditAction, string> = {
   STUDENT_PASSWORD_SET: "Задан пароль студенческого кабинета",
   STUDENT_PASSWORD_REPLACED: "Заменён пароль студенческого кабинета",
   ACCESS_RESET: "Сброшен доступ студента",
+  PORTFOLIO_ITEM_CREATED: "Добавлено достижение в портфолио",
+  PORTFOLIO_ITEM_UPDATED: "Обновлено достижение в портфолио",
+  PORTFOLIO_ITEM_DELETED: "Удалено достижение из портфолио",
+  PORTFOLIO_FILE_DOWNLOADED: "Скачан файл студенческого портфолио",
 };
 
 const changedFieldLabels: Record<string, string> = {
@@ -36,6 +42,13 @@ const changedFieldLabels: Record<string, string> = {
   accountStatus: "статус доступа",
   activeSessions: "активные сессии",
 };
+
+function getChangedFieldLabel(field: string): string {
+  if (field.startsWith("portfolio:")) {
+    return `название записи «${field.slice("portfolio:".length)}»`;
+  }
+  return changedFieldLabels[field] ?? field;
+}
 
 const dateFormatter = new Intl.DateTimeFormat("ru-RU", {
   dateStyle: "medium",
@@ -54,7 +67,7 @@ export default async function StaffStudentDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireStaffContext();
+  const { isManagerAccount } = await requireStaffContext();
   const id = parseId((await params).id);
   if (id === null) notFound();
 
@@ -74,6 +87,26 @@ export default async function StaffStudentDetailPage({
         corporateMailPasswordEncrypted: true,
         corporateMailIssuedAt: true,
         group: { select: { name: true } },
+        portfolioItems: {
+          orderBy: [{ eventDate: "desc" }, { createdAt: "desc" }],
+          select: {
+            id: true,
+            studentId: true,
+            folderId: true,
+            title: true,
+            category: true,
+            eventName: true,
+            eventDate: true,
+            role: true,
+            description: true,
+            originalName: true,
+            mimeType: true,
+            size: true,
+            source: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
         auditLogs: {
           orderBy: [{ createdAt: "desc" }, { id: "desc" }],
           take: 100,
@@ -187,7 +220,7 @@ export default async function StaffStudentDetailPage({
                   {entry.changedFields.length > 0 ? (
                     <p>
                       {entry.changedFields
-                        .map((field) => changedFieldLabels[field] ?? field)
+                        .map(getChangedFieldLabel)
                         .join(", ")}
                     </p>
                   ) : null}
@@ -204,6 +237,58 @@ export default async function StaffStudentDetailPage({
           </ol>
         ) : (
           <p className={styles.emptyState}>Изменений пока нет.</p>
+        )}
+      </section>
+
+      <section className={styles.panel} aria-labelledby="portfolio-title">
+        <div className={styles.panelHeading}>
+          <div>
+            <h2 id="portfolio-title">Портфолио</h2>
+            <p>Достижения студента и документы, загруженные деканатом.</p>
+          </div>
+          <Link
+            className={styles.primaryButton}
+            href={`/staff/achievements?studentId=${student.id}`}
+          >
+            Добавить достижение
+          </Link>
+        </div>
+        {student.portfolioItems.length === 0 ? (
+          <p className={styles.emptyState}>Записей пока нет.</p>
+        ) : (
+          <ul className={styles.auditList}>
+            {student.portfolioItems.map((item) => (
+              <li className={styles.auditItem} key={item.id}>
+                <div>
+                  <strong>{item.title}</strong>
+                  <p>
+                    {portfolioCategoryLabels[item.category]}
+                    {item.eventName ? ` · ${item.eventName}` : ""}
+                    {item.eventDate
+                      ? ` · ${dateFormatter.format(item.eventDate)}`
+                      : ""}
+                  </p>
+                  <span>
+                    {item.source === "STAFF"
+                      ? "Добавлено деканатом"
+                      : "Добавлено студентом"}
+                    {" · "}
+                    <Link href={`/files/portfolio/${item.id}`}>Открыть файл</Link>
+                    {" · "}
+                    <Link href={`/files/portfolio/${item.id}?download=1`}>
+                      Скачать
+                    </Link>
+                  </span>
+                  <PortfolioItemControls
+                    folders={[]}
+                    isManager={isManagerAccount}
+                    isStaff
+                    item={item}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
       </section>
     </main>
