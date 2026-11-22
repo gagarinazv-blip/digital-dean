@@ -3,7 +3,12 @@ import Link from "next/link";
 import { CampusLoading, CampusSection } from "@/components/campus-section";
 import { CampusArchitectureArt } from "@/components/campus-architecture-art";
 import { EmptyState } from "@/components/empty-state";
-import type { RequestStatus } from "@/generated/prisma/enums";
+import type { Prisma } from "@/generated/prisma/client";
+import type {
+  OpportunityDirection,
+  OpportunityType,
+  RequestStatus,
+} from "@/generated/prisma/enums";
 import { requestStatusLabels, requestTypeLabels } from "@/lib/campus-labels";
 import {
   getRequestCatalogTitle,
@@ -18,6 +23,11 @@ import { formatRequestNumber } from "@/lib/request-number";
 import { getUniversityDateTimeFormatter } from "@/lib/campus-time";
 import { getStudentPortfolio } from "@/lib/portfolio";
 import { requireStudent } from "@/lib/student";
+import { getPrisma } from "@/lib/prisma";
+import {
+  opportunityDirectionLabels,
+  opportunityTypeConfig,
+} from "@/lib/opportunity-catalog";
 import { PortfolioView } from "@/app/(campus)/documents/portfolio-view";
 import { RequestSearchForm } from "./request-search-form";
 import styles from "./help.module.css";
@@ -32,6 +42,14 @@ const requestDateTimeFormatter = getUniversityDateTimeFormatter({
 });
 
 const requestStatuses = Object.keys(requestStatusLabels) as RequestStatus[];
+const opportunityApplicationStatusLabels = {
+  SUBMITTED: "Отправлена",
+  IN_REVIEW: "На рассмотрении",
+  NEEDS_INFO: "Нужны уточнения",
+  ACCEPTED: "Принята",
+  REJECTED: "Отклонена",
+  WITHDRAWN: "Отозвана",
+} as const;
 
 function isRequestStatus(value: string): value is RequestStatus {
   return requestStatuses.includes(value as RequestStatus);
@@ -402,6 +420,69 @@ export async function HelpWorkspace({
         value.toLocaleLowerCase("ru").includes(normalizedSearch),
       );
     });
+  const searchStudent =
+    activeTab === "catalog" && normalizedSearch ? await requireStudent() : null;
+  const opportunityTypeMatches = Object.entries(opportunityTypeConfig)
+    .filter(([, config]) =>
+      config.label.toLocaleLowerCase("ru").includes(normalizedSearch),
+    )
+    .map(([type]) => type as OpportunityType);
+  const opportunityDirectionMatches = Object.entries(opportunityDirectionLabels)
+    .filter(([, label]) => label.toLocaleLowerCase("ru").includes(normalizedSearch))
+    .map(([direction]) => direction as OpportunityDirection);
+  const opportunitySearchTerms: Prisma.OpportunityWhereInput[] = [
+    { title: { contains: search, mode: "insensitive" } },
+    { organizer: { contains: search, mode: "insensitive" } },
+    { shortDescription: { contains: search, mode: "insensitive" } },
+    { description: { contains: search, mode: "insensitive" } },
+    ...(opportunityTypeMatches.length > 0
+      ? [{ type: { in: opportunityTypeMatches } }]
+      : []),
+    ...(opportunityDirectionMatches.length > 0
+      ? [{ directions: { hasSome: opportunityDirectionMatches } }]
+      : []),
+  ];
+  const [matchingOpportunities, matchingApplications] = searchStudent
+    ? await Promise.all([
+        getPrisma().opportunity.findMany({
+          where: { status: "PUBLISHED", OR: opportunitySearchTerms },
+          orderBy: [{ deadline: "asc" }, { id: "desc" }],
+          take: 8,
+          select: {
+            id: true,
+            title: true,
+            type: true,
+            organizer: true,
+            shortDescription: true,
+            description: true,
+            deadline: true,
+            directions: true,
+          },
+        }),
+        getPrisma().opportunityApplication.findMany({
+          where: {
+            studentId: searchStudent.id,
+            opportunity: { status: { not: "DRAFT" } },
+            OR: [
+              {
+                opportunity: {
+                  title: { contains: search, mode: "insensitive" },
+                },
+              },
+              { staffComment: { contains: search, mode: "insensitive" } },
+            ],
+          },
+          orderBy: { submittedAt: "desc" },
+          take: 8,
+          select: {
+            publicId: true,
+            status: true,
+            kind: true,
+            opportunity: { select: { title: true, type: true } },
+          },
+        }),
+      ])
+    : [[], []];
 
   return (
     <CampusSection
@@ -531,6 +612,49 @@ export async function HelpWorkspace({
                 </div>
               )}
             </section>
+            {search && (
+              <section className={styles.section} aria-labelledby="opportunities-search-title">
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <p className={styles.kicker}>Возможности</p>
+                    <h2 id="opportunities-search-title">Возможности и мои заявки</h2>
+                  </div>
+                </div>
+                {matchingOpportunities.length === 0 &&
+                matchingApplications.length === 0 ? (
+                  <p role="status">По запросу «{search}» возможности и заявки не найдены.</p>
+                ) : (
+                  <div className={styles.searchOpportunityResults}>
+                    {matchingOpportunities.map((opportunity) => (
+                      <article key={opportunity.id}>
+                        <span>{opportunityTypeConfig[opportunity.type].label}</span>
+                        <h3>{opportunity.title}</h3>
+                        <p>{opportunity.organizer}</p>
+                        <p>{opportunity.shortDescription || opportunity.description.slice(0, 180)}</p>
+                        <Link
+                          href={`/opportunities/${opportunity.id}?returnTo=${encodeURIComponent(`/opportunities/catalog?q=${encodeURIComponent(search)}`)}`}
+                        >
+                          Открыть возможность
+                        </Link>
+                      </article>
+                    ))}
+                    {matchingApplications.map((application) => (
+                      <article key={application.publicId}>
+                        <span>{opportunityTypeConfig[application.opportunity.type].label}</span>
+                        <h3>Моя заявка: {application.opportunity.title}</h3>
+                        <p>
+                          Статус: {opportunityApplicationStatusLabels[application.status]}
+                        </p>
+                        {application.kind === "LATE_REQUEST" && <p>Индивидуальный запрос</p>}
+                        <Link href={`/opportunities/applications#application-${application.publicId}`}>
+                          Открыть заявку
+                        </Link>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
             <RecentRequests requests={requests} />
           </>
         ) : activeTab === "documents" ? (

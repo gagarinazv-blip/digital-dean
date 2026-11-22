@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { relative, resolve, sep } from "node:path";
 
-export type StoredFileExtension = "pdf" | "jpg" | "png";
+export type StoredFileExtension = "pdf" | "jpg" | "png" | "doc" | "docx";
 
 export interface FileStorage {
   save(data: Uint8Array, extension: StoredFileExtension): Promise<string>;
@@ -13,7 +13,7 @@ export interface FileStorage {
 }
 
 function assertSafeStoredName(storedName: string): void {
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(pdf|jpg|png)$/i.test(storedName)) {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(pdf|jpg|png|docx|doc)$/i.test(storedName)) {
     throw new Error("Invalid stored file name.");
   }
 }

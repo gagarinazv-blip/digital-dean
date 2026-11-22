@@ -12,7 +12,11 @@ export function getPrisma(): PrismaClient {
     cachedPrisma &&
     typeof cachedPrisma.portfolioFolder !== "undefined" &&
     typeof cachedPrisma.portfolioItem !== "undefined" &&
-    typeof cachedPrisma.studentDocument !== "undefined"
+    typeof cachedPrisma.studentDocument !== "undefined" &&
+    typeof cachedPrisma.opportunity !== "undefined" &&
+    typeof cachedPrisma.opportunityApplication !== "undefined" &&
+    typeof cachedPrisma.opportunityBookmark !== "undefined" &&
+    typeof cachedPrisma.applicationFile !== "undefined"
   ) {
     return cachedPrisma;
   }

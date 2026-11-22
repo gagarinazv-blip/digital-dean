@@ -28,6 +28,7 @@ const auditActionLabels: Record<StudentAuditAction, string> = {
   PORTFOLIO_ITEM_UPDATED: "Обновлено достижение в портфолио",
   PORTFOLIO_ITEM_DELETED: "Удалено достижение из портфолио",
   PORTFOLIO_FILE_DOWNLOADED: "Скачан файл студенческого портфолио",
+  OPPORTUNITY_FILE_DOWNLOADED: "Скачан файл заявки на участие",
 };
 
 const changedFieldLabels: Record<string, string> = {

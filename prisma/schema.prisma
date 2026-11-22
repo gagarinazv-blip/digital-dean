@@ -37,6 +37,7 @@ enum StudentAuditAction {
   PORTFOLIO_ITEM_UPDATED
   PORTFOLIO_ITEM_DELETED
   PORTFOLIO_FILE_DOWNLOADED
+  OPPORTUNITY_FILE_DOWNLOADED
 }
 
 enum Weekday {
@@ -171,7 +172,45 @@ enum OpportunityType {
   COMPETITION
   INTERNSHIP
   CONFERENCE
+  CASE_CHAMPIONSHIP
+  GRANT
+  EXCHANGE
+  CLUB
+  CULTURAL
+  SPORT
+  VOLUNTEERING
   OTHER
+}
+
+enum OpportunityDirection {
+  INTERNATIONAL_RELATIONS
+  ECONOMICS_FINANCE
+  LAW
+  REGIONAL_STUDIES
+  POLITICAL_SCIENCE
+  JOURNALISM_MEDIA
+  DATA_IT
+  LANGUAGES
+  HISTORY_CULTURE
+  ARTS
+  SPORT_HEALTH
+  SOCIAL_PROJECTS
+}
+
+enum OpportunityFormat {
+  OFFLINE
+  ONLINE
+  HYBRID
+}
+
+enum OpportunityCost {
+  FREE
+  PAID
+}
+
+enum OpportunityApplicationKind {
+  STANDARD
+  LATE_REQUEST
 }
 
 enum OpportunityStatus {
@@ -210,11 +249,11 @@ model User {
   requestStatusHistory     RequestStatusHistory[]     @relation("RequestStatusHistoryAuthor")
   requestAssignmentHistory RequestAssignmentHistory[] @relation("RequestAssignmentHistoryAuthor")
   studentAuditLogs         StudentAuditLog[]
-  uploadedPortfolioItems   PortfolioItem[]             @relation("PortfolioItemUploader")
-  staffNotifications       StaffNotification[]         @relation("StaffNotificationRecipient")
+  uploadedPortfolioItems   PortfolioItem[]            @relation("PortfolioItemUploader")
+  staffNotifications       StaffNotification[]        @relation("StaffNotificationRecipient")
   createdEvents            Event[]                    @relation("EventCreator")
-  createdOpportunities     Opportunity[]               @relation("OpportunityCreator")
-  decidedApplications      OpportunityApplication[]    @relation("ApplicationDecider")
+  createdOpportunities     Opportunity[]              @relation("OpportunityCreator")
+  decidedApplications      OpportunityApplication[]   @relation("ApplicationDecider")
   createdAt                DateTime                   @default(now())
 }
 
@@ -255,22 +294,22 @@ model LoginAttempt {
 }
 
 model Student {
-  id                             Int                  @id @default(autoincrement())
-  userId                         Int                  @unique
+  id                             Int                      @id @default(autoincrement())
+  userId                         Int                      @unique
   fullName                       String
   faculty                        String
   direction                      String
   course                         Int
   groupId                        Int
-  phone                          String?              @unique
-  accountStatus                  StudentAccountStatus @default(ACTIVE)
-  corporateEmail                 String?              @unique
+  phone                          String?                  @unique
+  accountStatus                  StudentAccountStatus     @default(ACTIVE)
+  corporateEmail                 String?                  @unique
   corporateMailPasswordEncrypted String?
   corporateMailIssuedAt          DateTime?
-  recordBookNumber               String?              @unique
+  recordBookNumber               String?                  @unique
   studyForm                      StudyForm?
-  user                           User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
-  group                          StudentGroup         @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  user                           User                     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  group                          StudentGroup             @relation(fields: [groupId], references: [id], onDelete: Restrict)
   grades                         Grade[]
   academicSemesters              AcademicSemester[]
   requests                       Request[]
@@ -282,20 +321,21 @@ model Student {
   staffNotifications             StaffNotification[]
   studentDocuments               StudentDocument[]
   opportunityApplications        OpportunityApplication[]
+  opportunityBookmarks           OpportunityBookmark[]
 
   @@index([groupId])
 }
 
 model StaffProfile {
-  id               Int       @id @default(autoincrement())
-  userId           Int       @unique
-  fullName         String
-  position         String
-  department       String
-  phone            String?   @unique
-  isSupervisor     Boolean   @default(false)
-  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  assignedRequests Request[] @relation("AssignedStaffRequests")
+  id                    Int                        @id @default(autoincrement())
+  userId                Int                        @unique
+  fullName              String
+  position              String
+  department            String
+  phone                 String?                    @unique
+  isSupervisor          Boolean                    @default(false)
+  user                  User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignedRequests      Request[]                  @relation("AssignedStaffRequests")
   assignmentHistoryFrom RequestAssignmentHistory[] @relation("RequestAssignmentHistoryFrom")
   assignmentHistoryTo   RequestAssignmentHistory[] @relation("RequestAssignmentHistoryTo")
 }
@@ -343,17 +383,17 @@ model StudentAuditLog {
 }
 
 model PortfolioFolder {
-  id        Int               @id @default(autoincrement())
-  studentId Int
-  parentId  Int?
-  name      String            @db.VarChar(60)
-  normalizedName String       @db.VarChar(60)
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
-  student   Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  parent    PortfolioFolder?  @relation("PortfolioFolderTree", fields: [parentId], references: [id], onDelete: SetNull)
-  children  PortfolioFolder[] @relation("PortfolioFolderTree")
-  items     PortfolioItem[]
+  id             Int               @id @default(autoincrement())
+  studentId      Int
+  parentId       Int?
+  name           String            @db.VarChar(60)
+  normalizedName String            @db.VarChar(60)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  student        Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  parent         PortfolioFolder?  @relation("PortfolioFolderTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children       PortfolioFolder[] @relation("PortfolioFolderTree")
+  items          PortfolioItem[]
 
   @@unique([studentId, normalizedName])
   @@index([parentId])
@@ -388,75 +428,105 @@ model PortfolioItem {
 }
 
 model StudentDocument {
-  id           Int                @id @default(autoincrement())
+  id           Int                 @id @default(autoincrement())
   studentId    Int
-  title        String             @db.VarChar(120)
+  title        String              @db.VarChar(120)
   documentType StudentDocumentType @default(OTHER)
-  storedName   String             @unique @db.VarChar(100)
-  originalName String             @db.VarChar(255)
-  mimeType     String             @db.VarChar(100)
+  storedName   String              @unique @db.VarChar(100)
+  originalName String              @db.VarChar(255)
+  mimeType     String              @db.VarChar(100)
   size         Int
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
-  student      Student            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  student      Student             @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@index([studentId, createdAt])
   @@index([studentId, documentType])
 }
 
 model Opportunity {
-  id                Int                  @id @default(autoincrement())
-  title             String               @db.VarChar(120)
+  id                Int                      @id @default(autoincrement())
+  title             String                   @db.VarChar(120)
   type              OpportunityType
-  organizer         String               @db.VarChar(160)
-  description       String               @db.Text
-  requirements      String               @db.Text
+  organizer         String                   @db.VarChar(160)
+  shortDescription  String                   @default("") @db.VarChar(200)
+  description       String                   @db.Text
+  requirements      String                   @db.Text
   deadline          DateTime
-  officialUrl       String?              @db.VarChar(2048)
+  allowLateRequests Boolean                  @default(false)
+  lateRequestsUntil DateTime?
+  directions        OpportunityDirection[]   @default([])
+  minCourse         Int?
+  maxCourse         Int?
+  allowedFaculties  String[]                 @default([])
+  format            OpportunityFormat        @default(OFFLINE) @map("deliveryFormat")
+  formatLegacy      String?                  @map("format") @db.VarChar(100)
+  location          String?                  @db.VarChar(160)
+  startsAt          DateTime?                @db.Timestamptz(3)
+  endsAt            DateTime?                @db.Timestamptz(3)
+  cost              OpportunityCost          @default(FREE)
+  costNote          String?                  @db.VarChar(200)
+  officialUrl       String?                  @db.VarChar(2048)
   eventDate         DateTime?
-  format            String?              @db.VarChar(100)
-  requiredDocuments Json
-  status            OpportunityStatus    @default(DRAFT)
+  requiredDocuments Json                     @default("[]")
+  details           Json                     @default("{}")
+  status            OpportunityStatus        @default(DRAFT)
   createdById       Int
-  createdAt         DateTime             @default(now())
-  updatedAt         DateTime             @updatedAt
-  createdBy         User                 @relation("OpportunityCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  createdBy         User                     @relation("OpportunityCreator", fields: [createdById], references: [id], onDelete: Restrict)
   applications      OpportunityApplication[]
+  bookmarks         OpportunityBookmark[]
 
   @@index([status, deadline])
+  @@index([status, type, deadline])
   @@index([createdById])
 }
 
 model OpportunityApplication {
-  id            Int                        @id @default(autoincrement())
-  publicId      String                     @unique @default(uuid())
-  opportunityId Int
-  studentId     Int
-  status        OpportunityApplicationStatus @default(SUBMITTED)
-  motivation    String?                    @db.VarChar(2000)
+  id              Int                          @id @default(autoincrement())
+  publicId        String                       @unique @default(uuid())
+  opportunityId   Int
+  studentId       Int
+  kind            OpportunityApplicationKind   @default(STANDARD)
+  status          OpportunityApplicationStatus @default(SUBMITTED)
+  motivation      String?                      @db.VarChar(2000)
+  lateReason      String?                      @db.VarChar(1000)
+  details         Json                         @default("{}")
   studentSnapshot Json
-  staffComment  String?                    @db.VarChar(2000)
-  decidedById   Int?
-  submittedAt   DateTime                   @default(now())
-  updatedAt     DateTime                   @updatedAt
-  opportunity   Opportunity                @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
-  student       Student                    @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  decidedBy     User?                      @relation("ApplicationDecider", fields: [decidedById], references: [id], onDelete: SetNull)
-  files         ApplicationFile[]
+  staffComment    String?                      @db.VarChar(2000)
+  decidedById     Int?
+  submittedAt     DateTime                     @default(now())
+  updatedAt       DateTime                     @updatedAt
+  opportunity     Opportunity                  @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  student         Student                      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  decidedBy       User?                        @relation("ApplicationDecider", fields: [decidedById], references: [id], onDelete: SetNull)
+  files           ApplicationFile[]
 
   @@index([studentId, submittedAt])
   @@index([opportunityId, status])
 }
 
+model OpportunityBookmark {
+  studentId     Int
+  opportunityId Int
+  createdAt     DateTime    @default(now())
+  student       Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@id([studentId, opportunityId])
+  @@index([opportunityId])
+}
+
 model ApplicationFile {
-  id           Int                   @id @default(autoincrement())
-  applicationId Int
-  requirementKey String              @db.VarChar(80)
-  originalName String                @db.VarChar(255)
-  storedName   String                @unique @db.VarChar(100)
-  mimeType     String                @db.VarChar(100)
-  size         Int
-  application  OpportunityApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  id             Int                    @id @default(autoincrement())
+  applicationId  Int
+  requirementKey String                 @db.VarChar(80)
+  originalName   String                 @db.VarChar(255)
+  storedName     String                 @unique @db.VarChar(100)
+  mimeType       String                 @db.VarChar(100)
+  size           Int
+  application    OpportunityApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
   @@index([applicationId])
 }
@@ -589,24 +659,24 @@ model AcademicSessionItem {
 }
 
 model Request {
-  id              Int                    @id @default(autoincrement())
-  publicId        String                 @unique @default(uuid())
-  studentId       Int
-  type            RequestType
-  catalogCode     String?
-  formFields      Json?
-  profileSnapshot Json?
-  status          RequestStatus          @default(NEW)
-  comment         String?
-  assignedToId    Int?
-  student         Student                @relation(fields: [studentId], references: [id], onDelete: Restrict)
-  assignedTo      StaffProfile?          @relation("AssignedStaffRequests", fields: [assignedToId], references: [id], onDelete: SetNull)
-  comments        RequestComment[]
-  statusHistory   RequestStatusHistory[]
-  assignmentHistory RequestAssignmentHistory[]
+  id                 Int                        @id @default(autoincrement())
+  publicId           String                     @unique @default(uuid())
+  studentId          Int
+  type               RequestType
+  catalogCode        String?
+  formFields         Json?
+  profileSnapshot    Json?
+  status             RequestStatus              @default(NEW)
+  comment            String?
+  assignedToId       Int?
+  student            Student                    @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  assignedTo         StaffProfile?              @relation("AssignedStaffRequests", fields: [assignedToId], references: [id], onDelete: SetNull)
+  comments           RequestComment[]
+  statusHistory      RequestStatusHistory[]
+  assignmentHistory  RequestAssignmentHistory[]
   staffNotifications StaffNotification[]
-  createdAt       DateTime               @default(now())
-  updatedAt       DateTime               @updatedAt
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
 
   @@index([studentId])
   @@index([status])
@@ -614,21 +684,21 @@ model Request {
 }
 
 model StaffNotification {
-  id               Int                  @id @default(autoincrement())
-  publicId         String               @unique @default(uuid())
+  id               Int                   @id @default(autoincrement())
+  publicId         String                @unique @default(uuid())
   recipientId      Int
   eventKey         String
   type             StaffNotificationType
   title            String
-  body             String               @db.Text
+  body             String                @db.Text
   link             String
   relatedRequestId Int?
   relatedStudentId Int?
   readAt           DateTime?
-  createdAt        DateTime             @default(now())
-  recipient        User                 @relation("StaffNotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
-  relatedRequest   Request?             @relation(fields: [relatedRequestId], references: [id], onDelete: SetNull)
-  relatedStudent   Student?             @relation(fields: [relatedStudentId], references: [id], onDelete: SetNull)
+  createdAt        DateTime              @default(now())
+  recipient        User                  @relation("StaffNotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  relatedRequest   Request?              @relation(fields: [relatedRequestId], references: [id], onDelete: SetNull)
+  relatedStudent   Student?              @relation(fields: [relatedStudentId], references: [id], onDelete: SetNull)
 
   @@unique([recipientId, eventKey])
   @@index([recipientId, createdAt])
@@ -636,16 +706,16 @@ model StaffNotification {
 }
 
 model RequestStatusHistory {
-  id           Int           @id @default(autoincrement())
+  id           Int            @id @default(autoincrement())
   requestId    Int
   fromStatus   RequestStatus?
   status       RequestStatus
-  isRollback   Boolean       @default(false)
-  changedAt    DateTime      @default(now())
+  isRollback   Boolean        @default(false)
+  changedAt    DateTime       @default(now())
   authorUserId Int?
-  comment      String?       @db.Text
-  request      Request       @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  author       User?         @relation("RequestStatusHistoryAuthor", fields: [authorUserId], references: [id], onDelete: SetNull)
+  comment      String?        @db.Text
+  request      Request        @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  author       User?          @relation("RequestStatusHistoryAuthor", fields: [authorUserId], references: [id], onDelete: SetNull)
 
   @@index([requestId, changedAt])
   @@index([authorUserId])

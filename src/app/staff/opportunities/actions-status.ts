@@ -4,6 +4,15 @@ import { redirect } from "next/navigation";
 import { getPrisma } from "@/lib/prisma";
 import { requireStaffContext } from "@/lib/staff";
 
+const statusLabels = {
+  SUBMITTED: "Отправлена",
+  IN_REVIEW: "На рассмотрении",
+  NEEDS_INFO: "Нужны уточнения",
+  ACCEPTED: "Одобрена",
+  REJECTED: "Отклонена",
+  WITHDRAWN: "Отозвана",
+} as const;
+
 export async function updateOpportunityApplicationStatusAction(formData: FormData) {
   const { userId } = await requireStaffContext();
   const id = Number(formData.get("id"));
@@ -28,16 +37,18 @@ export async function updateOpportunityApplicationStatusAction(formData: FormDat
         decidedById: ["ACCEPTED", "REJECTED"].includes(status) ? userId : null,
       },
     });
-    await tx.notification.create({
-      data: {
-        studentId: application.student.id,
-        type: "OPPORTUNITY_STATUS",
-        title: "Статус заявки на участие изменён",
-        text: `Статус заявки на «${application.opportunity.title}»: ${status}.`,
-        targetType: "OPPORTUNITY_APPLICATION",
-        targetId: application.publicId,
-      },
-    });
+    if (application.status !== status) {
+      await tx.notification.create({
+        data: {
+          studentId: application.student.id,
+          type: "OPPORTUNITY_STATUS",
+          title: "Статус заявки на участие изменён",
+          text: `Статус заявки на «${application.opportunity.title}»: ${statusLabels[status as keyof typeof statusLabels]}.`,
+          targetType: "OPPORTUNITY_APPLICATION",
+          targetId: application.publicId,
+        },
+      });
+    }
   });
   redirect(`/staff/opportunities/${application.opportunityId}/applications`);
 }

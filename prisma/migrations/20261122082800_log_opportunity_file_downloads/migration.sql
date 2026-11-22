@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "StudentAuditAction" ADD VALUE 'OPPORTUNITY_FILE_DOWNLOADED';

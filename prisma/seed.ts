@@ -33,6 +33,7 @@ import {
   testSeedStudentAccounts,
   type DemoStudentSeedAccount,
 } from "./demo-account-data";
+import { opportunitySeeds } from "./opportunity-seed-data";
 
 const alphaCorporateMailPassword = "Demo-Mail-Alpha-Only-2026!";
 
@@ -995,60 +996,104 @@ async function main() {
         }
       }
 
-      const opportunitySeeds = [
-        ["Конкурс цифровых решений", "COMPETITION", "Центр студенческих проектов", 14],
-        ["Стажировка в аналитическом центре", "INTERNSHIP", "Академический консорциум", 21],
-        ["Межвузовская научная конференция", "CONFERENCE", "Кафедра исследований", 10],
-        ["Студенческий творческий конкурс", "COMPETITION", "Культурный центр МГИМО", 7],
-        ["Летняя международная стажировка", "INTERNSHIP", "Международная программа", 30],
-        ["Архивная конференция", "CONFERENCE", "Вымышленная научная школа", -7],
-      ] as const;
       const opportunityIds: number[] = [];
       for (const [index, seed] of opportunitySeeds.entries()) {
-        const [title, type, organizer, offset] = seed;
-        const existing = await tx.opportunity.findFirst({ where: { title } });
-        const opportunity =
-          existing ??
-          (await tx.opportunity.create({
-            data: {
-              title,
-              type,
-              organizer,
-              description: "Вымышленное мероприятие для демонстрации каталога возможностей.",
-              requirements: "Заполните мотивацию и приложите необходимые подтверждающие документы.",
-              deadline: new Date(seedNow.getTime() + offset * 24 * 60 * 60 * 1000),
-              officialUrl: `https://example.com/opportunities/${index + 1}`,
-              format: "ОНЛАЙН",
-              requiredDocuments: [
-                { key: "resume", title: "Резюме", required: true },
-                { key: "statement", title: "Эссе или мотивационное письмо", required: false },
-              ],
-              status: index === 5 ? "PUBLISHED" : index === 4 ? "DRAFT" : "PUBLISHED",
-              createdById: alphaUserId === undefined ? demoStaffUserId! : demoStaffUserId!,
-            },
-          }));
+        const deadline = new Date(
+          seedNow.getTime() + seed.offset * 24 * 60 * 60 * 1000,
+        );
+        const opportunityData = {
+          title: seed.title,
+          type: seed.type,
+          organizer: seed.organizer,
+          shortDescription: `Вымышленная возможность: ${seed.title}.`,
+          description: `Демо-описание возможности «${seed.title}». Условия и участники вымышлены и предназначены для проверки интерфейса.`,
+          requirements: "Подготовьте краткую мотивацию и проверьте условия участия.",
+          deadline,
+          allowLateRequests: seed.allowLateRequests ?? false,
+          lateRequestsUntil: seed.allowLateRequests
+            ? new Date(deadline.getTime() + 7 * 24 * 60 * 60 * 1000)
+            : null,
+          directions: [seed.direction],
+          minCourse: index % 4 === 0 ? 2 : null,
+          maxCourse: index % 5 === 0 ? 4 : null,
+          allowedFaculties: [],
+          format: seed.format,
+          location: seed.location ?? "Кампус, аудитория 204",
+          startsAt: null,
+          endsAt: null,
+          cost: seed.cost,
+          costNote: seed.costNote ?? null,
+          officialUrl: `https://example.com/opportunities/${index + 1}`,
+          eventDate: seed.type === "CONFERENCE" ? deadline : null,
+          requiredDocuments: [
+            { key: "resume", title: "Резюме", required: index % 3 === 0 },
+            { key: "statement", title: "Эссе или мотивационное письмо", required: false },
+          ],
+          details: seed.details,
+          status: seed.status,
+          createdById: demoStaffUserId!,
+        };
+        const existing = await tx.opportunity.findFirst({
+          where: { title: seed.title },
+          select: { id: true },
+        });
+        const opportunity = existing
+          ? await tx.opportunity.update({
+              where: { id: existing.id },
+              data: opportunityData,
+            })
+          : await tx.opportunity.create({ data: opportunityData });
         opportunityIds.push(opportunity.id);
       }
 
-      for (const [index, opportunityId] of opportunityIds.slice(0, 2).entries()) {
+      const applicationStatuses = [
+        "SUBMITTED",
+        "IN_REVIEW",
+        "NEEDS_INFO",
+        "ACCEPTED",
+        "REJECTED",
+        "WITHDRAWN",
+      ] as const;
+      for (const [index, opportunityId] of opportunityIds.entries()) {
+        if (opportunitySeeds[index].status === "DRAFT") continue;
+        const studentId = index % 2 === 0 ? alphaStudentId : betaStudentId;
         const existingApplication = await tx.opportunityApplication.findFirst({
-          where: { opportunityId, studentId: alphaStudentId },
+          where: { opportunityId, studentId },
         });
         if (!existingApplication) {
           await tx.opportunityApplication.create({
             data: {
               opportunityId,
-              studentId: alphaStudentId,
-              status: index === 0 ? "SUBMITTED" : "IN_REVIEW",
+              studentId,
+              kind: opportunitySeeds[index].allowLateRequests
+                ? "LATE_REQUEST"
+                : "STANDARD",
+              status: applicationStatuses[index % applicationStatuses.length],
               motivation: "Вымышленная мотивация студента для демонстрации сценария.",
               studentSnapshot: {
-                fullName: "Елизавета Воронцова",
-                groupName: "TEST-ACADEMIC-31A",
+                fullName:
+                  index % 2 === 0
+                    ? "Елизавета Воронцова"
+                    : "Александр Фёдоров",
+                groupName: index % 2 === 0 ? "TEST-ACADEMIC-31A" : "TEST-ACADEMIC-32B",
                 course: 3,
-                faculty: "Факультет прикладных вычислений",
+                faculty:
+                  index % 2 === 0
+                    ? "Факультет прикладных вычислений"
+                    : "Факультет международных отношений",
               },
-              staffComment: index === 1 ? "Заявка передана на рассмотрение." : null,
-              decidedById: index === 1 ? demoStaffUserId : null,
+              staffComment:
+                applicationStatuses[index % applicationStatuses.length] ===
+                "IN_REVIEW"
+                  ? "Заявка передана на рассмотрение."
+                  : null,
+              decidedById:
+                applicationStatuses[index % applicationStatuses.length] ===
+                  "ACCEPTED" ||
+                applicationStatuses[index % applicationStatuses.length] ===
+                  "REJECTED"
+                  ? demoStaffUserId
+                  : null,
             },
           });
         }
