@@ -510,3 +510,7 @@
     flex-basis: 24px;
   }
 }
+
+.dateCell {
+  min-width: 150px;
+}
