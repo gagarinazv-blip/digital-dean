@@ -16,9 +16,12 @@ import {
   type PreparedOpportunityFile,
 } from "@/lib/opportunity-application-files";
 import {
+  getOpportunityApplicationFields,
+  getOpportunityApplicationAnswerInput,
+  getOpportunityApplicationRequirements,
   isStudentEligible,
-  opportunityTypeConfig,
   safeOpportunityReturnTo,
+  validateOpportunityApplicationAnswers,
   validateOpportunityDetails,
 } from "@/lib/opportunity-catalog";
 import { notifyStaff } from "@/lib/staff-notification-workflow";
@@ -164,9 +167,7 @@ export async function submitOpportunityApplication(
 
   const now = getDemoNow();
   const isLate = opportunity.deadline.getTime() < now.getTime();
-  const requestedKind = formData.get("kind") === "LATE_REQUEST"
-    ? "LATE_REQUEST"
-    : "STANDARD";
+  const requestedKind = isLate ? "LATE_REQUEST" : "STANDARD";
   if (isLate) {
     if (
       requestedKind !== "LATE_REQUEST" ||
@@ -185,30 +186,47 @@ export async function submitOpportunityApplication(
     throw new Error(eligibility.reason ?? "Возможность недоступна для вашего профиля.");
   }
 
-  const detailsInput: Record<string, unknown> = {};
-  for (const field of opportunityTypeConfig[opportunity.type].fields) {
-    const value = formData.get(`detail_${field.name}`);
-    detailsInput[field.name] = typeof value === "string" ? value : "";
-  }
-  const validatedDetails = validateOpportunityDetails(
+  const eventValidation = validateOpportunityDetails(
     opportunity.type,
-    detailsInput,
+    opportunity.details,
   );
-  if (Object.keys(validatedDetails.errors).length > 0) {
-    throw new Error(Object.values(validatedDetails.errors)[0]);
+  if (Object.keys(eventValidation.errors).length > 0) {
+    throw new Error("Параметры возможности настроены некорректно.");
   }
   if (
     opportunity.type === "SPORT" &&
-    validatedDetails.details.additionalRecruitment === true &&
-    validatedDetails.details.freeSpots === 0
+    eventValidation.details.additionalRecruitment === true &&
+    eventValidation.details.freeSpots === 0
   ) {
     throw new Error("Мест нет.");
   }
 
-  const motivationValue = formData.get("motivation");
-  const motivation =
-    typeof motivationValue === "string" ? motivationValue.trim() : "";
-  if (motivation.length > 2000) throw new Error("Мотивация: не более 2000 символов.");
+  const portfolioItems = await prisma.portfolioItem.findMany({
+    where: { studentId: student.id },
+    select: { id: true, title: true },
+  });
+  const applicationFields = getOpportunityApplicationFields(opportunity.type, {
+    eventDetails: eventValidation.details,
+    directions: opportunity.directions,
+    portfolioItems,
+  });
+  const answerInput = getOpportunityApplicationAnswerInput(
+    formData,
+    applicationFields,
+  );
+  const validatedAnswers = validateOpportunityApplicationAnswers(
+    opportunity.type,
+    answerInput,
+    {
+      eventDetails: eventValidation.details,
+      directions: opportunity.directions,
+      portfolioItems,
+    },
+  );
+  if (Object.keys(validatedAnswers.errors).length > 0) {
+    throw new Error(Object.values(validatedAnswers.errors)[0]);
+  }
+
   const lateReasonValue = formData.get("lateReason");
   const lateReason =
     typeof lateReasonValue === "string" ? lateReasonValue.trim() : "";
@@ -216,7 +234,11 @@ export async function submitOpportunityApplication(
     throw new Error("Причина индивидуального запроса должна содержать от 20 до 1000 символов.");
   }
 
-  const requirements = parseRequirements(opportunity.requiredDocuments);
+  const requirements = getOpportunityApplicationRequirements(
+    opportunity.type,
+    eventValidation.details,
+    parseRequirements(opportunity.requiredDocuments),
+  );
   const files = await prepareApplicationFiles(
     formData,
     student.id,
@@ -263,9 +285,9 @@ export async function submitOpportunityApplication(
             opportunityId,
             studentId: student.id,
             kind: requestedKind,
-            motivation: motivation || null,
+            motivation: validatedAnswers.motivation,
             lateReason: requestedKind === "LATE_REQUEST" ? lateReason : null,
-            details: validatedDetails.details as Prisma.InputJsonObject,
+            details: validatedAnswers.details as Prisma.InputJsonObject,
             studentSnapshot: {
               fullName: studentRecord.fullName,
               groupName: studentRecord.group.name,

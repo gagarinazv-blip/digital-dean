@@ -121,6 +121,10 @@
   overflow-wrap: break-word;
 }
 
+.studentFacts > div {
+  display: contents;
+}
+
 .facts dt,
 .studentFacts dt {
   color: var(--muted, #79716d);

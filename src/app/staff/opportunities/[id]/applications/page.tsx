@@ -9,7 +9,9 @@ import { CampusLoading } from "@/components/campus-section";
 import { getPrisma } from "@/lib/prisma";
 import { requireStaffContext } from "@/lib/staff";
 import {
-  opportunityTypeConfig,
+  applicationAnswersSchema,
+  filterOpportunityApplicationAnswers,
+  getOpportunityDetailFacts,
   validateOpportunityDetails,
 } from "@/lib/opportunity-catalog";
 import { OpportunityApplicationStatusForm } from "../../application-status-form";
@@ -70,7 +72,13 @@ async function StaffApplicationsContent({
   const prisma = getPrisma();
   const opportunity = await prisma.opportunity.findUnique({
     where: { id: opportunityId },
-    select: { id: true, title: true, type: true },
+    select: {
+      id: true,
+      title: true,
+      type: true,
+      details: true,
+      directions: true,
+    },
   });
   if (!opportunity) notFound();
   const applications = await prisma.opportunityApplication.findMany({
@@ -92,12 +100,60 @@ async function StaffApplicationsContent({
       files: { orderBy: { id: "asc" } },
     },
   });
+  const portfolioReferences = applications.flatMap((application) => {
+    const answers = filterOpportunityApplicationAnswers(
+      opportunity.type,
+      application.details,
+    );
+    const ids = answers.portfolioItemIds;
+    return Array.isArray(ids)
+      ? ids
+          .filter((id): id is number => typeof id === "number")
+          .map((id) => ({ id, studentId: application.studentId }))
+      : [];
+  });
+  const applicationPortfolioItems =
+    portfolioReferences.length > 0
+      ? await prisma.portfolioItem.findMany({
+          where: {
+            OR: portfolioReferences.map((reference) => ({
+              id: reference.id,
+              studentId: reference.studentId,
+            })),
+          },
+          select: { id: true, studentId: true, title: true },
+        })
+      : [];
+  const portfolioLabels = new Map(
+    applicationPortfolioItems.map((item) => [
+      `${item.studentId}:${item.id}`,
+      item.title,
+    ]),
+  );
+  const eventDetails = validateOpportunityDetails(
+    opportunity.type,
+    opportunity.details,
+  ).details;
+  const eventFacts = getOpportunityDetailFacts(opportunity.type, eventDetails);
 
   return (
     <main className={styles.page}>
       <p className={styles.eyebrow}>Сотрудникам · Возможности</p>
       <h1>Заявки: {opportunity.title}</h1>
       <p><Link href="/staff/opportunities">← К возможностям</Link></p>
+      {eventFacts.length > 0 && (
+        <section>
+          <h2>Параметры возможности</h2>
+          <dl className={styles.applicationDetails}>
+            {eventFacts.map((fact) => (
+              <div key={fact.label}>
+                <dt>{fact.label}</dt>
+                <dd>{fact.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      )}
       <form className={styles.applicationFilters} method="get">
         <label>
           Статус
@@ -125,11 +181,13 @@ async function StaffApplicationsContent({
       ) : (
         <div className={styles.applicationList}>
           {applications.map((application) => {
-            const details = validateOpportunityDetails(
+            const answers = filterOpportunityApplicationAnswers(
               opportunity.type,
-              application.details as Record<string, unknown>,
-            ).details;
-            const detailFields = opportunityTypeConfig[opportunity.type].fields;
+              application.details,
+            );
+            const answerFields = applicationAnswersSchema[
+              opportunity.type
+            ].fields.filter((field) => field.name !== "motivation");
             const snapshotName =
               snapshotValue(application.studentSnapshot, "fullName") ||
               application.student.fullName;
@@ -188,16 +246,33 @@ async function StaffApplicationsContent({
                     <p>{application.lateReason}</p>
                   </section>
                 )}
-                {detailFields.some((field) => details[field.name] !== undefined) && (
+                {answerFields.some((field) => answers[field.name] !== undefined) && (
                   <section>
                     <h3>Ответы студента</h3>
                     <dl className={styles.applicationDetails}>
-                      {detailFields.map((field) => {
-                        const value = details[field.name];
+                      {answerFields.map((field) => {
+                        const value = answers[field.name];
                         return value === undefined ? null : (
                           <div key={field.name}>
                             <dt>{field.label}</dt>
-                            <dd>{typeof value === "boolean" ? (value ? "Да" : "Нет") : String(value)}</dd>
+                            <dd>
+                              {typeof value === "boolean"
+                                ? value
+                                  ? "Да"
+                                  : "Нет"
+                                : Array.isArray(value)
+                                  ? value
+                                      .map((item) =>
+                                        field.name === "portfolioItemIds" &&
+                                        typeof item === "number"
+                                          ? portfolioLabels.get(
+                                              `${application.studentId}:${item}`,
+                                            ) ?? `Запись портфолио #${item}`
+                                          : String(item),
+                                      )
+                                      .join(", ")
+                                  : String(value)}
+                            </dd>
                           </div>
                         );
                       })}

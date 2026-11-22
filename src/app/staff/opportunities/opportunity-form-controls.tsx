@@ -16,7 +16,22 @@ export function OpportunityTypeFields({
   initialDetails: Record<string, unknown>;
 }) {
   const [type, setType] = useState(initialType);
-  const details = opportunityTypeConfig[type].fields;
+  const [typeDetails, setTypeDetails] = useState(initialDetails);
+  const [auditionRequired, setAuditionRequired] = useState(
+    initialDetails.auditionRequired === true,
+  );
+  const [additionalRecruitment, setAdditionalRecruitment] = useState(
+    initialDetails.additionalRecruitment === true,
+  );
+  const details = opportunityTypeConfig[type].opportunityDetailsSchema.filter(
+    (field) =>
+      (type !== "CULTURAL" ||
+        field.name !== "auditionWhen" ||
+        auditionRequired) &&
+      (type !== "SPORT" ||
+        field.name !== "freeSpots" ||
+        additionalRecruitment),
+  );
 
   return (
     <>
@@ -25,7 +40,17 @@ export function OpportunityTypeFields({
         <select
           name="type"
           value={type}
-          onChange={(event) => setType(event.currentTarget.value as OpportunityType)}
+          onChange={(event) => {
+            const nextType = event.currentTarget.value as OpportunityType;
+            if (nextType !== type) setTypeDetails({});
+            setType(nextType);
+            setAuditionRequired(
+              nextType === type && typeDetails.auditionRequired === true,
+            );
+            setAdditionalRecruitment(
+              nextType === type && typeDetails.additionalRecruitment === true,
+            );
+          }}
           required
         >
           {opportunityTypes.map((option) => (
@@ -38,7 +63,7 @@ export function OpportunityTypeFields({
       <fieldset className="opportunity-type-fields">
         <legend>Параметры типа</legend>
         {details.map((field) => {
-          const value = initialDetails[field.name];
+          const value = typeDetails[field.name];
           if (field.type === "checkbox") {
             return (
               <label className="opportunity-check" key={field.name}>
@@ -47,6 +72,14 @@ export function OpportunityTypeFields({
                   name={`detail_${field.name}`}
                   value="true"
                   defaultChecked={value === true}
+                  onChange={
+                    field.name === "auditionRequired"
+                      ? (event) => setAuditionRequired(event.currentTarget.checked)
+                      : field.name === "additionalRecruitment"
+                        ? (event) =>
+                            setAdditionalRecruitment(event.currentTarget.checked)
+                        : undefined
+                  }
                 />
                 {field.label}
               </label>

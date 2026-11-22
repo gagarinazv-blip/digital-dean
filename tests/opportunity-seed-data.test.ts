@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { validateOpportunityDetails } from "@/lib/opportunity-catalog";
 import { opportunitySeeds } from "../prisma/opportunity-seed-data";
 
 describe("opportunity demo seed", () => {
@@ -38,5 +39,14 @@ describe("opportunity demo seed", () => {
         (seed) => seed.allowLateRequests && seed.offset < 0,
       ),
     ).toBe(true);
+  });
+
+  it("provides valid required details for every seeded opportunity", () => {
+    for (const seed of opportunitySeeds) {
+      expect(
+        validateOpportunityDetails(seed.type, seed.details).errors,
+        seed.title,
+      ).toEqual({});
+    }
   });
 });

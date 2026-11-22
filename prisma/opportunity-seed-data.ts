@@ -55,6 +55,7 @@ function makeSeedSet(
         rehearsalSchedule: "По вторникам",
         location: "Кампус, студия 3",
         auditionRequired: index % 2 === 0,
+        ...(index % 2 === 0 ? { auditionWhen: "По предварительной записи" } : {}),
         seats: 18,
       },
       SPORT: {

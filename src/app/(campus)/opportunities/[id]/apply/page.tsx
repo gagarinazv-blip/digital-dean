@@ -6,16 +6,22 @@ import { getPrisma } from "@/lib/prisma";
 import { requireStudent } from "@/lib/student";
 import { getDemoNow } from "@/lib/demo-date";
 import {
+  getOpportunityApplicationFields,
+  getOpportunityApplicationRequirements,
+  getOpportunityDetailFacts,
   isStudentEligible,
-  opportunityTypeConfig,
   safeOpportunityReturnTo,
+  validateOpportunityDetails,
 } from "@/lib/opportunity-catalog";
 import {
   parseRequirements,
   type OpportunityRequirement,
 } from "@/lib/opportunities";
 import { submitOpportunityAction } from "../../actions";
-import { OpportunityApplicationForm } from "../opportunity-application-form";
+import {
+  OpportunityApplicationAnswerFields,
+  OpportunityApplicationForm,
+} from "../opportunity-application-form";
 import styles from "../opportunity.module.css";
 
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -131,9 +137,21 @@ async function ApplyContent({
       select: { id: true, title: true, originalName: true },
     }),
   ]);
-  const requirements = parseRequirements(opportunity.requiredDocuments);
+  const eventDetails = validateOpportunityDetails(
+    opportunity.type,
+    opportunity.details,
+  ).details;
+  const requirements = getOpportunityApplicationRequirements(
+    opportunity.type,
+    eventDetails,
+    parseRequirements(opportunity.requiredDocuments),
+  );
   const submit = submitOpportunityAction.bind(null, id);
-  const config = opportunityTypeConfig[opportunity.type];
+  const answerFields = getOpportunityApplicationFields(opportunity.type, {
+    eventDetails,
+    directions: opportunity.directions,
+    portfolioItems,
+  });
   const canSubmit = !active && eligibility.eligible && (open || lateAvailable);
 
   return (
@@ -171,6 +189,15 @@ async function ApplyContent({
             <dt>Направление</dt><dd>{student.direction}</dd>
           </dl>
           <p>Данные подставлены из профиля. Если они неверны, обратитесь в деканат.</p>
+          <h2>Параметры возможности</h2>
+          <dl className={styles.studentFacts}>
+            {getOpportunityDetailFacts(opportunity.type, eventDetails).map((fact) => (
+              <div key={fact.label}>
+                <dt>{fact.label}</dt>
+                <dd>{fact.value}</dd>
+              </div>
+            ))}
+          </dl>
           <Link href={`/opportunities/catalog${returnTo.includes("?") ? returnTo.slice(returnTo.indexOf("?")) : ""}`}>
             К каталогу
           </Link>
@@ -196,11 +223,6 @@ async function ApplyContent({
               formId={`opportunity-application-${id}`}
               isLate={isLate}
             >
-              <input
-                type="hidden"
-                name="kind"
-                value={isLate ? "LATE_REQUEST" : "STANDARD"}
-              />
               {isLate && (
                 <label className={styles.formField}>
                   Причина индивидуального запроса
@@ -216,38 +238,8 @@ async function ApplyContent({
                   </span>
                 </label>
               )}
-              <label className={styles.formField}>
-                Мотивация
-                <textarea name="motivation" maxLength={2000} />
-              </label>
               <h2>Ответы по типу возможности</h2>
-              {config.fields.map((field) => (
-                <label className={styles.formField} key={field.name}>
-                  {field.label}{field.required ? " *" : ""}
-                  {field.type === "textarea" ? (
-                    <textarea
-                      name={`detail_${field.name}`}
-                      maxLength={field.maxLength}
-                      required={field.required}
-                    />
-                  ) : field.type === "checkbox" ? (
-                    <input
-                      name={`detail_${field.name}`}
-                      type="checkbox"
-                      value="true"
-                    />
-                  ) : (
-                    <input
-                      name={`detail_${field.name}`}
-                      type={field.type}
-                      min={field.min}
-                      max={field.max}
-                      maxLength={field.maxLength}
-                      required={field.required}
-                    />
-                  )}
-                </label>
-              ))}
+              <OpportunityApplicationAnswerFields fields={answerFields} />
               <h2>Необходимые документы</h2>
               <ApplicationFileSlots
                 requirements={requirements}

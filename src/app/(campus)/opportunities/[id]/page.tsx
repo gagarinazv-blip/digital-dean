@@ -6,6 +6,7 @@ import { CampusLoading, CampusSection } from "@/components/campus-section";
 import { getPrisma } from "@/lib/prisma";
 import { requireStudent } from "@/lib/student";
 import {
+  getOpportunityDetailFacts,
   isStudentEligible,
   opportunityDirectionLabels,
   opportunityTypeConfig,
@@ -130,16 +131,14 @@ async function OpportunityContent({
           <p className={styles.longText}>{opportunity.requirements}</p>
           <h2>Ключевые факты</h2>
           <dl className={styles.facts}>
-            {config.fields.map((field) => {
-              const value = details[field.name];
-              if (value === undefined || value === "") return null;
-              return (
-                <div key={field.name}>
-                  <dt>{field.label}</dt>
-                  <dd>{typeof value === "boolean" ? (value ? "Да" : "Нет") : String(value)}</dd>
+            {getOpportunityDetailFacts(opportunity.type, details).map(
+              (fact) => (
+                <div key={fact.label}>
+                  <dt>{fact.label}</dt>
+                  <dd>{fact.value}</dd>
                 </div>
-              );
-            })}
+              ),
+            )}
             <div>
               <dt>Направления</dt>
               <dd>

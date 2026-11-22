@@ -164,7 +164,7 @@ export function validateOpportunityForm(
     stringValue(formData, "requiredDocuments"),
   );
   const detailInput: Record<string, unknown> = {};
-  for (const field of opportunityTypeConfig[type].fields) {
+  for (const field of opportunityTypeConfig[type].opportunityDetailsSchema) {
     const value = formData.get(`detail_${field.name}`);
     detailInput[field.name] = typeof value === "string" ? value : "";
   }

@@ -12,6 +12,7 @@ import { requireStudent } from "@/lib/student";
 import { getDemoNow } from "@/lib/demo-date";
 import {
   isStudentEligible,
+  getOpportunityDetailFacts,
   opportunityDirectionLabels,
   opportunityDirections,
   opportunityTypeConfig,
@@ -584,18 +585,15 @@ async function CatalogContent({
                     )}
                     {Object.keys(details).length > 0 && (
                       <ul className={styles.facts}>
-                        {config.fields
-                          .filter((field) => field.type !== "checkbox")
-                          .slice(0, 3)
-                          .map((field) => {
-                            const value = details[field.name];
-                            return value === undefined || value === "" ? null : (
-                              <li key={field.name}>
-                                <span>{field.label}</span>
-                                <strong>{String(value)}</strong>
-                              </li>
-                            );
-                          })}
+                        {getOpportunityDetailFacts(
+                          opportunity.type,
+                          details,
+                        ).map((fact) => (
+                          <li key={fact.label}>
+                            <span>{fact.label}</span>
+                            <strong>{fact.value}</strong>
+                          </li>
+                        ))}
                       </ul>
                     )}
                     <div className={styles.tags}>
