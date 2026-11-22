@@ -6,6 +6,21 @@
   margin-bottom: var(--space-6);
 }
 
+.headingWithAction {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.headingCopy {
+  min-width: 0;
+}
+
+.headingAction {
+  flex: 0 0 auto;
+}
+
 .eyebrow {
   margin-bottom: var(--space-2);
   color: var(--color-blue-700);
@@ -235,6 +250,10 @@
   .heading h1 {
     font-size: var(--font-size-h1-mobile);
     line-height: 32px;
+  }
+
+  .headingWithAction {
+    flex-direction: column;
   }
 
   .card,
