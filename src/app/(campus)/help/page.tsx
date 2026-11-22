@@ -96,7 +96,7 @@ function getRequestSelectionHref(
   if (status) {
     params.set("status", status);
   }
-  return `/requests?${params.toString()}#request-details`;
+  return `/help?${params.toString()}#request-details`;
 }
 
 function RecentRequests({
@@ -116,7 +116,7 @@ function RecentRequests({
         </div>
         <Link
           className={styles.secondaryLink}
-          href="/requests?tab=requests"
+          href="/help?tab=requests"
         >
           Все заявки <span aria-hidden="true">→</span>
         </Link>
@@ -453,28 +453,28 @@ export async function HelpWorkspace({
           <Link
             aria-current={activeTab === "documents" ? "page" : undefined}
             className={activeTab === "documents" ? styles.activeTab : ""}
-            href="/documents?tab=documents"
+            href="/help?tab=documents"
           >
             Мои документы
           </Link>
           <Link
             aria-current={activeTab === "portfolio" ? "page" : undefined}
             className={activeTab === "portfolio" ? styles.activeTab : ""}
-            href="/documents?tab=portfolio"
+            href="/help?tab=portfolio"
           >
             Портфолио
           </Link>
           <Link
             aria-current={activeTab === "catalog" ? "page" : undefined}
             className={activeTab === "catalog" ? styles.activeTab : ""}
-            href="/documents?tab=catalog"
+            href="/help?tab=catalog"
           >
             Каталог услуг
           </Link>
           <Link
             aria-current={activeTab === "requests" ? "page" : undefined}
             className={activeTab === "requests" ? styles.activeTab : ""}
-            href="/requests?tab=requests"
+            href="/help?tab=requests"
           >
             Мои заявки
             <span className={styles.tabCount}>· {requests.length}</span>
@@ -483,7 +483,7 @@ export async function HelpWorkspace({
 
         {activeTab === "catalog" ? (
           <>
-            <form action="/documents" className={styles.filterBar} role="search">
+            <form action="/help" className={styles.filterBar} role="search">
               <input name="tab" type="hidden" value={activeTab} />
               <label className={styles.searchField}>
                 <span className={styles.visuallyHidden}>Поиск услуг</span>
@@ -573,14 +573,14 @@ export async function HelpWorkspace({
                 <p className={styles.kicker}>Результаты обработанных заявок</p>
                 <h2 id="documents-title">Мои документы</h2>
               </div>
-              <Link className={styles.secondaryLink} href="/documents?tab=catalog">
+              <Link className={styles.secondaryLink} href="/help?tab=catalog">
                 Заказать документ <span aria-hidden="true">→</span>
               </Link>
             </div>
             {documents.length === 0 ? (
               <EmptyState
                 action={
-                  <Link className={styles.serviceLink} href="/documents?tab=catalog">
+                  <Link className={styles.serviceLink} href="/help?tab=catalog">
                     Перейти в каталог услуг <span aria-hidden="true">→</span>
                   </Link>
                 }
@@ -647,7 +647,7 @@ export async function HelpWorkspace({
               aria-label="Список заявок"
             >
               <RequestSearchForm
-                routeBase="/requests"
+                routeBase="/help"
                 search={search}
                 status={selectedStatus}
               />
@@ -658,8 +658,8 @@ export async function HelpWorkspace({
                       className={styles.serviceLink}
                       href={
                         requests.length === 0
-                          ? "/documents?tab=catalog"
-                          : "/requests?tab=requests"
+                          ? "/help?tab=catalog"
+                          : "/help?tab=requests"
                       }
                     >
                       {requests.length === 0

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { logoutAction } from "@/app/profile/actions";
+import { SearchBox } from "@/components/search-box";
 import { getAvatarInitials, getAvatarTone } from "@/lib/avatar";
 import { StaffNavigation } from "@/components/staff-navigation";
 import styles from "./staff-layout.module.css";
@@ -47,6 +48,7 @@ export function StaffLayout({
               {staff.position} · {staff.department}
             </span>
           </div>
+          <SearchBox />
           <div className={styles.account}>
             <div className={styles.accountText}>
               <span

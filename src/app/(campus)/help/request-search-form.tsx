@@ -9,7 +9,7 @@ const requestStatuses = Object.keys(requestStatusLabels) as RequestStatus[];
 export function RequestSearchForm({
   search,
   status,
-  routeBase = "/requests",
+  routeBase = "/help",
 }: {
   search: string;
   status: RequestStatus | "";

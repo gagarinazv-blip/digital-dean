@@ -1,0 +1,157 @@
+.page {
+  width: min(100%, 980px);
+  display: grid;
+  gap: 24px;
+  margin: 0 auto;
+  padding: 40px 0 56px;
+}
+
+.heading {
+  display: grid;
+  gap: 8px;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--color-wine-700);
+  font-size: var(--font-size-caption);
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.heading h1 {
+  margin: 0;
+  font-size: var(--font-size-h1);
+  font-weight: 650;
+  line-height: 1.15;
+  overflow-wrap: break-word;
+}
+
+.description,
+.emptyState {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--font-size-body-compact);
+  line-height: 1.55;
+}
+
+.groups {
+  display: grid;
+  gap: 16px;
+}
+
+.group {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.groupHeading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.groupHeading h2 {
+  margin: 0;
+  font-size: var(--font-size-h3);
+  font-weight: 650;
+}
+
+.groupHeading span {
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+}
+
+.results {
+  display: grid;
+}
+
+.result {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-ink);
+  text-decoration: none;
+}
+
+.result:last-child {
+  border-bottom: 0;
+}
+
+.result:hover {
+  background: var(--color-subtle);
+}
+
+.result:focus-visible,
+.loadMore:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: -3px;
+}
+
+.result strong {
+  font-size: var(--font-size-body-compact);
+  font-weight: 600;
+  overflow-wrap: break-word;
+}
+
+.result span {
+  color: var(--color-muted);
+  font-size: var(--font-size-label);
+  line-height: 1.4;
+  overflow-wrap: break-word;
+}
+
+.emptyState {
+  padding: 24px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.loadMore {
+  min-height: var(--size-touch);
+  justify-self: center;
+  padding: 0 22px;
+  border: 1px solid var(--color-wine-900);
+  border-radius: var(--radius-pill);
+  background: var(--color-wine-900);
+  color: var(--color-surface);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--font-size-label);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.loadMore:hover {
+  background: var(--color-wine-700);
+}
+
+@media (max-width: 680px) {
+  .page {
+    gap: 18px;
+    padding: 24px 0 36px;
+  }
+
+  .heading h1 {
+    font-size: var(--font-size-h1-mobile);
+  }
+
+  .groupHeading {
+    padding: 15px 16px;
+  }
+
+  .result {
+    padding: 14px 16px;
+  }
+}

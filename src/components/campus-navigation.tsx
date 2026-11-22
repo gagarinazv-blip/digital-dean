@@ -140,8 +140,10 @@ export function CampusNavigation({
         {navigation.map((item) => {
           const isHelpRoute =
             item.href === "/help" &&
-            (pathname.startsWith("/documents") ||
-              pathname.startsWith("/requests"));
+            (pathname === "/documents" ||
+              pathname.startsWith("/documents/") ||
+              pathname === "/requests" ||
+              pathname.startsWith("/requests/"));
           const isCurrent =
             pathname === item.href ||
             (item.href !== "/" && pathname.startsWith(`${item.href}/`)) ||

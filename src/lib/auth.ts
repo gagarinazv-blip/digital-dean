@@ -480,6 +480,12 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   };
 }
 
+export async function getCurrentSessionRateLimitKey(): Promise<string | null> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
+  return token ? sha256(token) : null;
+}
+
 export async function getSessionPrincipalForToken(
   token: string,
 ): Promise<SessionPrincipal | null> {

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { logoutAction } from "@/app/profile/actions";
 import { CampusNavigation } from "@/components/campus-navigation";
 import { NotificationBell } from "@/components/notification-bell";
+import { SearchBox } from "@/components/search-box";
 import { getAvatarInitials, getAvatarTone } from "@/lib/avatar";
 import styles from "./campus-layout.module.css";
 
@@ -48,32 +49,8 @@ export function CampusLayout({
             </span>
           </Link>
           <span className={styles.headerDescriptor}>Студенческий кабинет</span>
-          <form
-            action="/documents"
-            className={styles.headerSearch}
-            role="search"
-          >
-            <input name="tab" type="hidden" value="catalog" />
-            <svg
-              aria-hidden="true"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="1.8"
-              viewBox="0 0 24 24"
-            >
-              <circle cx="11" cy="11" r="7" />
-              <path d="m20 20-4-4" />
-            </svg>
-            <input
-              aria-label="Поиск по сервисам"
-              name="q"
-              placeholder="Поиск по сервисам"
-              type="search"
-            />
-          </form>
           <div className={styles.headerActions}>
+            <SearchBox />
             <NotificationBell
               initialUnreadCount={unreadNotificationCount}
               studentId={student.id}

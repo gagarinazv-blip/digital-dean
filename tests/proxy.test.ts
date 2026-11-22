@@ -49,13 +49,20 @@ const managerPrincipal = {
   },
 };
 
-function makeRequest(path: string, token?: string) {
+function makeRequest(
+  path: string,
+  token?: string,
+  method: "GET" | "POST" = "GET",
+) {
   const headers = new Headers();
   if (token) {
     headers.set("cookie", `digital-dean-session=${token}`);
   }
 
-  return new NextRequest(`https://digital-dean.test${path}`, { headers });
+  return new NextRequest(`https://digital-dean.test${path}`, {
+    headers,
+    method,
+  });
 }
 
 beforeEach(() => {
@@ -95,13 +102,13 @@ describe("role and request access proxy", () => {
     expect(getSessionPrincipalForTokenMock).not.toHaveBeenCalled();
   });
 
-  it("returns 403 when a student opens the staff area", async () => {
+  it("redirects a student opening the staff area to the student home", async () => {
     getSessionPrincipalForTokenMock.mockResolvedValue(studentPrincipal);
 
     const response = await proxy(makeRequest("/staff", "opaque-session-token"));
 
-    expect(response.status).toBe(403);
-    expect(await response.text()).toBe("403 — Доступ запрещён");
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("https://digital-dean.test/");
     expect(getSessionPrincipalForTokenMock).toHaveBeenCalledWith(
       "opaque-session-token",
     );
@@ -137,14 +144,28 @@ describe("role and request access proxy", () => {
     );
   });
 
-  it("returns 403 when staff opens a student-only section", async () => {
+  it("redirects staff opening a student-only section to the staff home", async () => {
     getSessionPrincipalForTokenMock.mockResolvedValue(staffPrincipal);
 
     const response = await proxy(
       makeRequest("/schedule", "opaque-session-token"),
     );
 
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "https://digital-dean.test/staff",
+    );
+  });
+
+  it("keeps direct non-GET requests forbidden when roles do not match", async () => {
+    getSessionPrincipalForTokenMock.mockResolvedValue(studentPrincipal);
+
+    const response = await proxy(
+      makeRequest("/staff/requests/243", "opaque-session-token", "POST"),
+    );
+
     expect(response.status).toBe(403);
+    expect(await response.text()).toBe("403 — Доступ запрещён");
   });
 
   it("allows a signed-in student request route to reach its owner-scoped loader", async () => {

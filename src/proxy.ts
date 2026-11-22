@@ -43,13 +43,21 @@ export async function proxy(request: NextRequest) {
 
   const requiredRole = isStaffArea ? "STAFF" : "STUDENT";
   if (principal.role !== requiredRole) {
-    return new Response("403 — Доступ запрещён", {
-      status: 403,
-      headers: {
-        "Cache-Control": "no-store",
-        "Content-Type": "text/plain; charset=utf-8",
-      },
-    });
+    if (
+      pathname.startsWith("/api/") ||
+      (request.method !== "GET" && request.method !== "HEAD")
+    ) {
+      return new Response("403 — Доступ запрещён", {
+        status: 403,
+        headers: {
+          "Cache-Control": "no-store",
+          "Content-Type": "text/plain; charset=utf-8",
+        },
+      });
+    }
+
+    const destination = principal.role === "STAFF" ? "/staff" : "/";
+    return NextResponse.redirect(new URL(destination, request.url));
   }
 
   const staffRequestPath = pathname.match(/^\/staff\/requests\/([^/]+)$/);
@@ -78,6 +86,8 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     "/",
+    "/digest/:path*",
+    "/documents/:path*",
     "/grades/:path*",
     "/help/:path*",
     "/notifications/:path*",

@@ -83,7 +83,7 @@ export default async function NewRequestPage({
     >
       <div className={styles.content}>
         <nav className={styles.breadcrumbs} aria-label="Хлебные крошки">
-          <Link href="/documents">Документы и заявки</Link>
+          <Link href="/help?tab=catalog">Документы и заявки</Link>
           <span aria-hidden="true">/</span>
           <span>
             {getRequestCatalogTitle(

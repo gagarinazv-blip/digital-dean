@@ -51,7 +51,7 @@ function makeHref(
   if (query) params.set("q", query);
   if (category) params.set("category", category);
   if (year) params.set("year", year);
-  return `/documents?${params.toString()}`;
+  return `/help?${params.toString()}`;
 }
 
 export function PortfolioView({
@@ -156,7 +156,7 @@ export function PortfolioView({
           </details>
         </div>
 
-        <form action="/documents" className={styles.filters} role="search">
+        <form action="/help" className={styles.filters} role="search">
           <input name="tab" type="hidden" value="portfolio" />
           <input name="folder" type="hidden" value={folder || "all"} />
           <label className={styles.field}>
