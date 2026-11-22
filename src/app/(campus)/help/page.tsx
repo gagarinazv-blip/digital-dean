@@ -567,7 +567,7 @@ export async function HelpWorkspace({
                   title={`По запросу «${search}» услуги не найдены`}
                 />
               ) : (
-                <div className={styles.serviceGrid}>
+                <div className={styles.serviceGrid} data-stagger>
                   {visibleServices.map((service) => (
                     <article className={styles.serviceCard} key={service.code}>
                       <span className={styles.serviceIcon}>
@@ -679,7 +679,7 @@ export async function HelpWorkspace({
                 title="Готовых документов пока нет"
               />
             ) : (
-              <div className={styles.documentGrid}>
+              <div className={styles.documentGrid} data-stagger>
                 {documents.map((document) => (
                   <article className={styles.documentCard} key={document.id}>
                     <div className={styles.documentHeading}>
@@ -771,7 +771,7 @@ export async function HelpWorkspace({
                   }
                 />
               ) : (
-                <ul className={styles.requestList}>
+                <ul className={styles.requestList} data-stagger>
                   {visibleRequests.map((request) => {
                     const serviceTitle = getRequestCatalogTitle(
                       request.catalogCode,

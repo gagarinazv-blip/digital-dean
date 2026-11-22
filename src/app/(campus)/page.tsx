@@ -249,7 +249,7 @@ async function CampusToday() {
   const firstName = data.student.fullName.split(" ")[0];
 
   return (
-    <main className={styles.page}>
+    <main className={styles.page} data-stagger>
       <div className={styles.top}>
         <section className={styles.welcome} aria-labelledby="welcome-title">
           <h1 id="welcome-title">
@@ -275,7 +275,7 @@ async function CampusToday() {
         <h2 className={controls.visuallyHidden} id="quick-actions-title">
           Быстрые действия
         </h2>
-        <nav className={styles.quickActions} aria-label="Быстрые действия">
+        <nav className={styles.quickActions} data-stagger aria-label="Быстрые действия">
           {quickActions.map((action) => (
             <Link
               className={styles.actionTile}

@@ -390,7 +390,7 @@ export function LessonAgenda({
   }
 
   return (
-    <ul className={styles.lessonList}>
+    <ul className={styles.lessonList} data-stagger>
       {day.lessons.map((lesson) => {
         const status = statusPresentation[lesson.status];
         const changedTime = Boolean(
@@ -1418,7 +1418,7 @@ export function ScheduleView({
       )}
 
       {view === "list" && (
-        <div aria-label="Список занятий по дням" className={styles.agendaFeed}>
+        <div aria-label="Список занятий по дням" className={styles.agendaFeed} data-stagger>
           {daysWithLessons.length > 0 ? (
             daysWithLessons.map((day) => (
               <section className={styles.agendaFeedDay} key={day.key}>
@@ -1459,6 +1459,7 @@ export function ScheduleView({
               className={`${styles.weekGrid} ${
                 showSunday ? styles.weekGridSeven : styles.weekGridSix
               }`}
+              data-stagger
             >
               <div className={styles.weekGridCorner} />
               {visibleWeekDays.map((day) => (
@@ -1556,7 +1557,7 @@ export function ScheduleView({
                 </button>
               ))}
             </nav>
-            <div className={styles.dayList}>
+            <div className={styles.dayList} data-stagger>
               {filteredDays.map((day) => (
                 <section
                   aria-current={day.key === todayKey ? "date" : undefined}

@@ -615,7 +615,7 @@ export function SessionView({
         </div>
       </header>
 
-      <section aria-label="Сводка сессии" className={styles.summaryGrid}>
+      <section aria-label="Сводка сессии" className={styles.summaryGrid} data-stagger>
         <article className={styles.summaryCard}>
           <span>Сдано</span>
           <strong>{summary.passed} <small>из {summary.total}</small></strong>
@@ -643,6 +643,7 @@ export function SessionView({
       <div
         aria-label={`Прогресс сессии: сдано ${summary.passed}, запланировано ${Math.max(0, summary.total - summary.passed - summary.debts)}, не сдано ${summary.debts} из ${summary.total}`}
         className={styles.progressTrack}
+        data-grow
         role="img"
       >
         <span
@@ -758,7 +759,7 @@ export function SessionView({
 
         {projection === "feed" ? (
           <div className={styles.feedLayout}>
-            <div className={styles.eventList}>
+            <div className={styles.eventList} data-stagger>
               {eventGroups.map(({ date, events }) => (
                 <section className={styles.dateGroup} key={date}>
                   <h4>

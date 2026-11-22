@@ -111,7 +111,7 @@ async function DigestContent({
             На этой неделе мероприятий пока нет
           </div>
         ) : (
-          <div className={styles.weekGrid}>
+          <div className={styles.weekGrid} data-stagger>
             {days.map((day) => {
               const isToday = day.dateKey === todayKey;
               return (

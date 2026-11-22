@@ -67,13 +67,14 @@ export function DayTimeline({
           />
         )}
         <ul aria-label={label}>
-          {timeline.items.map(({ event, lane, left, width }) => {
+          {timeline.items.map(({ event, lane, left, width }, order) => {
             const description = describe(event, event.id === mainId);
             return (
               <li
                 key={event.id}
                 style={{
                   "--lane": lane,
+                  "--order": order,
                   left: `${left}%`,
                   width: `${width}%`,
                 } as React.CSSProperties}

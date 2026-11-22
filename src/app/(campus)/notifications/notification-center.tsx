@@ -755,6 +755,7 @@ export function NotificationCenter({
                     <div
                       aria-labelledby={`group-${group.key}`}
                       className={styles.groupItems}
+                      data-stagger
                       role="list"
                     >
                       {group.notifications.map((notification) => (

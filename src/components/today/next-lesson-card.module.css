@@ -1,4 +1,4 @@
-/* Однотонная заливка, как у плиток, показывает состояние: шалфейная — занятие
+/* Однотонная заливка, как у плиток, показывает состояние: бежевая — занятие
    будет, серая — отменено, белая — занятий нет. Текст всегда тёмный.
    Размеры текста: 32 (28, 24), 18 и 14. */
 .card {
@@ -7,7 +7,7 @@
   gap: var(--space-3);
   padding: var(--space-4) var(--space-6) var(--space-5);
   border-radius: var(--radius-surface);
-  background: var(--color-hero-sage);
+  background: var(--color-hero-beige);
   box-shadow: var(--shadow-card);
   color: var(--color-ink);
   font-size: var(--font-size-body-compact);

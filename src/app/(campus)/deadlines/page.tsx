@@ -97,7 +97,7 @@ export default async function DeadlinesPage() {
     <CampusSection
       description="Что сдать, сколько осталось и сколько это весит в оценке."
       eyebrow="Учёба"
-      illustration="grades"
+      illustration="tasks"
       title="Задания"
       tone="sage"
     >
@@ -118,7 +118,7 @@ export default async function DeadlinesPage() {
             <h2 data-tone={group.key} id={`tasks-${group.key}`}>
               {group.title} <span>{group.tasks.length}</span>
             </h2>
-            <ul className={styles.list}>
+            <ul className={styles.list} data-stagger>
               {group.tasks.map((task) => (
                 <TaskCard key={task.id} task={task} />
               ))}

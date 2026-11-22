@@ -118,7 +118,7 @@ async function ApplicationsContent({
           <Link href="/opportunities/catalog">Перейти в каталог</Link>
         </div>
       ) : (
-        <div className={styles.list}>
+        <div className={styles.list} data-stagger>
           {applications.map((application) => (
             <article
               className={styles.card}

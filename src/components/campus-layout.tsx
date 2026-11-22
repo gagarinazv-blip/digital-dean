@@ -4,6 +4,7 @@ import { logoutAction } from "@/app/profile/actions";
 import { BRAND_NAME, BRAND_TAGLINE, BrandMark } from "@/components/brand-logo";
 import { CampusNavigation } from "@/components/campus-navigation";
 import { NotificationBell } from "@/components/notification-bell";
+import { SectionStage } from "@/components/section-stage";
 import { getAvatarInitials, getAvatarTone } from "@/lib/avatar";
 import styles from "./campus-layout.module.css";
 
@@ -110,7 +111,7 @@ export function CampusLayout({
           studentId={student.id}
           unreadNotificationCount={unreadNotificationCount}
         />
-        <div className={styles.content}>{children}</div>
+        <SectionStage className={styles.content}>{children}</SectionStage>
       </div>
     </div>
   );

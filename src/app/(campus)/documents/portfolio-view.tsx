@@ -203,7 +203,7 @@ export function PortfolioView({
             }
           />
         ) : (
-          <div className={styles.itemGrid}>
+          <div className={styles.itemGrid} data-stagger>
             {visibleItems.map((item) => (
               <article className={styles.itemCard} key={item.id}>
                 <div className={styles.itemHeading}>

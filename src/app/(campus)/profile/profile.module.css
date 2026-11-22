@@ -120,18 +120,6 @@
   font-size: var(--font-size-body-compact);
 }
 
-.heroAccent {
-  position: absolute;
-  inset: auto -3% -100% auto;
-  width: min(360px, 45%);
-  aspect-ratio: 1;
-  border: 1px solid color-mix(in srgb, var(--color-blue-700) 18%, transparent);
-  border-radius: 50%;
-  box-shadow:
-    0 0 0 26px color-mix(in srgb, var(--color-blue-700) 4%, transparent),
-    0 0 0 54px color-mix(in srgb, var(--color-blue-700) 3%, transparent);
-  pointer-events: none;
-}
 
 .information {
   display: grid;
@@ -353,11 +341,6 @@
     line-height: 1.5;
   }
 
-  .heroAccent {
-    right: -24%;
-    bottom: -134%;
-    width: 55%;
-  }
 
   .information {
     gap: var(--space-3);

@@ -1,6 +1,7 @@
 import { Suspense, type ReactNode } from "react";
 import { cookies } from "next/headers";
 import { CampusLayout } from "@/components/campus-layout";
+import "@/app/section-motion.css";
 import { CampusLoading } from "@/components/campus-section";
 import { DemoNowProvider } from "@/components/demo-now";
 import {

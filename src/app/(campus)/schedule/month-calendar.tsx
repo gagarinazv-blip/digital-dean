@@ -71,6 +71,7 @@ export function MonthCalendar({
       <div
         aria-label="Календарь занятий на месяц"
         className={styles.grid}
+        data-stagger="week"
         onKeyDown={(event) => {
           const cell =
             event.target instanceof Element
