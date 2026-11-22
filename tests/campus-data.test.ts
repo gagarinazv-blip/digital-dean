@@ -122,13 +122,6 @@ describe("getCampusTodayData", () => {
         take: 3,
       }),
     );
-    expect(prismaMock.notification.count).toHaveBeenCalledWith({
-      where: {
-        type: { not: null },
-        studentId: student.id,
-        readAt: null,
-      },
-    });
   });
 
   it("chooses the next lesson and shows the three newest changes", async () => {

@@ -5,7 +5,6 @@ import {
   getUpcomingDeadlines,
 } from "@/lib/deadline-utils";
 import { getDemoNow } from "@/lib/demo-date";
-import { countUnreadStudentNotifications } from "@/lib/notification-data";
 import { getPrisma } from "@/lib/prisma";
 import { requireStudent } from "@/lib/student";
 import { getMoscowDateKey, getMoscowWeek } from "@/lib/campus-time";
@@ -27,7 +26,6 @@ export async function getCampusTodayData(now = getDemoNow()) {
     deadlineRecords,
     announcements,
     requests,
-    unreadNotificationCount,
   ] = await Promise.all([
     getScheduleForGroup(student.group.id, "week", { now }),
     prisma.deadline.findMany({
@@ -76,7 +74,6 @@ export async function getCampusTodayData(now = getDemoNow()) {
         updatedAt: true,
       },
     }),
-    countUnreadStudentNotifications(student.id),
   ]);
 
   const overdueDeadlines = deadlineRecords
@@ -230,6 +227,5 @@ export async function getCampusTodayData(now = getDemoNow()) {
     firstOverdueDeadlineId: overdueDeadlines[0]?.id ?? null,
     changes,
     latestRequest: requests[0] ?? null,
-    unreadNotificationCount,
   };
 }
