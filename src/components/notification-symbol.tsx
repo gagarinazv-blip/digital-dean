@@ -6,6 +6,7 @@ const typeClass: Record<NotificationType, string> = {
   DEADLINE: styles.deadline,
   REQUEST_STATUS: styles.request,
   ANNOUNCEMENT: styles.announcement,
+  OPPORTUNITY_STATUS: styles.request,
 };
 
 export function NotificationSymbol({ type }: { type: NotificationType }) {

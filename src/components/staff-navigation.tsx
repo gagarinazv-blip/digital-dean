@@ -10,6 +10,7 @@ const navigationItems = [
   { href: "/staff/students", label: "Студенты", icon: User },
   { href: "/staff/achievements", label: "Достижения", icon: GraphUp },
   { href: "/staff/events", label: "Дайджест событий", icon: Calendar },
+  { href: "/staff/opportunities", label: "Возможности", icon: TaskList },
 ] as const;
 
 export function StaffNavigation() {

@@ -1,8 +1,7 @@
+import { redirect } from "next/navigation";
 import { HelpWorkspace } from "@/app/(campus)/help/page";
 
-export const instant = false;
-
-export default function DocumentsPage({
+export default async function DocumentsPage({
   searchParams,
 }: {
   searchParams: Promise<{
@@ -15,6 +14,10 @@ export default function DocumentsPage({
     folder?: string | string[];
   }>;
 }) {
+  const query = await searchParams;
+  if (query.tab === "portfolio") {
+    redirect("/opportunities/portfolio");
+  }
   return HelpWorkspace({
     searchParams,
     defaultTab: "catalog",

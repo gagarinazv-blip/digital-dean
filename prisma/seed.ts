@@ -335,6 +335,38 @@ async function seedPortfolioDemo(prisma: PrismaClient): Promise<void> {
       throw error;
     }
   }
+
+  const alpha = studentByLogin.get("student.alpha");
+  if (alpha) {
+    const documents = [
+      ["Паспорт — демонстрационный скан", "PASSPORT", "pdf", pdfPlaceholder],
+      ["СНИЛС — демонстрационный скан", "SNILS", "png", pngPlaceholder],
+    ] as const;
+    for (const [title, documentType, extension, data] of documents) {
+      const existing = await prisma.studentDocument.findFirst({
+        where: { studentId: alpha.id, title },
+        select: { id: true },
+      });
+      if (existing) continue;
+      const storedName = `${randomUUID()}.${extension}`;
+      await mkdir(uploadDirectory, { recursive: true, mode: 0o700 });
+      await writeFile(resolve(uploadDirectory, storedName), data, {
+        flag: "wx",
+        mode: 0o600,
+      });
+      await prisma.studentDocument.create({
+        data: {
+          studentId: alpha.id,
+          title,
+          documentType,
+          storedName,
+          originalName: `demo-${storedName}`,
+          mimeType: extension === "pdf" ? "application/pdf" : "image/png",
+          size: data.length,
+        },
+      });
+    }
+  }
 }
 
 async function main() {
@@ -958,6 +990,65 @@ async function main() {
           requestTargets.set(login, {
             publicId: created.publicId,
             status: created.status,
+          });
+        }
+      }
+
+      const opportunitySeeds = [
+        ["Конкурс цифровых решений", "COMPETITION", "Центр студенческих проектов", 14],
+        ["Стажировка в аналитическом центре", "INTERNSHIP", "Академический консорциум", 21],
+        ["Межвузовская научная конференция", "CONFERENCE", "Кафедра исследований", 10],
+        ["Студенческий творческий конкурс", "COMPETITION", "Культурный центр МГИМО", 7],
+        ["Летняя международная стажировка", "INTERNSHIP", "Международная программа", 30],
+        ["Архивная конференция", "CONFERENCE", "Вымышленная научная школа", -7],
+      ] as const;
+      const opportunityIds: number[] = [];
+      for (const [index, seed] of opportunitySeeds.entries()) {
+        const [title, type, organizer, offset] = seed;
+        const existing = await tx.opportunity.findFirst({ where: { title } });
+        const opportunity =
+          existing ??
+          (await tx.opportunity.create({
+            data: {
+              title,
+              type,
+              organizer,
+              description: "Вымышленное мероприятие для демонстрации каталога возможностей.",
+              requirements: "Заполните мотивацию и приложите необходимые подтверждающие документы.",
+              deadline: new Date(seedNow.getTime() + offset * 24 * 60 * 60 * 1000),
+              officialUrl: `https://example.com/opportunities/${index + 1}`,
+              format: "ОНЛАЙН",
+              requiredDocuments: [
+                { key: "resume", title: "Резюме", required: true },
+                { key: "statement", title: "Эссе или мотивационное письмо", required: false },
+              ],
+              status: index === 5 ? "PUBLISHED" : index === 4 ? "DRAFT" : "PUBLISHED",
+              createdById: alphaUserId === undefined ? demoStaffUserId! : demoStaffUserId!,
+            },
+          }));
+        opportunityIds.push(opportunity.id);
+      }
+
+      for (const [index, opportunityId] of opportunityIds.slice(0, 2).entries()) {
+        const existingApplication = await tx.opportunityApplication.findFirst({
+          where: { opportunityId, studentId: alphaStudentId },
+        });
+        if (!existingApplication) {
+          await tx.opportunityApplication.create({
+            data: {
+              opportunityId,
+              studentId: alphaStudentId,
+              status: index === 0 ? "SUBMITTED" : "IN_REVIEW",
+              motivation: "Вымышленная мотивация студента для демонстрации сценария.",
+              studentSnapshot: {
+                fullName: "Елизавета Воронцова",
+                groupName: "TEST-ACADEMIC-31A",
+                course: 3,
+                faculty: "Факультет прикладных вычислений",
+              },
+              staffComment: index === 1 ? "Заявка передана на рассмотрение." : null,
+              decidedById: index === 1 ? demoStaffUserId : null,
+            },
           });
         }
       }
