@@ -215,36 +215,6 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-focus) 35%, transparent);
 }
 
-.passwordInput {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.passwordInput input {
-  padding-right: 88px;
-}
-
-.passwordToggle {
-  position: absolute;
-  right: 8px;
-  min-height: 36px;
-  padding: 4px 8px;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: var(--color-subtle);
-  color: var(--color-wine-900);
-  font: inherit;
-  font-size: var(--font-size-caption);
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.passwordToggle:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
-}
-
 .fieldHint {
   color: var(--color-muted);
   font-size: var(--font-size-caption);
