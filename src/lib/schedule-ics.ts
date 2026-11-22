@@ -92,11 +92,11 @@ export function generateScheduleIcs(
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Campus OS//Schedule//RU",
+    "PRODID:-//AKSIUM//Schedule//RU",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     `X-WR-TIMEZONE:${UNIVERSITY_TIME_ZONE}`,
-    "X-WR-CALNAME:Campus OS — расписание",
+    "X-WR-CALNAME:АКСИУМ — расписание",
     ...universityTimeZoneLines,
   ];
 

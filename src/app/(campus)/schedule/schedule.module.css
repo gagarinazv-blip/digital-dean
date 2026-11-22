@@ -36,7 +36,7 @@
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  border: 1px solid rgb(54 87 115 / 14%);
+  border: 1px solid color-mix(in srgb, var(--color-blue-700) 14%, transparent);
   border-radius: var(--radius-md);
   background: rgb(255 255 255 / 62%);
   color: var(--color-blue-700);
@@ -69,8 +69,8 @@
   inset: 0 0 0 auto;
   width: min(42%, 420px);
   background:
-    radial-gradient(ellipse at 86% 105%, rgb(54 87 115 / 11%) 0 27%, transparent 28%),
-    radial-gradient(ellipse at 71% 112%, rgb(54 87 115 / 8%) 0 38%, transparent 39%),
+    radial-gradient(ellipse at 86% 105%, color-mix(in srgb, var(--color-blue-700) 11%, transparent) 0 27%, transparent 28%),
+    radial-gradient(ellipse at 71% 112%, color-mix(in srgb, var(--color-blue-700) 8%, transparent) 0 38%, transparent 39%),
     linear-gradient(90deg, transparent, rgb(255 255 255 / 14%));
   pointer-events: none;
 }
@@ -1647,7 +1647,7 @@
 }
 
 .weekGridColumn[aria-current="date"] {
-  background: rgb(244 234 235 / 26%);
+  background: color-mix(in srgb, var(--color-wine-100) 26%, transparent);
 }
 
 .weekGridColumn.selectedWeekColumn {

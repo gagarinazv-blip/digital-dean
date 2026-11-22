@@ -46,12 +46,12 @@
   place-items: center;
   border-radius: var(--radius-sm);
   background: var(--color-surface);
-  color: var(--color-wine-900);
+  color: var(--color-ink);
 }
 
 .brandMark svg {
-  width: 19px;
-  height: 19px;
+  width: 27px;
+  height: 27px;
 }
 
 .brandText {

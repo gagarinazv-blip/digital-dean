@@ -30,7 +30,7 @@ export function generateDeadlineIcs(
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Campus OS//Deadlines//RU",
+    "PRODID:-//AKSIUM//Deadlines//RU",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     `X-WR-TIMEZONE:${UNIVERSITY_TIME_ZONE}`,

@@ -89,7 +89,7 @@
   border: 5px solid var(--color-wine-100);
   background: var(--color-wine-900);
   color: transparent;
-  box-shadow: 0 0 0 2px rgb(100 28 41 / 8%);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-wine-900) 8%, transparent);
 }
 
 .stageCurrent .stageCopy strong {

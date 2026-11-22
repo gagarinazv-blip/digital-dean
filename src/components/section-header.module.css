@@ -1,7 +1,7 @@
 .header {
   --header-from: var(--color-hero);
   --header-to: var(--color-wine-100);
-  --header-ring: rgb(54 87 115 / 14%);
+  --header-ring: color-mix(in srgb, var(--color-blue-700) 14%, transparent);
   position: relative;
   isolation: isolate;
   min-width: 0;
@@ -25,19 +25,19 @@
 .header[data-tone="wine"] {
   --header-from: var(--color-wine-100);
   --header-to: var(--color-hero-end);
-  --header-ring: rgb(100 28 41 / 12%);
+  --header-ring: color-mix(in srgb, var(--color-wine-900) 12%, transparent);
 }
 
 .header[data-tone="sand"] {
   --header-from: var(--color-warning-bg);
   --header-to: var(--color-wine-100);
-  --header-ring: rgb(118 83 29 / 14%);
+  --header-ring: color-mix(in srgb, var(--color-warning-text) 14%, transparent);
 }
 
 .header[data-tone="sage"] {
   --header-from: var(--color-success-bg);
   --header-to: var(--color-hero-end);
-  --header-ring: rgb(42 96 59 / 13%);
+  --header-ring: color-mix(in srgb, var(--color-success-text) 13%, transparent);
 }
 
 /* Тонкие окружности задают глубину и не мешают тексту. */

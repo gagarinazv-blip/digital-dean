@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { logoutAction } from "@/app/profile/actions";
 import { getAvatarInitials, getAvatarTone } from "@/lib/avatar";
+import { BRAND_NAME, BRAND_TAGLINE, BrandMark } from "@/components/brand-logo";
 import { StaffNavigation } from "@/components/staff-navigation";
 import styles from "./staff-layout.module.css";
 
@@ -28,21 +29,11 @@ export function StaffLayout({
         <div className={styles.headerInner}>
           <Link className={styles.brand} href="/staff">
             <span className={styles.brandMark} aria-hidden="true">
-              <svg
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="1.6"
-                viewBox="0 0 24 24"
-              >
-                <path d="m2 9 10-5 10 5-10 5z" />
-                <path d="M6 11v5c3 2 9 2 12 0v-5M22 9v6" />
-              </svg>
+              <BrandMark />
             </span>
             <span className={styles.brandText}>
-              <strong>Кампус ОЭС</strong>
-              <span>Цифровой деканат</span>
+              <strong>{BRAND_NAME}</strong>
+              <span>{BRAND_TAGLINE}</span>
             </span>
           </Link>
           <div className={styles.headerContext}>

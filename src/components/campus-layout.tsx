@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { logoutAction } from "@/app/profile/actions";
+import { BRAND_NAME, BRAND_TAGLINE, BrandMark } from "@/components/brand-logo";
 import { CampusNavigation } from "@/components/campus-navigation";
 import { NotificationBell } from "@/components/notification-bell";
 import { getAvatarInitials, getAvatarTone } from "@/lib/avatar";
@@ -25,26 +26,16 @@ export function CampusLayout({
       <header className={styles.header}>
         <div className={styles.headerInner}>
           <Link
-            aria-label="Кампус ОЭС — главная"
+            aria-label={`${BRAND_NAME} — главная`}
             className={styles.brand}
             href="/"
           >
             <span className={styles.brandMark} aria-hidden="true">
-              <svg
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="1.6"
-                viewBox="0 0 24 24"
-              >
-                <path d="m2 9 10-5 10 5-10 5z" />
-                <path d="M6 11v5c3 2 9 2 12 0v-5M22 9v6" />
-              </svg>
+              <BrandMark />
             </span>
             <span className={styles.brandText}>
-              <strong>Кампус ОЭС</strong>
-              <span>Цифровой деканат</span>
+              <strong>{BRAND_NAME}</strong>
+              <span>{BRAND_TAGLINE}</span>
             </span>
           </Link>
           <span className={styles.headerDescriptor}>Студенческий кабинет</span>

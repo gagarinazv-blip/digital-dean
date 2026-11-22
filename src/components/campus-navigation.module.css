@@ -157,7 +157,7 @@
     inset: var(--size-header-mobile) 0 0;
     display: block;
     border: 0;
-    background: rgb(38 34 34 / 32%);
+    background: color-mix(in srgb, var(--color-ink) 32%, transparent);
   }
 
   .navigation {
