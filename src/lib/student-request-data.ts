@@ -54,6 +54,7 @@ const requestDetailSelection = {
         select: {
           id: true,
           kind: true,
+          fieldKey: true,
           fileName: true,
           mediaType: true,
           sizeBytes: true,

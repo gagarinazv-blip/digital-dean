@@ -51,6 +51,7 @@ describe("request form values", () => {
     ).toEqual([
       {
         id: "purpose",
+        kind: "text",
         label: "Куда нужна справка",
         value: "для конкурса",
       },

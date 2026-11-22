@@ -43,17 +43,18 @@ export function useModalDialog({
 
   useEffect(() => {
     const dialog = ref.current;
-    if (!dialog) return;
-    if (open && !dialog.open) {
-      triggerRef.current =
-        document.activeElement instanceof HTMLElement
-          ? document.activeElement
-          : null;
-      dialog.showModal();
-      dialog.querySelector<HTMLElement>("[data-autofocus]")?.focus();
-    } else if (!open && dialog.open) {
-      dialog.close();
-    }
+    if (!dialog || !open) return;
+    triggerRef.current ??=
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    if (!dialog.open) dialog.showModal();
+    dialog.querySelector<HTMLElement>("[data-autofocus]")?.focus();
+    // Страница, скрытая при переходе, не должна оставлять модальное окно
+    // в верхнем слое: оно блокирует следующую страницу.
+    return () => {
+      if (dialog.open) dialog.close();
+    };
   }, [open]);
 
   useEffect(
@@ -84,7 +85,10 @@ export function useModalDialog({
       onRequestClose();
     },
     onClose(event: SyntheticEvent<HTMLDialogElement>) {
-      if (event.target !== event.currentTarget) return;
+      // close приходит асинхронно: окно уже могли открыть снова.
+      if (event.target !== event.currentTarget || event.currentTarget.open) {
+        return;
+      }
       const trigger = triggerRef.current;
       triggerRef.current = null;
       if (trigger?.isConnected) trigger.focus();

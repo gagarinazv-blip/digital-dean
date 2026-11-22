@@ -103,6 +103,25 @@ enum RequestStatus {
   CANCELLED
 }
 
+enum CertificateFormStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum CertificateDeliveryMethod {
+  ELECTRONIC
+  DEAN_OFFICE
+}
+
+enum CertificateFormAuditAction {
+  CREATED
+  UPDATED
+  DUPLICATED
+  ACTIVATED
+  ARCHIVED
+}
+
 enum RequestCommentVisibility {
   PUBLIC
   INTERNAL
@@ -274,6 +293,7 @@ model User {
   requestStatusHistory     RequestStatusHistory[]     @relation("RequestStatusHistoryAuthor")
   requestAssignmentHistory RequestAssignmentHistory[] @relation("RequestAssignmentHistoryAuthor")
   studentAuditLogs         StudentAuditLog[]
+  certificateFormAuditLogs CertificateFormAuditLog[]
   uploadedPortfolioItems   PortfolioItem[]            @relation("PortfolioItemUploader")
   staffNotifications       StaffNotification[]        @relation("StaffNotificationRecipient")
   createdEvents            Event[]                    @relation("EventCreator")
@@ -364,7 +384,7 @@ model StaffProfile {
   assignedRequests      Request[]                  @relation("AssignedStaffRequests")
   assignmentHistoryFrom RequestAssignmentHistory[] @relation("RequestAssignmentHistoryFrom")
   assignmentHistoryTo   RequestAssignmentHistory[] @relation("RequestAssignmentHistoryTo")
-  deadlineMaterials DeadlineMaterial[]
+  deadlineMaterials     DeadlineMaterial[]
 }
 
 model Event {
@@ -713,18 +733,43 @@ model Request {
 }
 
 model CertificateForm {
-  id            Int      @id @default(autoincrement())
-  code          String   @unique @db.VarChar(64)
-  title         String   @db.VarChar(120)
-  description   String   @db.VarChar(1000)
-  executionDays Int
-  fields        Json
-  active        Boolean  @default(true)
-  sortOrder     Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id               Int                         @id @default(autoincrement())
+  code             String                      @unique @db.VarChar(64)
+  title            String                      @db.VarChar(120)
+  // Название без учёта регистра и лишних пробелов: по нему проверяется уникальность.
+  normalizedTitle  String                      @unique @db.VarChar(160)
+  description      String                      @db.VarChar(1000)
+  executionDays    Int
+  fields           Json
+  status           CertificateFormStatus       @default(DRAFT)
+  // Совпадает со status = ACTIVE; поле сохранено для совместимости.
+  active           Boolean                     @default(true)
+  deliveryMethods  CertificateDeliveryMethod[] @default([ELECTRONIC])
+  requiresApproval Boolean                     @default(false)
+  template         String                      @default("") @db.VarChar(4000)
+  version          Int                         @default(1)
+  sortOrder        Int                         @default(0)
+  createdAt        DateTime                    @default(now())
+  updatedAt        DateTime                    @updatedAt
+  auditLogs        CertificateFormAuditLog[]
 
   @@index([active, sortOrder])
+  @@index([status, sortOrder])
+}
+
+model CertificateFormAuditLog {
+  id            Int                        @id @default(autoincrement())
+  formId        Int
+  actorUserId   Int?
+  action        CertificateFormAuditAction
+  version       Int
+  changedFields String[]                   @default([])
+  createdAt     DateTime                   @default(now())
+  form          CertificateForm            @relation(fields: [formId], references: [id], onDelete: Restrict)
+  actor         User?                      @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([formId, createdAt])
+  @@index([actorUserId, createdAt])
 }
 
 model StaffNotification {
@@ -800,6 +845,8 @@ model RequestAttachment {
   id        Int                   @id @default(autoincrement())
   commentId Int
   kind      RequestAttachmentKind @default(REQUEST)
+  // Ключ поля формы справки, если файл загружен в это поле.
+  fieldKey  String?               @db.VarChar(40)
   fileName  String
   mediaType String
   sizeBytes Int

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { RequestFieldValue } from "@/components/request-field-value";
 import { CampusSection } from "@/components/campus-section";
 import { RequestConversation } from "@/components/request-conversation";
 import {
@@ -168,6 +169,9 @@ export default async function StudentRequestPage({
     resultAttachments.length > 0,
   );
   const title = getPageTitle(request.status, request.type, serviceTitle);
+  const requestAttachments = request.comments.flatMap(
+    (comment) => comment.attachments,
+  );
   const formEntries = getRequestFieldEntries(
     request.catalogCode,
     request.formFields,
@@ -564,7 +568,12 @@ export default async function StudentRequestPage({
                     {formEntries.map((entry) => (
                       <div key={entry.id}>
                         <dt>{entry.label}</dt>
-                        <dd>{entry.value}</dd>
+                        <dd>
+                          <RequestFieldValue
+                            attachments={requestAttachments}
+                            entry={entry}
+                          />
+                        </dd>
                       </div>
                     ))}
                     {request.comment && (

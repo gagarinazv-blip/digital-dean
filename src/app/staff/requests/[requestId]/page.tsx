@@ -1,17 +1,23 @@
 import Link from "next/link";
+import { RequestFieldValue } from "@/components/request-field-value";
 import { CampusSection } from "@/components/campus-section";
 import { RequestConversation } from "@/components/request-conversation";
 import { requestStatusLabels, requestTypeLabels } from "@/lib/campus-labels";
 import { canStaffRollbackRequest } from "@/lib/permissions";
 import {
+  formatDeliveryMethods,
+  getRequestCatalogSnapshot,
   getRequestCatalogTitle,
   getRequestFieldEntries,
   getRequestProfileEntries,
+  renderCertificateTemplate,
 } from "@/lib/request-catalog";
 import {
   getAllowedStaffRequestTransitions,
   getPreviousRequestStatus,
 } from "@/lib/request-workflow";
+import { formatStackDay } from "@/lib/date-stack";
+import { getDemoNow } from "@/lib/demo-date";
 import { getStaffRequestDetails } from "@/lib/staff-data";
 import { formatRequestNumber } from "@/lib/request-number";
 import { getUniversityDateTimeFormatter } from "@/lib/campus-time";
@@ -116,12 +122,23 @@ export default async function StaffRequestPage({
     requestTypeLabels[request.type],
     request.formSchemaSnapshot,
   );
+  const requestAttachments = request.comments.flatMap(
+    (comment) => comment.attachments,
+  );
   const formEntries = getRequestFieldEntries(
     request.catalogCode,
     request.formFields,
     request.formSchemaSnapshot,
   );
   const profileEntries = getRequestProfileEntries(request.profileSnapshot) ?? [];
+  const snapshot = getRequestCatalogSnapshot(request.formSchemaSnapshot);
+  const certificateText = snapshot?.template
+    ? renderCertificateTemplate(snapshot.template, {
+        fullName: request.student.fullName,
+        groupName: request.student.group.name,
+        date: formatStackDay(getDemoNow(), null),
+      })
+    : null;
   const transitions = getAllowedStaffRequestTransitions(request.status);
   const stageIndex = getStageIndex(request.status);
   const assignedToMe = request.assignedToId === staff.id;
@@ -233,10 +250,26 @@ export default async function StaffRequestPage({
                   <dt><span aria-hidden="true">▤</span> Услуга</dt>
                   <dd>{serviceTitle}</dd>
                 </div>
+                {snapshot && (
+                  <div>
+                    <dt><span aria-hidden="true">◇</span> Условия</dt>
+                    <dd>
+                      {formatDeliveryMethods(snapshot.deliveryMethods)} · до{" "}
+                      {snapshot.executionDays} рабочих дней · форма версии{" "}
+                      {snapshot.version}
+                      {snapshot.requiresApproval ? " · нужна подпись или согласование" : ""}
+                    </dd>
+                  </div>
+                )}
                 {formEntries.map((entry) => (
                   <div key={entry.id}>
                     <dt><span aria-hidden="true">◎</span> {entry.label}</dt>
-                    <dd>{entry.value}</dd>
+                    <dd>
+                          <RequestFieldValue
+                            attachments={requestAttachments}
+                            entry={entry}
+                          />
+                        </dd>
                   </div>
                 ))}
                 {request.comment && (
@@ -256,6 +289,13 @@ export default async function StaffRequestPage({
                   </div>
                 )}
               </dl>
+
+              {certificateText && (
+                <div className={styles.studentSection}>
+                  <h3>Текст справки по шаблону</h3>
+                  <p className={styles.certificateText}>{certificateText}</p>
+                </div>
+              )}
 
               <div className={styles.studentSection}>
                 <h3>Информация о студенте</h3>

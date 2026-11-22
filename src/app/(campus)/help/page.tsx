@@ -12,8 +12,10 @@ import type {
 import { requestStatusLabels, requestTypeLabels } from "@/lib/campus-labels";
 import { getCertificateForms } from "@/lib/certificate-forms";
 import {
+  formatDeliveryMethods,
   getRequestCatalogTitle,
 } from "@/lib/request-catalog";
+import { getRequestProfileSnapshot } from "@/lib/request-profile";
 import {
   getStudentDocuments,
   getStudentRequest,
@@ -22,14 +24,16 @@ import {
 import { formatRequestNumber } from "@/lib/request-number";
 import { getUniversityDateTimeFormatter } from "@/lib/campus-time";
 import { getStudentPortfolio } from "@/lib/portfolio";
-import { requireStudent } from "@/lib/student";
+import { requireStudent, requireStudentContext } from "@/lib/student";
 import { getPrisma } from "@/lib/prisma";
 import {
   opportunityDirectionLabels,
   opportunityTypeConfig,
 } from "@/lib/opportunity-catalog";
 import { PortfolioView } from "@/app/(campus)/documents/portfolio-view";
+import { RequestWindow } from "@/app/(campus)/requests/request-window";
 import { RequestSearchForm } from "./request-search-form";
+import controls from "@/components/ui/controls.module.css";
 import styles from "./help.module.css";
 
 const requestDateFormatter = getUniversityDateTimeFormatter({
@@ -410,6 +414,10 @@ export async function HelpWorkspace({
       : null;
   const catalogEntries =
     activeTab === "catalog" ? await getCertificateForms() : [];
+  const requestProfile =
+    activeTab === "catalog"
+      ? getRequestProfileSnapshot((await requireStudentContext()).student)
+      : null;
   const visibleServices = catalogEntries
     .filter((service) => service.active)
     .filter((service) => {
@@ -527,9 +535,13 @@ export async function HelpWorkspace({
                 Каталог услуг, отправка заявления и история общения с деканатом
                 — в одном разделе.
               </p>
-              <Link className={styles.primaryButton} href="/requests/new">
-                Новая заявка <span aria-hidden="true">→</span>
-              </Link>
+              {requestProfile && catalogEntries.length > 0 ? (
+                <RequestWindow
+                  profile={requestProfile}
+                  services={catalogEntries}
+                  triggerLabel="Новая заявка"
+                />
+              ) : null}
             </div>
           </section>
         )}
@@ -595,7 +607,8 @@ export async function HelpWorkspace({
                         {service.description}
                       </p>
                       <span className={styles.serviceMeta}>
-                        Электронно · до {service.executionDays} рабочих дней
+                        {formatDeliveryMethods(service.deliveryMethods)} · до{" "}
+                        {service.executionDays} рабочих дней
                       </span>
                       <div className={styles.requirements}>
                         <strong>Для оформления</strong>
@@ -606,12 +619,15 @@ export async function HelpWorkspace({
                           <li>Данные профиля студента</li>
                         </ul>
                       </div>
-                      <Link
-                        className={styles.serviceLink}
-                        href={`/requests/new?service=${service.code}`}
-                      >
-                        Выбрать услугу <span aria-hidden="true">→</span>
-                      </Link>
+                      {requestProfile ? (
+                        <RequestWindow
+                          profile={requestProfile}
+                          serviceCode={service.code}
+                          services={catalogEntries}
+                          triggerClassName={controls.secondary}
+                          triggerLabel="Заказать"
+                        />
+                      ) : null}
                     </article>
                   ))}
                 </div>
