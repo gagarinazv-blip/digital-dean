@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { SectionIllustration } from "@/components/section-header";
+import { SectionArt, type SectionIllustration } from "@/components/section-art";
 import styles from "./empty-state.module.css";
 
 export type EmptyStateIllustration =
@@ -100,16 +100,7 @@ export function EmptyState({
       role={role}
     >
       {art ? (
-        // Декоративный SVG: оптимизация next/image для вектора не нужна.
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          alt=""
-          className={styles.art}
-          decoding="async"
-          height={768}
-          src={`/illustrations/${art}.svg`}
-          width={1024}
-        />
+        <SectionArt className={styles.art} name={art} />
       ) : (
       <svg
         aria-hidden="true"

@@ -1,23 +1,8 @@
 import type { ReactNode } from "react";
+import { SectionArt, type SectionIllustration } from "@/components/section-art";
 import styles from "./section-header.module.css";
 
 export type SectionTone = "blue" | "wine" | "sand" | "sage";
-
-export type SectionIllustration =
-  | "schedule"
-  | "digest"
-  | "grades"
-  | "documents"
-  | "opportunities"
-  | "notifications"
-  | "profile"
-  | "calm"
-  | "requests"
-  | "students"
-  | "achievements"
-  | "events"
-  | "programs"
-  | "certificates";
 
 // Шапка раздела: заголовок, действие и иллюстрация на мягком градиенте.
 export function SectionHeader({
@@ -39,7 +24,6 @@ export function SectionHeader({
 }) {
   return (
     <header className={styles.header} data-tone={tone}>
-      <span aria-hidden="true" className={styles.rings} />
       <div className={styles.copy}>
         {eyebrow ? <p className={styles.eyebrow}>{eyebrow}</p> : null}
         <h1 className={styles.title} id={titleId}>
@@ -51,16 +35,7 @@ export function SectionHeader({
         {action ? <div className={styles.action}>{action}</div> : null}
       </div>
       {illustration ? (
-        // Декоративный SVG: оптимизация next/image для вектора не нужна.
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          alt=""
-          className={styles.illustration}
-          decoding="async"
-          height={768}
-          src={`/illustrations/${illustration}.svg`}
-          width={1024}
-        />
+        <SectionArt className={styles.illustration} name={illustration} />
       ) : null}
     </header>
   );

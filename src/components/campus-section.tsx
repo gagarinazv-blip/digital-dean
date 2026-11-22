@@ -1,9 +1,6 @@
 import type { ReactNode } from "react";
-import {
-  SectionHeader,
-  type SectionIllustration,
-  type SectionTone,
-} from "@/components/section-header";
+import type { SectionIllustration } from "@/components/section-art";
+import { SectionHeader, type SectionTone } from "@/components/section-header";
 import styles from "@/app/sections.module.css";
 
 export function CampusSection({

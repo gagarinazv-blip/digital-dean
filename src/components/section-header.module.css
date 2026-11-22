@@ -1,7 +1,6 @@
 .header {
   --header-from: var(--color-hero);
   --header-to: var(--color-wine-100);
-  --header-ring: color-mix(in srgb, var(--color-blue-700) 14%, transparent);
   position: relative;
   isolation: isolate;
   min-width: 0;
@@ -25,31 +24,16 @@
 .header[data-tone="wine"] {
   --header-from: var(--color-wine-100);
   --header-to: var(--color-hero-end);
-  --header-ring: color-mix(in srgb, var(--color-wine-900) 12%, transparent);
 }
 
 .header[data-tone="sand"] {
   --header-from: var(--color-warning-bg);
   --header-to: var(--color-wine-100);
-  --header-ring: color-mix(in srgb, var(--color-warning-text) 14%, transparent);
 }
 
 .header[data-tone="sage"] {
   --header-from: var(--color-success-bg);
   --header-to: var(--color-hero-end);
-  --header-ring: color-mix(in srgb, var(--color-success-text) 13%, transparent);
-}
-
-/* Тонкие окружности задают глубину и не мешают тексту. */
-.rings {
-  position: absolute;
-  z-index: -1;
-  inset: 0;
-  background:
-    radial-gradient(circle 190px at 82% 118%, transparent 99%, var(--header-ring) 99.4% 100%, transparent 100%),
-    radial-gradient(circle 270px at 82% 118%, transparent 99.2%, var(--header-ring) 99.6% 100%, transparent 100%),
-    radial-gradient(circle 360px at 82% 118%, transparent 99.4%, var(--header-ring) 99.7% 100%, transparent 100%);
-  pointer-events: none;
 }
 
 .copy {
@@ -104,20 +88,9 @@
 
 .illustration {
   width: auto;
-  height: 132px;
-  margin-block: calc(-1 * var(--space-3));
-  animation: illustration-enter 480ms var(--motion-ease) both;
-}
-
-@keyframes illustration-enter {
-  from {
-    opacity: 0;
-    transform: translate(16px, 6px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
+  height: 156px;
+  aspect-ratio: 200 / 142;
+  margin-block: calc(-1 * var(--space-4));
 }
 
 @media (max-width: 680px) {
@@ -146,8 +119,7 @@
 }
 
 @media print {
-  .illustration,
-  .rings {
+  .illustration {
     display: none;
   }
 }
