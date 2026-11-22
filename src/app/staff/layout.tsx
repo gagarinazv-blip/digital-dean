@@ -3,8 +3,6 @@ import { StaffLayout } from "@/components/staff-layout";
 import { CampusLoading } from "@/components/campus-section";
 import { requireStaff } from "@/lib/staff";
 
-export const instant = false;
-
 export default async function StaffRouteLayout({
   children,
 }: {

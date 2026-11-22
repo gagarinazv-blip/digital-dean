@@ -1,4 +1,5 @@
-import { CampusSection } from "@/components/campus-section";
+import { Suspense } from "react";
+import { CampusLoading, CampusSection } from "@/components/campus-section";
 import { EmptyState } from "@/components/empty-state";
 import {
   getDeadlineCountdown,
@@ -10,13 +11,19 @@ import { getDemoNow } from "@/lib/demo-date";
 import { requireStudent } from "@/lib/student";
 import styles from "./deadlines.module.css";
 
-export const instant = false;
-
 const deadlineDateFormatter = getUniversityDateTimeFormatter({
   dateStyle: "long",
 });
 
-export default async function DeadlinesPage() {
+export default function DeadlinesPage() {
+  return (
+    <Suspense fallback={<CampusLoading label="задания и сроки" />}>
+      <DeadlinesContent />
+    </Suspense>
+  );
+}
+
+async function DeadlinesContent() {
   const student = await requireStudent();
   const now = getDemoNow();
   const deadlines = await getStudentDeadlines(student.id);

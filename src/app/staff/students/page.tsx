@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import Link from "next/link";
+import { CampusLoading } from "@/components/campus-section";
 import type { Prisma } from "@/generated/prisma/client";
 import { getPrisma } from "@/lib/prisma";
 import { requireStaffContext } from "@/lib/staff";
@@ -12,11 +14,21 @@ function firstValue(value: string | string[] | undefined): string {
   return Array.isArray(value) ? (value[0] ?? "") : (value ?? "");
 }
 
-export default async function StaffStudentsPage({
-  searchParams,
-}: {
+type StaffStudentsPageProps = {
   searchParams: Promise<SearchParams>;
-}) {
+};
+
+export default function StaffStudentsPage(props: StaffStudentsPageProps) {
+  return (
+    <Suspense fallback={<CampusLoading label="список студентов" />}>
+      <StaffStudentsContent {...props} />
+    </Suspense>
+  );
+}
+
+async function StaffStudentsContent({
+  searchParams,
+}: StaffStudentsPageProps) {
   await requireStaffContext();
   const { q } = await searchParams;
   const searchTerm = firstValue(q).trim().slice(0, 100);

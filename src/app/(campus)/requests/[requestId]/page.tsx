@@ -1,5 +1,6 @@
+import { Suspense } from "react";
 import Link from "next/link";
-import { CampusSection } from "@/components/campus-section";
+import { CampusLoading, CampusSection } from "@/components/campus-section";
 import { RequestConversation } from "@/components/request-conversation";
 import {
   StudentCancelForm,
@@ -23,8 +24,6 @@ import { getUniversityDateTimeFormatter } from "@/lib/campus-time";
 import type { RequestStatus, RequestType } from "@/generated/prisma/enums";
 import workflowStyles from "@/app/request-workflow.module.css";
 import styles from "./request-detail.module.css";
-
-export const instant = false;
 
 const requestDateFormatter = getUniversityDateTimeFormatter({
   dateStyle: "long",
@@ -140,13 +139,23 @@ function getStatusPresentation(
   }
 }
 
-export default async function StudentRequestPage({
-  params,
-  searchParams,
-}: {
+type StudentRequestPageProps = {
   params: Promise<{ requestId: string }>;
   searchParams: Promise<{ created?: string; cancelled?: string }>;
-}) {
+};
+
+export default function StudentRequestPage(props: StudentRequestPageProps) {
+  return (
+    <Suspense fallback={<CampusLoading label="заявка" />}>
+      <StudentRequestContent {...props} />
+    </Suspense>
+  );
+}
+
+async function StudentRequestContent({
+  params,
+  searchParams,
+}: StudentRequestPageProps) {
   const [{ requestId }, query] = await Promise.all([params, searchParams]);
   const request = await getStudentRequest(requestId);
   const serviceTitle = getRequestCatalogTitle(

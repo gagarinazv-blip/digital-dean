@@ -1,5 +1,7 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CampusLoading } from "@/components/campus-section";
 import type { StudentAuditAction } from "@/generated/prisma/enums";
 import { getCorporateMailDomain } from "@/lib/corporate-mail";
 import { getUniversityDateTimeFormatter } from "@/lib/campus-time";
@@ -49,11 +51,23 @@ function parseId(value: string): number | null {
   return Number.isSafeInteger(id) ? id : null;
 }
 
-export default async function StaffStudentDetailPage({
-  params,
-}: {
+type StaffStudentDetailPageProps = {
   params: Promise<{ id: string }>;
-}) {
+};
+
+export default function StaffStudentDetailPage(
+  props: StaffStudentDetailPageProps,
+) {
+  return (
+    <Suspense fallback={<CampusLoading label="карточка студента" />}>
+      <StaffStudentDetailContent {...props} />
+    </Suspense>
+  );
+}
+
+async function StaffStudentDetailContent({
+  params,
+}: StaffStudentDetailPageProps) {
   await requireStaffContext();
   const id = parseId((await params).id);
   if (id === null) notFound();

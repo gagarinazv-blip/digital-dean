@@ -1,6 +1,6 @@
+import { Suspense } from "react";
 import { HelpWorkspace } from "@/app/(campus)/help/page";
-
-export const instant = false;
+import { CampusLoading } from "@/components/campus-section";
 
 export default function RequestsPage({
   searchParams,
@@ -12,8 +12,9 @@ export default function RequestsPage({
     selected?: string | string[];
   }>;
 }) {
-  return HelpWorkspace({
-    searchParams,
-    defaultTab: "requests",
-  });
+  return (
+    <Suspense fallback={<CampusLoading label="заявки" />}>
+      <HelpWorkspace searchParams={searchParams} defaultTab="requests" />
+    </Suspense>
+  );
 }

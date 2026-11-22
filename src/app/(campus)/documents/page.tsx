@@ -1,6 +1,6 @@
+import { Suspense } from "react";
 import { HelpWorkspace } from "@/app/(campus)/help/page";
-
-export const instant = false;
+import { CampusLoading } from "@/components/campus-section";
 
 export default function DocumentsPage({
   searchParams,
@@ -12,8 +12,9 @@ export default function DocumentsPage({
     selected?: string | string[];
   }>;
 }) {
-  return HelpWorkspace({
-    searchParams,
-    defaultTab: "catalog",
-  });
+  return (
+    <Suspense fallback={<CampusLoading label="документы" />}>
+      <HelpWorkspace searchParams={searchParams} defaultTab="catalog" />
+    </Suspense>
+  );
 }

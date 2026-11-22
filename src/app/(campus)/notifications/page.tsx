@@ -1,13 +1,19 @@
 import { Suspense } from "react";
-import { CampusSection } from "@/components/campus-section";
+import { CampusLoading, CampusSection } from "@/components/campus-section";
 import { countUnreadStudentNotifications } from "@/lib/notification-data";
 import { requireStudent } from "@/lib/student";
 import { NotificationCenter } from "./notification-center";
 import styles from "./notifications.module.css";
 
-export const instant = false;
+export default function NotificationsPage() {
+  return (
+    <Suspense fallback={<CampusLoading label="уведомления" />}>
+      <NotificationsContent />
+    </Suspense>
+  );
+}
 
-export default async function NotificationsPage() {
+async function NotificationsContent() {
   const student = await requireStudent();
   const unreadCount = await countUnreadStudentNotifications(student.id);
 

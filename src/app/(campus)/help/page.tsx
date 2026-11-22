@@ -1,5 +1,6 @@
+import { Suspense } from "react";
 import Link from "next/link";
-import { CampusSection } from "@/components/campus-section";
+import { CampusLoading, CampusSection } from "@/components/campus-section";
 import { CampusArchitectureArt } from "@/components/campus-architecture-art";
 import { EmptyState } from "@/components/empty-state";
 import type { RequestStatus } from "@/generated/prisma/enums";
@@ -17,8 +18,6 @@ import { formatRequestNumber } from "@/lib/request-number";
 import { getUniversityDateTimeFormatter } from "@/lib/campus-time";
 import { RequestSearchForm } from "./request-search-form";
 import styles from "./help.module.css";
-
-export const instant = false;
 
 const requestDateFormatter = getUniversityDateTimeFormatter({
   dateStyle: "medium",
@@ -723,5 +722,9 @@ export async function HelpWorkspace({
 export default function HelpPage({
   searchParams,
 }: Pick<HelpWorkspaceProps, "searchParams">) {
-  return HelpWorkspace({ searchParams });
+  return (
+    <Suspense fallback={<CampusLoading label="документы и заявки" />}>
+      <HelpWorkspace searchParams={searchParams} />
+    </Suspense>
+  );
 }

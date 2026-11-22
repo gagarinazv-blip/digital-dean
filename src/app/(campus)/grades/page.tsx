@@ -14,8 +14,6 @@ import {
 import { GradesTabs } from "./grades-tabs";
 import styles from "./grades.module.css";
 
-export const instant = false;
-
 type GradesPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
