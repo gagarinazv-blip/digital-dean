@@ -293,6 +293,12 @@ details[open] > :not(summary) {
   }
 }
 
+@media (min-width: 1700px) {
+  :root {
+    --size-content-max: 1520px;
+  }
+}
+
 @media (max-width: 680px) {
   html {
     scroll-padding-top: calc(var(--size-header-mobile) + var(--space-3));

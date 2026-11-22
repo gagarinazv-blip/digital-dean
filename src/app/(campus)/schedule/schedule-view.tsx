@@ -1403,6 +1403,7 @@ export function ScheduleView({
                     ? `Ближайшее занятие: ${nextLesson.subject}, ауд. ${nextLesson.room}`
                     : "В ближайшей неделе занятий нет."
               }
+              art={activeFilterCount > 0 ? undefined : "calm"}
               illustration={activeFilterCount > 0 ? "search" : "schedule"}
               title={
                 activeFilterCount > 0
@@ -1627,6 +1628,7 @@ export function ScheduleView({
                     ? "Измените условия поиска или сбросьте фильтры."
                     : "Выберите другой месяц или вернитесь к текущему расписанию."
                 }
+                art={activeFilterCount > 0 ? undefined : "calm"}
                 illustration={activeFilterCount > 0 ? "search" : "schedule"}
                 title={
                   activeFilterCount > 0

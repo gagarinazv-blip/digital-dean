@@ -7,7 +7,11 @@ import {
 import { getDemoNow } from "@/lib/demo-date";
 import { getPrisma } from "@/lib/prisma";
 import { requireStudent } from "@/lib/student";
-import { getMoscowDateKey, getMoscowWeek } from "@/lib/campus-time";
+import {
+  getMoscowCalendarWeek,
+  getMoscowDateKey,
+  getMoscowWeek,
+} from "@/lib/campus-time";
 import { cleanStudentFacingText } from "@/lib/campus-labels";
 import {
   getNextScheduleLesson,
@@ -135,6 +139,20 @@ export async function getCampusTodayData(now = getDemoNow()) {
     .sort((first, second) => second.date.getTime() - first.date.getTime())
     .slice(0, 3);
 
+  const calendarWeek = getMoscowCalendarWeek(now);
+  const weekDays = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(calendarWeek.startDate);
+    date.setUTCDate(date.getUTCDate() + index);
+    const key = date.toISOString().slice(0, 10);
+    return {
+      key,
+      lessonCount: schedule.filter(
+        (item) =>
+          item.status !== "CANCELLED" &&
+          getMoscowDateKey(item.startTime) === key,
+      ).length,
+    };
+  });
   const todaySchedule = schedule.filter(
     (item) => getMoscowDateKey(item.startTime) === week.todayKey,
   );
@@ -219,6 +237,7 @@ export async function getCampusTodayData(now = getDemoNow()) {
     student,
     now,
     week,
+    weekDays,
     todaySchedule,
     nextLesson,
     nearbyLessons,

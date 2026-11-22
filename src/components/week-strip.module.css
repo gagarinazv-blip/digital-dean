@@ -1,0 +1,138 @@
+.week {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  background: linear-gradient(
+    150deg,
+    var(--color-surface) 0%,
+    var(--color-surface) 55%,
+    var(--color-wine-100) 100%
+  );
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.heading h2 {
+  color: var(--color-ink);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.heading h2::first-letter {
+  text-transform: uppercase;
+}
+
+.link {
+  border-radius: var(--radius-sm);
+  color: var(--color-wine-900);
+  font-size: var(--font-size-label);
+  font-weight: 600;
+}
+
+.link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.day {
+  min-width: 0;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: var(--space-1) 0;
+  border-radius: var(--radius-md);
+  color: var(--color-ink);
+}
+
+.day:hover {
+  background: var(--color-subtle);
+}
+
+.weekday {
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+  line-height: 16px;
+}
+
+.date {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-body-compact);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.day[aria-current="date"] .date {
+  background: var(--color-wine-900);
+  color: var(--color-surface);
+}
+
+.dots {
+  height: 6px;
+  display: flex;
+  gap: 3px;
+}
+
+.dots i,
+.legend span::before {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-blue-700);
+}
+
+.dots i[data-kind="deadline"],
+.legend span[data-kind="deadline"]::before {
+  background: var(--color-danger-text);
+}
+
+.legend {
+  display: flex;
+  gap: var(--space-4);
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+  line-height: 16px;
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend span::before {
+  content: "";
+}
+
+.link:focus-visible,
+.day:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+@media (min-width: 1240px) and (max-height: 859px) {
+  .legend {
+    display: none;
+  }
+}

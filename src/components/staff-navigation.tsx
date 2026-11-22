@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Calendar,
   Group,
+  Journal,
   PageEdit,
   SidebarCollapse,
   SidebarExpand,
@@ -23,7 +23,7 @@ const navigationItems = [
   { href: "/staff", label: "Заявки", icon: TaskList },
   { href: "/staff/students", label: "Студенты", icon: Group },
   { href: "/staff/achievements", label: "Достижения", icon: Trophy },
-  { href: "/staff/events", label: "Дайджест событий", icon: Calendar },
+  { href: "/staff/events", label: "Дайджест событий", icon: Journal },
   { href: "/staff/opportunities", label: "Возможности", icon: Suitcase },
   {
     href: "/staff/certificate-forms",

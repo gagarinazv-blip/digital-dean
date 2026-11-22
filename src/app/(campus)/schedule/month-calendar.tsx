@@ -2,6 +2,7 @@
 
 import type { KeyboardEvent, MouseEvent } from "react";
 import { formatMoscowTime } from "@/lib/campus-time";
+import { pluralize } from "@/lib/plural";
 import type { ScheduleDayView, ScheduleLessonView } from "./schedule-view";
 import styles from "./month-calendar.module.css";
 
@@ -33,15 +34,6 @@ export function splitMonthEvents<T>(events: readonly T[]): {
     visible: events.slice(0, MAX_EVENTS - 1),
     hiddenCount: events.length - MAX_EVENTS + 1,
   };
-}
-
-function formatPairs(count: number): string {
-  const lastTwo = count % 100;
-  const last = count % 10;
-  if (lastTwo >= 11 && lastTwo <= 14) return `${count} пар`;
-  if (last === 1) return `${count} пара`;
-  if (last >= 2 && last <= 4) return `${count} пары`;
-  return `${count} пар`;
 }
 
 export function MonthCalendar({
@@ -116,7 +108,7 @@ export function MonthCalendar({
               <button
                 aria-current={dateKey === todayKey ? "date" : undefined}
                 aria-label={`${formatDay(dateKey)}, ${
-                  lessons.length > 0 ? formatPairs(lessons.length) : "занятий нет"
+                  lessons.length > 0 ? `${lessons.length} ${pluralize(lessons.length, "пара", "пары", "пар")}` : "занятий нет"
                 }`}
                 aria-pressed={dateKey === openDayKey}
                 className={styles.date}

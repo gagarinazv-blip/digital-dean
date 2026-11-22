@@ -176,15 +176,30 @@
 }
 
 .day {
-  padding: 12px;
+  display: grid;
+  grid-template-columns: 176px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-card);
+}
+
+.day[data-has-events="true"] {
+  background: linear-gradient(105deg, var(--color-wine-100) 0%, var(--color-surface) 34%);
+}
+
+.day[data-has-events="false"] {
+  align-items: center;
+  background: transparent;
+  box-shadow: none;
 }
 
 .dayHeader {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 8px;
-  padding: 2px 3px 10px;
+  padding: 2px 3px;
 }
 
 .dayHeader h2 {
@@ -218,8 +233,8 @@
 
 .eventList {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 9px;
+  grid-template-columns: repeat(auto-fill, minmax(min(400px, 100%), 1fr));
+  gap: var(--space-3);
   list-style: none;
 }
 
@@ -400,4 +415,11 @@
 
 .dayHeader h2::first-letter {
   text-transform: uppercase;
+}
+
+@media (max-width: 760px) {
+  .day {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+  }
 }

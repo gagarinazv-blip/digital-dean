@@ -706,6 +706,7 @@ export function NotificationCenter({
                   ? "Непрочитанных уведомлений нет. Вы ничего не пропустили."
                   : "Здесь появятся важные изменения и напоминания для вас."
               }
+              art="notifications"
               illustration="notifications"
               title={
                 activeFilter === "unread" ? "Все прочитано" : "Уведомлений нет"
@@ -715,6 +716,7 @@ export function NotificationCenter({
             <EmptyState
               className={styles.emptyState}
               description="Непрочитанных уведомлений нет. Вы ничего не пропустили."
+              art="notifications"
               illustration="notifications"
               title="Все прочитано"
             />

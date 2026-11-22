@@ -196,6 +196,7 @@ export function PortfolioView({
           <EmptyState
             className={styles.emptyState}
             description="Здесь будут ваши дипломы и сертификаты. Загружайте свои документы или дождитесь, когда деканат добавит достижения."
+            art={items.length === 0 ? "achievements" : undefined}
             illustration={items.length === 0 ? "documents" : "search"}
             title={
               items.length === 0 ? "Пока нет достижений" : "Записи не найдены"

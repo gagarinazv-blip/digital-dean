@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { connection } from "next/server";
-import { Calendar, GraphUp, HelpCircle } from "iconoir-react";
+import { ArrowUpRight, Calendar, GraphUp, HelpCircle } from "iconoir-react";
 import type { ScheduleKind } from "@/generated/prisma/enums";
 import { getCampusTodayData } from "@/lib/campus-data";
 import {
@@ -17,6 +17,9 @@ import {
 import { requestStatusLabels, requestTypeLabels } from "@/lib/campus-labels";
 import { getRequestCatalogTitle } from "@/lib/request-catalog";
 import { getAcademicRecords } from "@/lib/academic-records";
+import { pluralize } from "@/lib/plural";
+import { getAverageGrade } from "@/lib/grade-average";
+import { countActiveStudentRequests } from "@/lib/student-request-data";
 import { getStudentNotificationPage } from "@/lib/notification-data";
 import { presentStudentNotifications } from "@/lib/notification-presentation";
 import { notificationTypeLabels } from "@/lib/notification-workflow";
@@ -24,6 +27,7 @@ import { DateTimeStack } from "@/components/date-time-stack";
 import controls from "@/components/ui/controls.module.css";
 import { getDeadlineHref } from "@/lib/deadline-action";
 import { formatRequestNumber } from "@/lib/request-number";
+import { WeekStrip } from "@/components/week-strip";
 import { DeadlineListItem } from "@/components/deadline-list-item";
 import { EmptyState } from "@/components/empty-state";
 import { CampusArchitectureArt } from "@/components/campus-architecture-art";
@@ -76,6 +80,11 @@ const quickActions = [
   },
 ] as const;
 
+const monthFormatter = getUniversityDateTimeFormatter({
+  month: "long",
+  year: "numeric",
+});
+
 const welcomeDateFormatter = getUniversityDateTimeFormatter({
   weekday: "long",
   day: "numeric",
@@ -101,22 +110,18 @@ function CampusFallback() {
       aria-label="Загружаем план на день"
       className={styles.page}
     >
-      <span className={styles.skeletonHeading} />
-      <div aria-hidden="true" className={styles.skeletonActions}>
-        <span />
-        <span />
-        <span />
-      </div>
-      <div aria-hidden="true" className={styles.dashboardColumns}>
-        <div className={styles.primaryStack}>
+      <div aria-hidden="true" className={styles.board}>
+        <div className={styles.mainColumn}>
+          <span className={styles.skeletonHeading} />
           <span className={styles.skeletonHero} />
+          <span className={styles.skeletonActions} />
           <span className={styles.skeletonCard} />
         </div>
-        <div className={styles.secondaryStack}>
-          <span className={styles.skeletonCard} />
+        <div className={styles.sideColumn}>
           <span className={styles.skeletonHero} />
+          <span className={styles.skeletonCard} />
+          <span className={styles.skeletonActions} />
         </div>
-        <span className={styles.skeletonCard} />
       </div>
     </main>
   );
@@ -131,10 +136,10 @@ async function CampusToday() {
     getCampusTodayData(),
     getAcademicRecords(),
   ]);
-  const notificationPage = await getStudentNotificationPage(
-    data.student.id,
-    DASHBOARD_ROWS,
-  );
+  const [notificationPage, activeRequestCount] = await Promise.all([
+    getStudentNotificationPage(data.student.id, DASHBOARD_ROWS),
+    countActiveStudentRequests(data.student.id),
+  ]);
   const notificationItems = await presentStudentNotifications(
     notificationPage.notifications,
     data.student.id,
@@ -227,6 +232,35 @@ async function CampusToday() {
       (lesson) => getMoscowDateKey(lesson.startTime) !== todayKey,
     ),
   ];
+  const deadlineKeys = new Set(
+    deadlineRows.map((row) => getMoscowDateKey(row.dueAt)),
+  );
+  const averageGrade = getAverageGrade(
+    (academicRecords.dataset?.semesters ?? [])
+      .filter((semester) => semester.isCurrent)
+      .flatMap((semester) => semester.planItems)
+      .map((item) => item.result?.value),
+  );
+  const todayLessonCount = data.todaySchedule.filter(
+    (lesson) => lesson.status !== "CANCELLED",
+  ).length;
+  const actionMetrics: Record<
+    QuickActionName,
+    { value: string; caption: string }
+  > = {
+    help: {
+      value: String(activeRequestCount),
+      caption: `${pluralize(activeRequestCount, "заявка", "заявки", "заявок")} в работе`,
+    },
+    grades: {
+      value: averageGrade === null ? "—" : averageGrade.toFixed(1).replace(".", ","),
+      caption: "средний балл",
+    },
+    schedule: {
+      value: String(todayLessonCount),
+      caption: `${pluralize(todayLessonCount, "пара", "пары", "пар")} сегодня`,
+    },
+  };
   const todayDate = new Date(`${data.week.todayKey}T00:00:00.000Z`);
   const latestRequestTitle = data.latestRequest
     ? getRequestCatalogTitle(
@@ -248,49 +282,56 @@ async function CampusToday() {
 
   return (
     <main className={styles.page}>
-      <section className={styles.welcome} aria-labelledby="welcome-title">
-        <h1 id="welcome-title">
-          {getCampusGreeting(data.now)}, {firstName}
-        </h1>
-        <p className={styles.eyebrow}>
-          {welcomeDateFormatter.format(todayDate)} · группа{" "}
-          {getStudentFacingGroupName(data.student.group.name)}
-        </p>
-      </section>
+      <div className={styles.board}>
+        <div className={styles.mainColumn}>
+          <section className={styles.welcome} aria-labelledby="welcome-title">
+            <h1 id="welcome-title">
+              {getCampusGreeting(data.now)}, {firstName}
+            </h1>
+            <p className={styles.eyebrow}>
+              {welcomeDateFormatter.format(todayDate)} · группа{" "}
+              {getStudentFacingGroupName(data.student.group.name)}
+            </p>
+          </section>
 
-      <section
-        className={styles.quickActionsSection}
-        aria-labelledby="quick-actions-title"
-      >
-        <h2 className={controls.visuallyHidden} id="quick-actions-title">
-          Быстрые действия
-        </h2>
-        <nav className={styles.quickActions} aria-label="Быстрые действия">
-          {quickActions.map((action) => (
-            <Link
-              className={styles.actionTile}
-              href={action.href}
-              key={action.name}
-            >
-              <span className={styles.actionIcon}>
-                <QuickActionIcon name={action.name} />
-              </span>
-              <span className={styles.actionText}>
-                <span className={styles.actionLabel}>{action.label}</span>
-                <span className={styles.actionDescription}>
-                  {action.description}
-                </span>
-              </span>
-            </Link>
-          ))}
-        </nav>
-      </section>
+          <section
+            className={styles.quickActionsSection}
+            aria-labelledby="quick-actions-title"
+          >
+            <h2 className={controls.visuallyHidden} id="quick-actions-title">
+              Быстрые действия
+            </h2>
+            <nav className={styles.quickActions} aria-label="Быстрые действия">
+              {quickActions.map((action) => (
+                <Link
+                  className={styles.actionTile}
+                  data-tone={action.name}
+                  href={action.href}
+                  key={action.name}
+                >
+                  <span className={styles.actionText}>
+                    <span className={styles.actionLabel}>
+                      <QuickActionIcon name={action.name} />
+                      {action.label}
+                    </span>
+                    <span className={styles.actionDescription}>
+                      {action.description}
+                    </span>
+                  </span>
+                  <span className={styles.actionMetric}>
+                    <strong>{actionMetrics[action.name].value}</strong>
+                    <span>{actionMetrics[action.name].caption}</span>
+                  </span>
+                  <span aria-hidden="true" className={styles.actionNotch}>
+                    <span className={styles.actionArrow}>
+                      <ArrowUpRight strokeWidth={1.8} />
+                    </span>
+                  </span>
+                </Link>
+              ))}
+            </nav>
+          </section>
 
-      <div
-        className={styles.dashboardColumns}
-        data-notifications={notifications.length > 0 ? "list" : "empty"}
-      >
-        <div className={styles.primaryStack}>
           <section
             className={styles.heroCard}
             aria-labelledby="next-lesson-title"
@@ -298,35 +339,26 @@ async function CampusToday() {
             <div className={styles.heroArt} aria-hidden="true">
               <CampusArchitectureArt
                 priority
-                sizes="(max-width: 767px) 0px, (max-width: 1099px) 42vw, 20vw"
+                sizes="(max-width: 767px) 0px, (max-width: 1099px) 42vw, 30vw"
               />
             </div>
             <div className={styles.heroContent}>
               <div className={styles.heroTopline}>
-                <div className={styles.heroLabels}>
-                  <span className={styles.heroBadge}>
-                    {hero.kind === "current"
-                      ? "Идёт сейчас"
-                      : hero.kind === "next"
-                        ? "Следующая пара"
-                        : "Ближайшее занятие"}
+                <span className={styles.heroBadge}>
+                  {hero.kind === "current"
+                    ? "Идёт сейчас"
+                    : hero.kind === "next"
+                      ? "Следующая пара"
+                      : "Ближайшее занятие"}
+                </span>
+                {hero.kind === "current" && hero.countdown ? (
+                  <span className={styles.heroNote}>{hero.countdown}</span>
+                ) : hero.kind === "upcoming" ? (
+                  <span className={styles.heroNote}>
+                    {hero.hasTodayLessons
+                      ? "На сегодня пары закончились"
+                      : "Сегодня занятий нет"}
                   </span>
-                  {hero.kind === "current" && hero.countdown ? (
-                    <span className={styles.heroNote}>{hero.countdown}</span>
-                  ) : hero.kind === "upcoming" ? (
-                    <span className={styles.heroNote}>
-                      {hero.hasTodayLessons
-                        ? "На сегодня пары закончились"
-                        : "Сегодня занятий нет"}
-                    </span>
-                  ) : null}
-                </div>
-                {hero.lesson ? (
-                  <DateTimeStack
-                    align="end"
-                    end={hero.lesson.endTime}
-                    value={hero.lesson.startTime}
-                  />
                 ) : null}
               </div>
               {hero.lesson ? (
@@ -355,54 +387,63 @@ async function CampusToday() {
                   </p>
                 </div>
               )}
-              {nextSession && (
-                <Link
-                  aria-label={`Ближайшее событие сессии: ${nextSession.title}`}
-                  className={styles.heroSession}
-                  href={nextSession.href}
-                >
-                  <span className={styles.heroSessionDetails}>
-                    <span className={styles.heroSessionBadge}>
-                      {nextSession.subject}
-                    </span>
-                    <strong title={nextSession.title}>{nextSession.title}</strong>
-                  </span>
+              <div className={styles.heroFooter}>
+                {hero.lesson ? (
                   <DateTimeStack
-                    align="end"
-                    end={nextSession.endsAt}
-                    value={nextSession.startsAt}
+                    end={hero.lesson.endTime}
+                    value={hero.lesson.startTime}
                   />
-                </Link>
-              )}
-              <div className={styles.heroActions}>
-                <Link className={controls.primary} href="/schedule">
-                  Открыть расписание
-                </Link>
-                {hero.lesson && (
-                  <Link
-                    className={controls.secondary}
-                    href={`/schedule?view=week&date=${hero.lesson.occurrenceDate.toISOString().slice(0, 10)}`}
-                  >
-                    Подробнее
+                ) : null}
+                <div className={styles.heroActions}>
+                  <Link className={controls.primary} href="/schedule">
+                    Открыть расписание
                   </Link>
-                )}
+                  {hero.lesson && (
+                    <Link
+                      className={controls.secondary}
+                      href={`/schedule?view=week&date=${hero.lesson.occurrenceDate.toISOString().slice(0, 10)}`}
+                    >
+                      Подробнее
+                    </Link>
+                  )}
+                </div>
               </div>
             </div>
+            {nextSession && (
+              <Link
+                aria-label={`Ближайшее событие сессии: ${nextSession.title}`}
+                className={styles.heroSession}
+                href={nextSession.href}
+              >
+                <span className={styles.heroSessionBadge}>
+                  {nextSession.subject}
+                </span>
+                <strong title={nextSession.title}>{nextSession.title}</strong>
+                <DateTimeStack
+                  end={nextSession.endsAt}
+                  value={nextSession.startsAt}
+                />
+              </Link>
+            )}
           </section>
 
-          <section
-            className={`${styles.card} ${styles.scheduleCard}`}
-            aria-labelledby="today-schedule-title"
-          >
-            <div className={styles.cardHeading}>
-              <h2 id="today-schedule-title">
-                {data.todaySchedule.length > 0
-                  ? "Расписание на сегодня"
-                  : "Ближайшие занятия"}
-              </h2>
-            </div>
-            {lessonRows.length > 0 ? (
-              <div className={styles.fit}>
+          <div className={styles.lists}>
+            <section
+              className={`${styles.card} ${styles.scheduleCard}`}
+              aria-labelledby="today-schedule-title"
+            >
+              <div className={styles.cardHeading}>
+                <h2 id="today-schedule-title">
+                  {data.todaySchedule.length > 0
+                    ? "Расписание на сегодня"
+                    : "Ближайшие занятия"}
+                </h2>
+                <Link className={styles.headingLink} href="/schedule">
+                  Все занятия →
+                </Link>
+              </div>
+              {lessonRows.length > 0 ? (
+                <div className={styles.fit}>
                 <ol className={styles.rows}>
                   {lessonRows.map((lesson) => {
                     const details = `${scheduleKindLabels[lesson.kind]} · ауд. ${lesson.room}`;
@@ -419,6 +460,7 @@ async function CampusToday() {
                     return (
                       <li
                         className={styles.row}
+                        data-kind={lesson.kind}
                         data-state={
                           lesson.occurrenceId === activeLessonId
                             ? "current"
@@ -459,8 +501,8 @@ async function CampusToday() {
                     );
                   })}
                 </ol>
-              </div>
-            ) : (
+                </div>
+              ) : (
               <EmptyState
                 action={
                   <Link className={styles.textLink} href="/schedule?view=week">
@@ -471,52 +513,29 @@ async function CampusToday() {
                 illustration="schedule"
                 title="Ближайших занятий нет"
               />
-            )}
-            <Link className={styles.cardFooterLink} href="/schedule">
-              Все занятия →
-            </Link>
-          </section>
-        </div>
+              )}
+            </section>
 
-        <div className={styles.secondaryStack}>
-          <section
-            className={`${styles.card} ${styles.deadlineCard}`}
-            aria-labelledby="deadlines-title"
-          >
-            <div className={styles.cardHeading}>
-              <h2 id="deadlines-title">Ближайшие дедлайны</h2>
-              {deadlineRows.length > 0 ? (
-                <span
-                  aria-label={`Предстоящих сроков: ${deadlineRows.length}`}
-                  className={controls.badge}
-                  data-tone="accent"
-                >
-                  {deadlineRows.length}
-                </span>
-              ) : null}
-            </div>
-            {deadlineRows.length ? (
-              <div className={styles.fit}>
-                <ul className={styles.rows}>
-                  {deadlineRows.map((deadline) => (
-                    <DeadlineListItem
-                      dueAt={deadline.dueAt}
-                      href={deadline.href}
-                      key={deadline.id}
-                      subject={deadline.subject}
-                      title={deadline.title}
-                    />
-                  ))}
-                </ul>
-              </div>
-            ) : (
-              <EmptyState
-                className={styles.cardEmptyState}
-                illustration="documents"
-                title="Ближайших сроков нет"
-              />
-            )}
-            <div className={styles.deadlineFooter}>
+            <section
+              className={`${styles.card} ${styles.deadlineCard}`}
+              aria-labelledby="deadlines-title"
+            >
+              <div className={styles.cardHeading}>
+                <h2 id="deadlines-title">
+                  Ближайшие дедлайны{" "}
+                  {deadlineRows.length > 0 ? (
+                    <span
+                      aria-label={`Предстоящих сроков: ${deadlineRows.length}`}
+                      className={controls.badge}
+                      data-tone="accent"
+                    >
+                      {deadlineRows.length}
+                    </span>
+                  ) : null}
+                </h2>
+                <Link className={styles.headingLink} href="/deadlines">
+                  Все сроки →
+                </Link>
               {data.overdueDeadlineCount > 0 ? (
                 <Link
                   aria-label={`Показать просроченные задания: ${data.overdueDeadlineCount}`}
@@ -530,10 +549,93 @@ async function CampusToday() {
                   Просрочено: {data.overdueDeadlineCount}
                 </Link>
               ) : null}
-              <Link className={styles.cardFooterLink} href="/deadlines">
-                Все сроки →
-              </Link>
+              </div>
+              {deadlineRows.length ? (
+                <div className={styles.fit}>
+                <ul className={styles.rows}>
+                  {deadlineRows.map((deadline) => (
+                    <DeadlineListItem
+                      dueAt={deadline.dueAt}
+                      href={deadline.href}
+                      key={deadline.id}
+                      subject={deadline.subject}
+                      title={deadline.title}
+                    />
+                  ))}
+                </ul>
+                </div>
+              ) : (
+                <EmptyState
+                  className={styles.cardEmptyState}
+                  illustration="documents"
+                  title="Ближайших сроков нет"
+                />
+              )}
+            </section>
+          </div>
+        </div>
+
+        <div className={styles.sideColumn}>
+          <WeekStrip
+            days={data.weekDays.map((day) => ({
+              ...day,
+              hasDeadline: deadlineKeys.has(day.key),
+            }))}
+            title={monthFormatter.format(todayDate).replace(" г.", "")}
+            todayKey={todayKey}
+          />
+
+          <section
+            className={`${styles.card} ${styles.notificationCard}`}
+            aria-labelledby="dashboard-notifications-title"
+            data-empty={notifications.length === 0 || undefined}
+          >
+            <div className={styles.cardHeading}>
+              <h2 id="dashboard-notifications-title">
+                Уведомления{" "}
+                {notificationPage.unreadCount > 0 ? (
+                  <span className={controls.badge} data-tone="accent">
+                    Новых: {notificationPage.unreadCount}
+                  </span>
+                ) : null}
+              </h2>
             </div>
+            {notifications.length > 0 ? (
+              <div className={styles.fit}>
+              <ul className={styles.rows}>
+                {notifications.map((notification) => (
+                  <li className={styles.row} key={notification.id}>
+                    <Link className={styles.rowLink} href={notification.href}>
+                      <span className={styles.rowText}>
+                        <strong title={notification.title}>
+                          {notification.isUnread ? (
+                            <span
+                              aria-label="Не прочитано"
+                              className={styles.unreadDot}
+                              role="img"
+                            />
+                          ) : null}
+                          {notification.title}
+                        </strong>
+                        <span title={notification.text}>
+                          {notification.text || notification.kind}
+                        </span>
+                      </span>
+                      <DateTimeStack align="end" value={notification.date} />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              </div>
+            ) : (
+              <p className={styles.compactEmpty}>
+                Новых уведомлений нет. Здесь появятся изменения расписания, сроки
+                и статусы заявок.
+              </p>
+            )}
+            <Link className={styles.cardFooterLink} href="/notifications">
+              Все уведомления ({notificationTotal}) →
+            </Link>
           </section>
 
           <section
@@ -592,56 +694,6 @@ async function CampusToday() {
             )}
           </section>
         </div>
-
-        <section
-          className={`${styles.card} ${styles.notificationCard}`}
-          aria-labelledby="dashboard-notifications-title"
-        >
-          <div className={styles.cardHeading}>
-            <h2 id="dashboard-notifications-title">Уведомления</h2>
-            {notificationPage.unreadCount > 0 ? (
-              <span className={controls.badge} data-tone="accent">
-                Новых: {notificationPage.unreadCount}
-              </span>
-            ) : null}
-          </div>
-          {notifications.length > 0 ? (
-            <div className={styles.fit}>
-              <ul className={styles.rows}>
-                {notifications.map((notification) => (
-                  <li className={styles.row} key={notification.id}>
-                    <Link className={styles.rowLink} href={notification.href}>
-                      <span className={styles.rowText}>
-                        <strong title={notification.title}>
-                          {notification.isUnread ? (
-                            <span
-                              aria-label="Не прочитано"
-                              className={styles.unreadDot}
-                              role="img"
-                            />
-                          ) : null}
-                          {notification.title}
-                        </strong>
-                        <span title={notification.text}>
-                          {notification.text || notification.kind}
-                        </span>
-                      </span>
-                      <DateTimeStack align="end" value={notification.date} />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : (
-            <p className={styles.compactEmpty}>
-              Новых уведомлений нет. Здесь появятся изменения расписания, сроки и
-              статусы заявок.
-            </p>
-          )}
-          <Link className={styles.cardFooterLink} href="/notifications">
-            Все уведомления ({notificationTotal}) →
-          </Link>
-        </section>
       </div>
     </main>
   );

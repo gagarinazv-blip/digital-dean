@@ -5,11 +5,12 @@ import { usePathname } from "next/navigation";
 import {
   Bell,
   Calendar,
+  Journal,
   GraphUp,
   HomeSimple,
   Menu,
   Page,
-  TaskList,
+  Suitcase,
   User,
   Xmark,
 } from "iconoir-react";
@@ -21,10 +22,10 @@ import styles from "./campus-navigation.module.css";
 const navigation = [
   { href: "/", label: "Сегодня", icon: HomeSimple },
   { href: "/schedule", label: "Расписание", icon: Calendar },
-  { href: "/digest", label: "Дайджест событий", icon: Calendar },
+  { href: "/digest", label: "Дайджест событий", icon: Journal },
   { href: "/grades", label: "Успеваемость", icon: GraphUp },
   { href: "/documents", label: "Документы и заявки", icon: Page },
-  { href: "/opportunities/catalog", label: "Возможности", icon: TaskList },
+  { href: "/opportunities/catalog", label: "Возможности", icon: Suitcase },
   { href: "/notifications", label: "Уведомления", icon: Bell },
   { href: "/profile", label: "Профиль", icon: User },
 ] as const;
