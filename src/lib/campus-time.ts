@@ -306,6 +306,10 @@ export function formatMoscowTime(date: Date): string {
   });
 }
 
+export function formatMoscowDateTime(date: Date): string {
+  return `${formatMoscowWeekdayDate(date)}, ${formatMoscowTime(date)}`;
+}
+
 export function getTimeMinutes(date: Date): number {
   return date.getUTCHours() * 60 + date.getUTCMinutes();
 }

@@ -113,6 +113,7 @@ export function CampusLayout({
       </header>
       <div className={styles.shellBody}>
         <CampusNavigation
+          studentId={student.id}
           unreadNotificationCount={unreadNotificationCount}
         />
         <div className={styles.content}>{children}</div>

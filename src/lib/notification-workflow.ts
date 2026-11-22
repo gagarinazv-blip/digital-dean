@@ -2,6 +2,7 @@ import type {
   NotificationTargetType,
   NotificationType,
 } from "@/generated/prisma/enums";
+import { getDeadlineHref } from "@/lib/deadline-action";
 
 const notificationTypes: NotificationType[] = [
   "SCHEDULE_CHANGE",
@@ -74,7 +75,7 @@ export function buildNotificationTargetHref(
         ? `/schedule?view=week&lesson=${encodeURIComponent(targetId)}#lesson-${encodeURIComponent(targetId)}`
         : null;
     case "DEADLINE":
-      return `/deadlines#deadline-${encodeURIComponent(targetId)}`;
+      return getDeadlineHref(targetId);
     case "REQUEST":
       return isNotificationPublicId(targetId)
         ? `/requests/${targetId}`

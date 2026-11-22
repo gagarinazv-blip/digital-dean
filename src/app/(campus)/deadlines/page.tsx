@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { CampusSection } from "@/components/campus-section";
 import { EmptyState } from "@/components/empty-state";
 import {
@@ -6,6 +7,7 @@ import {
 } from "@/lib/deadline-utils";
 import { getUniversityDateTimeFormatter } from "@/lib/campus-time";
 import { getStudentDeadlines } from "@/lib/deadline-data";
+import { getDeadlineHref } from "@/lib/deadline-action";
 import { getDemoNow } from "@/lib/demo-date";
 import { requireStudent } from "@/lib/student";
 import styles from "./deadlines.module.css";
@@ -65,7 +67,14 @@ export default async function DeadlinesPage() {
                       : countdown?.label}
                   </span>
                 </div>
-                <h2>{deadline.title}</h2>
+                <h2>
+                  <Link
+                    className={styles.titleLink}
+                    href={getDeadlineHref(deadline.id)}
+                  >
+                    {deadline.title}
+                  </Link>
+                </h2>
                 {deadline.description && <p>{deadline.description}</p>}
                 <time dateTime={deadline.dueAt.toISOString()}>
                   Срок: {deadlineDateFormatter.format(deadline.dueAt)}

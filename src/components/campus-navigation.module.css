@@ -81,9 +81,9 @@
   min-width: 0;
 }
 
-.desktopUnreadBadge,
 .unreadBadge {
   min-width: 20px;
+  flex: 0 0 auto;
   height: 20px;
   display: inline-grid;
   place-items: center;
@@ -94,17 +94,12 @@
   font-size: var(--font-size-caption);
   font-weight: 600;
   line-height: 1;
-}
-
-.desktopUnreadBadge {
   margin-left: auto;
 }
 
-.unreadBadge {
-  position: absolute;
-  top: -5px;
-  right: -7px;
-  border: 2px solid var(--color-surface);
+.active .unreadBadge {
+  background: var(--color-surface);
+  color: var(--color-wine-900);
 }
 
 @media (max-width: 1023px) {
@@ -118,14 +113,20 @@
     padding: var(--space-2);
   }
 
-  .navigationLabel,
-  .desktopUnreadBadge {
+  .navigationLabel {
     position: absolute;
     width: 1px;
     height: 1px;
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
+  }
+
+  .unreadBadge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    margin-left: 0;
   }
 }
 
@@ -217,14 +218,8 @@
     height: 22px;
   }
 
-  .desktopUnreadBadge {
-    position: static;
-    width: auto;
-    height: 20px;
-    clip-path: none;
-  }
-
   .unreadBadge {
-    display: grid;
+    position: static;
+    margin-left: auto;
   }
 }

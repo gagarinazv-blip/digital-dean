@@ -14,6 +14,8 @@ import {
   Xmark,
 } from "iconoir-react";
 import { useEffect, useRef, useState } from "react";
+import { UnreadNotificationBadge } from "@/components/unread-notification-badge";
+import { useStudentNotificationStore } from "@/lib/notification-store";
 import styles from "./campus-navigation.module.css";
 
 const navigation = [
@@ -29,29 +31,19 @@ const navigation = [
 const unreadCountEvent = "campus:unread-notification-count";
 
 export function CampusNavigation({
+  studentId,
   unreadNotificationCount,
 }: {
+  studentId: number;
   unreadNotificationCount: number;
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(unreadNotificationCount);
+  const { unreadCount } = useStudentNotificationStore(
+    studentId,
+    unreadNotificationCount,
+  );
   const menuButtonRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    const handleUnreadCount = (event: Event) => {
-      const count = (event as CustomEvent<unknown>).detail;
-      if (
-        typeof count === "number" &&
-        Number.isSafeInteger(count) &&
-        count >= 0
-      ) {
-        setUnreadCount(count);
-      }
-    };
-    window.addEventListener(unreadCountEvent, handleUnreadCount);
-    return () => window.removeEventListener(unreadCountEvent, handleUnreadCount);
-  }, []);
 
   useEffect(() => {
     if (!mobileOpen) return;
@@ -105,11 +97,6 @@ export function CampusNavigation({
 
           return (
             <Link
-              aria-label={
-                item.href === "/notifications" && unreadCount > 0
-                  ? `Уведомления, непрочитанных: ${unreadCount}`
-                  : item.label
-              }
               aria-current={isCurrent ? "page" : undefined}
               className={`${styles.navigationLink} ${isCurrent ? styles.active : ""}`}
               href={item.href}
@@ -123,17 +110,13 @@ export function CampusNavigation({
                   className={styles.iconSvg}
                   strokeWidth={1.8}
                 />
-                {item.href === "/notifications" && unreadCount > 0 && (
-                  <span aria-hidden="true" className={styles.unreadBadge}>
-                    {unreadCount > 99 ? "99+" : unreadCount}
-                  </span>
-                )}
               </span>
               <span className={styles.navigationLabel}>{item.label}</span>
-              {item.href === "/notifications" && unreadCount > 0 && (
-                <span aria-hidden="true" className={styles.desktopUnreadBadge}>
-                  {unreadCount > 99 ? "99+" : unreadCount}
-                </span>
+              {item.href === "/notifications" && (
+                <UnreadNotificationBadge
+                  className={styles.unreadBadge}
+                  count={unreadCount}
+                />
               )}
             </Link>
           );

@@ -18,7 +18,6 @@ const notificationTypes: NotificationType[] = [
   "ANNOUNCEMENT",
   "OPPORTUNITY_STATUS",
 ];
-const unreadCountEvent = "campus:unread-notification-count";
 
 export type NotificationStoreSnapshot = NotificationFeedPage & {
   loading: boolean;
@@ -134,14 +133,6 @@ export function createNotificationStore(
   const emit = () => listeners.forEach((listener) => listener());
   const setSnapshot = (update: Partial<NotificationStoreSnapshot>) => {
     snapshot = { ...snapshot, ...update };
-    if (
-      typeof window !== "undefined" &&
-      update.unreadCount !== undefined
-    ) {
-      window.dispatchEvent(
-        new CustomEvent(unreadCountEvent, { detail: snapshot.unreadCount }),
-      );
-    }
     emit();
   };
 

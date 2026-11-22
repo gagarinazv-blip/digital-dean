@@ -11,11 +11,15 @@ import {
   useState,
   type KeyboardEvent,
 } from "react";
+import { DeadlinePreview } from "@/components/deadline-preview";
 import { NotificationSymbol } from "@/components/notification-symbol";
 import { EmptyState } from "@/components/empty-state";
 import { cleanStudentFacingText } from "@/lib/campus-labels";
 import { useStudentNotificationStore } from "@/lib/notification-store";
-import type { StudentNotificationItem } from "@/lib/notification-types";
+import type {
+  NotificationDeadlineDetails,
+  StudentNotificationItem,
+} from "@/lib/notification-types";
 import {
   createNotificationUrl,
   filterNotifications,
@@ -96,7 +100,12 @@ function NotificationRow({
           type="checkbox"
         />
       </label>
-      <button className={styles.rowMain} onClick={onSelect} type="button">
+      <button
+        aria-haspopup={notification.details.deadline ? "dialog" : undefined}
+        className={styles.rowMain}
+        onClick={onSelect}
+        type="button"
+      >
         <NotificationSymbol type={notification.type} />
         <span className={styles.rowContent}>
           <span className={styles.rowType}>
@@ -269,6 +278,17 @@ function NotificationDetails({
   );
 }
 
+function rowSelector(publicId: string): string {
+  return `[data-notification-id="${CSS.escape(publicId)}"]`;
+}
+
+function getRowButton(
+  list: HTMLElement,
+  publicId: string,
+): HTMLElement | null {
+  return list.querySelector<HTMLElement>(`${rowSelector(publicId)} > button`);
+}
+
 export function NotificationCenter({
   initialUnreadCount,
   studentId,
@@ -288,6 +308,10 @@ export function NotificationCenter({
   const searchTimerRef = useRef<number | null>(null);
   const [checkedIds, setCheckedIds] = useState<Set<string>>(() => new Set());
   const [keyboardIndex, setKeyboardIndex] = useState(-1);
+  const [preview, setPreview] = useState<{
+    notificationId: string;
+    deadline: NotificationDeadlineDetails;
+  } | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const attemptedOpenId = useRef<string | null>(null);
   const previousFirstIdRef = useRef<string | null>(null);
@@ -371,6 +395,13 @@ export function NotificationCenter({
           (item) => item.publicId === notification.publicId,
         ),
       );
+      if (notification.details.deadline) {
+        setPreview({
+          notificationId: notification.publicId,
+          deadline: notification.details.deadline,
+        });
+        return;
+      }
       updateUrl({ open: notification.publicId });
     },
     [displayedNotifications, markRead, updateUrl],
@@ -378,6 +409,8 @@ export function NotificationCenter({
 
   useEffect(() => {
     const handleKeyDown = (event: globalThis.KeyboardEvent) => {
+      // Открытый предпросмотр, в том числе из колокольчика, сам обрабатывает клавиши.
+      if (document.querySelector("dialog:modal")) return;
       const target = event.target;
       if (
         target instanceof HTMLElement &&
@@ -401,8 +434,19 @@ export function NotificationCenter({
           Math.min(displayedNotifications.length - 1, start + direction),
         );
         setKeyboardIndex(nextIndex);
-        updateUrl({ open: displayedNotifications[nextIndex].publicId }, true);
+        const nextId = displayedNotifications[nextIndex].publicId;
+        if (listRef.current?.contains(document.activeElement)) {
+          getRowButton(listRef.current, nextId)?.focus();
+        }
+        updateUrl({ open: nextId }, true);
       } else if (event.key === "Enter") {
+        // Кнопка или ссылка в фокусе срабатывает сама.
+        if (
+          target instanceof HTMLElement &&
+          target.closest("button, a, summary")
+        ) {
+          return;
+        }
         const index = selectedIndex >= 0 ? selectedIndex : keyboardIndex;
         const item = displayedNotifications[index];
         if (item) {
@@ -430,12 +474,22 @@ export function NotificationCenter({
     updateUrl,
   ]);
 
+  function closePreview() {
+    if (!preview) return;
+    setPreview(null);
+    // В фильтре «Непрочитанные» строка могла исчезнуть после прочтения.
+    const list = listRef.current;
+    const target =
+      (list && getRowButton(list, preview.notificationId)) ??
+      list?.querySelector<HTMLElement>("[data-notification-id] > button") ??
+      searchInputRef.current;
+    target?.focus();
+  }
+
   useEffect(() => {
     if (openId) {
       listRef.current
-        ?.querySelector<HTMLElement>(
-          `[data-notification-id="${CSS.escape(openId)}"]`,
-        )
+        ?.querySelector<HTMLElement>(rowSelector(openId))
         ?.scrollIntoView({ block: "nearest" });
     }
   }, [openId, notifications]);
@@ -506,6 +560,13 @@ export function NotificationCenter({
 
   return (
     <div className={styles.center}>
+      {preview && (
+        <DeadlinePreview
+          deadline={preview.deadline}
+          key={preview.notificationId}
+          onClose={closePreview}
+        />
+      )}
       <div className={styles.pageHeading}>
         <p>{state.unreadCount} непрочитанных</p>
         {state.unreadCount > 0 && (
