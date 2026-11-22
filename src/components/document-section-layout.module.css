@@ -1,0 +1,7 @@
+.layout {
+  min-width: 0;
+}
+
+.layout > nav {
+  margin-bottom: var(--space-3);
+}
