@@ -11,6 +11,7 @@ import {
   Menu,
   Page,
   Suitcase,
+  TaskList,
   User,
   Xmark,
 } from "iconoir-react";
@@ -22,6 +23,7 @@ import styles from "./campus-navigation.module.css";
 const navigation = [
   { href: "/", label: "Сегодня", icon: HomeSimple },
   { href: "/schedule", label: "Расписание", icon: Calendar },
+  { href: "/deadlines", label: "Задания", icon: TaskList },
   { href: "/digest", label: "Дайджест событий", icon: Journal },
   { href: "/grades", label: "Успеваемость", icon: GraphUp },
   { href: "/documents", label: "Документы и заявки", icon: Page },

@@ -20,7 +20,13 @@ export async function getStudentDeadlines(studentId: number) {
       title: true,
       dueAt: true,
       status: true,
-      description: true,
+      format: true,
+      disciplineId: true,
+      _count: { select: { materials: true } },
+      progress: {
+        where: { studentId },
+        select: { checklist: true },
+      },
     },
   });
 }

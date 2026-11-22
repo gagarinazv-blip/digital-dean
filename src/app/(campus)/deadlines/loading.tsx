@@ -1,5 +1,5 @@
 import { CampusLoading } from "@/components/campus-section";
 
 export default function DeadlinesLoading() {
-  return <CampusLoading label="задания и сроки" />;
+  return <CampusLoading label="задания" />;
 }
