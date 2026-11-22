@@ -8,6 +8,7 @@ export type PreparedRequestAttachment = {
   mediaType: "application/pdf" | "image/jpeg" | "image/png";
   sizeBytes: number;
   data: Uint8Array<ArrayBuffer>;
+  fieldKey?: string;
 };
 
 export type RequestUploadValidation =

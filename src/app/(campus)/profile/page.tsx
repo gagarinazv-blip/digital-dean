@@ -3,9 +3,7 @@ import type { StudyForm } from "@/generated/prisma/enums";
 import { getPrisma } from "@/lib/prisma";
 import { requireStudentContext } from "@/lib/student";
 import { CorporateMailCard } from "./corporate-mail-card";
-import { requireStudent } from "@/lib/student";
 import { getStudentFacingGroupName } from "@/lib/campus-labels";
-import { formatUniversityDateTime } from "@/lib/campus-time";
 import { getAvatarInitials, getAvatarTone } from "@/lib/avatar";
 import styles from "./profile.module.css";
 
@@ -114,13 +112,7 @@ async function ProfileContent() {
           email={
             mailIsIssued ? mailCredentials?.corporateEmail ?? null : null
           }
-          issuedDate={
-            mailIssuedAt
-              ? formatUniversityDateTime(mailIssuedAt, {
-                  dateStyle: "long",
-                })
-              : null
-          }
+          issuedAt={mailIssuedAt ?? null}
         />
       </section>
     </main>

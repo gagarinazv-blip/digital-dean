@@ -2,12 +2,15 @@ import Link from "next/link";
 import type { PortfolioSource } from "@/generated/prisma/enums";
 import type { PortfolioCategory } from "@/lib/portfolio-constants";
 import { portfolioCategoryLabels } from "@/lib/portfolio-constants";
-import { isPortfolioCategory } from "@/lib/portfolio-validation";
+import { isPortfolioCategory } from "@/lib/portfolio-form";
+import { DateTimeStack } from "@/components/date-time-stack";
+import { EmptyState } from "@/components/empty-state";
+import controls from "@/components/ui/controls.module.css";
 import {
   PortfolioFolderManager,
   PortfolioItemControls,
 } from "./portfolio-controls";
-import { PortfolioUploadForm } from "./portfolio-upload-form";
+import { PortfolioItemDrawer } from "./portfolio-item-drawer";
 import styles from "./portfolio.module.css";
 
 type Folder = { id: number; name: string };
@@ -29,11 +32,6 @@ type Item = {
   updatedAt: Date;
 };
 
-const dateFormatter = new Intl.DateTimeFormat("ru-RU", {
-  dateStyle: "long",
-  timeZone: "Europe/Moscow",
-});
-
 function formatBytes(bytes: number): string {
   return bytes >= 1024 * 1024
     ? `${(bytes / (1024 * 1024)).toFixed(1)} МБ`
@@ -46,12 +44,12 @@ function makeHref(
   category: string,
   year: string,
 ): string {
-  const params = new URLSearchParams({ tab: "portfolio" });
+  const params = new URLSearchParams();
   if (folder) params.set("folder", folder);
   if (query) params.set("q", query);
   if (category) params.set("category", category);
   if (year) params.set("year", year);
-  return `/documents?${params.toString()}`;
+  return `/opportunities/portfolio?${params.toString()}`;
 }
 
 export function PortfolioView({
@@ -150,14 +148,18 @@ export function PortfolioView({
             <p className={styles.kicker}>Достижения и подтверждающие документы</p>
             <h2 id="portfolio-title">Портфолио</h2>
           </div>
-          <details className={styles.uploadDetails}>
-            <summary className={styles.primaryButton}>Добавить запись</summary>
-            <PortfolioUploadForm isStaff={false} folders={folders} />
-          </details>
+          <PortfolioItemDrawer
+            folders={folders}
+            isStaff={false}
+            triggerLabel="Добавить запись"
+          />
         </div>
 
-        <form action="/documents" className={styles.filters} role="search">
-          <input name="tab" type="hidden" value="portfolio" />
+        <form
+          action="/opportunities/portfolio"
+          className={styles.filters}
+          role="search"
+        >
           <input name="folder" type="hidden" value={folder || "all"} />
           <label className={styles.field}>
             <span>Поиск по названию</span>
@@ -187,21 +189,18 @@ export function PortfolioView({
               ))}
             </select>
           </label>
-          <button className={styles.secondaryButton} type="submit">Применить</button>
+          <button className={controls.secondary} type="submit">Применить</button>
         </form>
 
         {visibleItems.length === 0 ? (
-          <div className={styles.emptyState}>
-            <h3>
-              {items.length === 0
-                ? "Пока нет достижений"
-                : "Записи не найдены"}
-            </h3>
-            <p>
-              Здесь будут ваши дипломы и сертификаты. Загружайте свои документы
-              или дождитесь, когда деканат добавит достижения.
-            </p>
-          </div>
+          <EmptyState
+            className={styles.emptyState}
+            description="Здесь будут ваши дипломы и сертификаты. Загружайте свои документы или дождитесь, когда деканат добавит достижения."
+            illustration={items.length === 0 ? "documents" : "search"}
+            title={
+              items.length === 0 ? "Пока нет достижений" : "Записи не найдены"
+            }
+          />
         ) : (
           <div className={styles.itemGrid}>
             {visibleItems.map((item) => (
@@ -233,7 +232,7 @@ export function PortfolioView({
                   {item.eventDate ? (
                     <>
                       <dt>Дата</dt>
-                      <dd>{dateFormatter.format(item.eventDate)}</dd>
+                      <dd><DateTimeStack allDay value={item.eventDate} /></dd>
                     </>
                   ) : null}
                   {item.role ? (
@@ -250,7 +249,7 @@ export function PortfolioView({
                 ) : null}
                 <div className={styles.itemLinks}>
                   <Link
-                    className={styles.secondaryButton}
+                    className={controls.secondary}
                     href={`/files/portfolio/${item.id}`}
                     rel="noreferrer"
                     target="_blank"
@@ -258,7 +257,7 @@ export function PortfolioView({
                     Открыть
                   </Link>
                   <Link
-                    className={styles.secondaryButton}
+                    className={controls.secondary}
                     href={`/files/portfolio/${item.id}?download=1`}
                   >
                     Скачать

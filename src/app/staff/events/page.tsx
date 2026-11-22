@@ -1,3 +1,4 @@
+import { DateTimeStack } from "@/components/date-time-stack";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { CampusLoading } from "@/components/campus-section";
@@ -11,7 +12,6 @@ import {
   groupEventsByStartDay,
 } from "@/lib/event-digest";
 import { getStaffDigestEvents } from "@/lib/event-data";
-import { formatMoscowTime } from "@/lib/campus-time";
 import { requireStaffContext } from "@/lib/staff";
 import {
   copyEventToNextWeekAction,
@@ -106,6 +106,10 @@ async function StaffEventsContent({
                         ) : (
                           <span>Время уточняется</span>
                         )}
+                        <DateTimeStack
+                          end={event.endsAt}
+                          value={event.startsAt}
+                        />
                         <span
                           className={styles.statusBadge}
                           data-status={event.status}

@@ -1,8 +1,8 @@
+import { DateTimeStack } from "@/components/date-time-stack";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { StudentAuditAction } from "@/generated/prisma/enums";
 import { getCorporateMailDomain } from "@/lib/corporate-mail";
-import { getUniversityDateTimeFormatter } from "@/lib/campus-time";
 import { getPrisma } from "@/lib/prisma";
 import { requireStaffContext } from "@/lib/staff";
 import { portfolioCategoryLabels } from "@/lib/portfolio-constants";
@@ -45,11 +45,6 @@ const changedFieldLabels: Record<string, string> = {
   activeSessions: "активные сессии",
 };
 
-const dateFormatter = getUniversityDateTimeFormatter({
-  dateStyle: "medium",
-  timeStyle: "short",
-});
-
 function getChangedFieldLabel(field: string): string {
   if (field.startsWith("portfolio:")) {
     return `название записи «${field.slice("portfolio:".length)}»`;
@@ -62,6 +57,8 @@ function parseId(value: string): number | null {
   const id = Number(value);
   return Number.isSafeInteger(id) ? id : null;
 }
+
+export const instant = false;
 
 export default async function StaffStudentDetailPage({
   params,
@@ -133,9 +130,6 @@ export default async function StaffStudentDetailPage({
   ]);
   if (!student) notFound();
 
-  const mailIssuedDate = student.corporateMailIssuedAt
-    ? dateFormatter.format(student.corporateMailIssuedAt)
-    : null;
   const mailDomain = getCorporateMailDomain();
 
   return (
@@ -187,7 +181,7 @@ export default async function StaffStudentDetailPage({
             groupId: student.groupId,
             corporateEmail: student.corporateEmail,
             mailPasswordSet: Boolean(student.corporateMailPasswordEncrypted),
-            mailIssuedDate,
+            mailIssuedAt: student.corporateMailIssuedAt,
           }}
         />
       </section>
@@ -229,9 +223,8 @@ export default async function StaffStudentDetailPage({
                     {entry.actor?.staffProfile?.fullName ??
                       entry.actor?.login ??
                       "Сотрудник недоступен"}
-                    {" · "}
-                    {dateFormatter.format(entry.createdAt)}
                   </span>
+                  <DateTimeStack value={entry.createdAt} />
                 </div>
               </li>
             ))}
@@ -265,10 +258,10 @@ export default async function StaffStudentDetailPage({
                   <p>
                     {portfolioCategoryLabels[item.category]}
                     {item.eventName ? ` · ${item.eventName}` : ""}
-                    {item.eventDate
-                      ? ` · ${dateFormatter.format(item.eventDate)}`
-                      : ""}
                   </p>
+                  {item.eventDate ? (
+                    <DateTimeStack allDay value={item.eventDate} />
+                  ) : null}
                   <span>
                     {item.source === "STAFF"
                       ? "Добавлено деканатом"

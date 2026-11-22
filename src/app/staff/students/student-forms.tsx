@@ -1,5 +1,6 @@
 "use client";
 
+import { DateTimeStack } from "@/components/date-time-stack";
 import { useActionState, useRef, useState } from "react";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { PhoneInput } from "@/components/phone-input";
@@ -304,7 +305,7 @@ type EditableStudent = {
   groupId: number;
   corporateEmail: string | null;
   mailPasswordSet: boolean;
-  mailIssuedDate: string | null;
+  mailIssuedAt: Date | null;
 };
 
 export function UpdateStudentForm({
@@ -587,9 +588,12 @@ export function UpdateStudentForm({
               id={`mail-password-status-${student.id}`}
             >
               {student.mailPasswordSet
-                ? `Пароль задан${student.mailIssuedDate ? ` · ${student.mailIssuedDate}` : ""}. Сотрудники не могут его прочитать.`
+                ? "Пароль задан. Сотрудники не могут его прочитать."
                 : "Пароль не задан."}
             </span>
+            {student.mailPasswordSet && student.mailIssuedAt ? (
+              <DateTimeStack value={student.mailIssuedAt} />
+            ) : null}
             {state.fieldErrors?.corporateMailPassword ? (
               <span
                 className={styles.fieldError}

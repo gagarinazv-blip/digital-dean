@@ -1,8 +1,13 @@
 "use client";
 
+import { DateTimeStack } from "@/components/date-time-stack";
 import { useActionState, useId, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
+import { Drawer } from "@/components/ui/drawer";
+import { FormField } from "@/components/ui/form-field";
+import { useDirtyForm } from "@/components/ui/use-dirty-form";
+import controls from "@/components/ui/controls.module.css";
 import { EmptyState } from "@/components/empty-state";
 import type { StudentDocumentType } from "@/generated/prisma/enums";
 import type { StudentDocumentActionState } from "@/lib/student-document-action-state";
@@ -68,71 +73,94 @@ export function UploadDocumentDialog({ buttonLabel }: { buttonLabel: string }) {
     },
     initialActionState,
   );
-  const id = useId();
+  const formId = useId();
+  const { formRef, isDirty, checkDirty } = useDirtyForm();
 
   return (
     <>
-      <ConfirmationDialog
-        buttonClassName={styles.uploadButton}
-        buttonLabel={buttonLabel}
-        onOpenChange={setOpen}
+      <button
+        aria-haspopup="dialog"
+        className={controls.primary}
+        onClick={() => setOpen(true)}
+        type="button"
+      >
+        {buttonLabel}
+      </button>
+      <Drawer
+        description="PDF, JPG или PNG размером не более 10 МБ."
+        eyebrow="Мои документы"
+        footer={(requestClose) => (
+          <>
+            <button
+              className={controls.secondary}
+              disabled={pending}
+              onClick={requestClose}
+              type="button"
+            >
+              Отмена
+            </button>
+            <button
+              aria-busy={pending}
+              className={controls.primary}
+              disabled={pending}
+              form={formId}
+              type="submit"
+            >
+              {pending ? "Загружается…" : "Загрузить"}
+            </button>
+          </>
+        )}
+        isBusy={pending}
+        isDirty={isDirty}
+        onClose={() => setOpen(false)}
         open={open}
         title="Загрузить документ"
       >
-        <div className={styles.dialogContent}>
-          <p>Поддерживаются PDF, JPG и PNG размером не более 10 МБ.</p>
-          <form action={formAction} className={styles.uploadForm}>
-            <label className={styles.field} htmlFor={`${id}-title`}>
-              Название
+        <form
+          action={formAction}
+          className={styles.uploadForm}
+          id={formId}
+          onChange={checkDirty}
+          onReset={(event) => event.preventDefault()}
+          ref={formRef}
+        >
+          <ActionFeedback state={state} />
+          <FormField label="Название" required>
+            {(control) => (
               <input
+                {...control}
                 autoComplete="off"
-                id={`${id}-title`}
+                data-autofocus=""
                 maxLength={120}
                 name="title"
                 required
               />
-            </label>
-            <label className={styles.field} htmlFor={`${id}-type`}>
-              Тип документа
-              <select defaultValue="OTHER" id={`${id}-type`} name="documentType">
+            )}
+          </FormField>
+          <FormField label="Тип документа">
+            {(control) => (
+              <select {...control} defaultValue="OTHER" name="documentType">
                 {Object.entries(documentTypeLabels).map(([value, label]) => (
                   <option key={value} value={value}>
                     {label}
                   </option>
                 ))}
               </select>
-            </label>
-            <label className={styles.field} htmlFor={`${id}-file`}>
-              Файл
+            )}
+          </FormField>
+          <FormField label="Файл" required>
+            {(control) => (
               <input
+                {...control}
                 accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
-                id={`${id}-file`}
                 name="file"
                 required
                 type="file"
               />
-            </label>
-            <ActionFeedback state={state} />
-            {pending ? (
-              <p aria-live="polite" className={styles.feedbackSuccess} role="status">
-                Загружаем документ…
-              </p>
-            ) : null}
-            <div className={styles.dialogActions}>
-              <button
-                className={styles.secondaryButton}
-                onClick={() => setOpen(false)}
-                type="button"
-              >
-                Отмена
-              </button>
-              <button className={styles.primaryButton} disabled={pending} type="submit">
-                {pending ? "Загрузка…" : "Загрузить"}
-              </button>
-            </div>
-          </form>
-        </div>
-      </ConfirmationDialog>
+            )}
+          </FormField>
+        </form>
+      </Drawer>
       {state.success ? (
         <p aria-live="polite" className={styles.feedbackSuccess} role="status">
           {state.success}
@@ -182,51 +210,75 @@ function DocumentActions({
     },
     initialActionState,
   );
-  const id = useId();
+  const renameFormId = useId();
+  const { formRef, isDirty, checkDirty } = useDirtyForm();
 
   return (
     <details className={styles.actionMenu}>
       <summary>Действия</summary>
       <div className={styles.menuItems}>
-        <ConfirmationDialog
-          buttonClassName={styles.secondaryButton}
-          buttonLabel="Переименовать"
-          onOpenChange={setRenameOpen}
-          open={renameOpen}
-          title="Переименовать документ"
+        <button
+          aria-haspopup="dialog"
+          className={controls.secondary}
+          onClick={() => setRenameOpen(true)}
+          type="button"
         >
-          <form action={renameAction} className={styles.dialogContent}>
-            <input name="id" type="hidden" value={document.id} />
-            <label className={styles.field} htmlFor={`${id}-rename`}>
-              Новое название
-              <input
-                autoComplete="off"
-                defaultValue={document.title}
-                id={`${id}-rename`}
-                maxLength={120}
-                name="title"
-                required
-              />
-            </label>
-            <ActionFeedback state={renameState} />
-            <div className={styles.dialogActions}>
+          Переименовать
+        </button>
+        <Drawer
+          eyebrow="Мои документы"
+          footer={(requestClose) => (
+            <>
               <button
-                className={styles.secondaryButton}
-                onClick={() => setRenameOpen(false)}
+                className={controls.secondary}
+                disabled={renamePending}
+                onClick={requestClose}
                 type="button"
               >
                 Отмена
               </button>
               <button
-                className={styles.primaryButton}
+                aria-busy={renamePending}
+                className={controls.primary}
                 disabled={renamePending}
+                form={renameFormId}
                 type="submit"
               >
-                {renamePending ? "Сохраняем…" : "Сохранить"}
+                {renamePending ? "Сохраняется…" : "Сохранить"}
               </button>
-            </div>
+            </>
+          )}
+          isBusy={renamePending}
+          isDirty={isDirty}
+          onClose={() => setRenameOpen(false)}
+          open={renameOpen}
+          title="Переименовать документ"
+        >
+          <form
+            action={renameAction}
+            className={styles.uploadForm}
+            id={renameFormId}
+            onChange={checkDirty}
+            onReset={(event) => event.preventDefault()}
+            ref={formRef}
+          >
+            <input name="id" type="hidden" value={document.id} />
+            <ActionFeedback state={renameState} />
+            <FormField label="Новое название" required>
+              {(control) => (
+                <input
+                  {...control}
+                  autoComplete="off"
+                  data-autofocus=""
+                  defaultValue={document.title}
+                  maxLength={120}
+                  name="title"
+                  required
+                />
+              )}
+            </FormField>
           </form>
-        </ConfirmationDialog>
+        </Drawer>
         <ConfirmationDialog
           buttonClassName={styles.dangerButton}
           buttonLabel="Удалить"
@@ -269,11 +321,6 @@ function formatFileSize(size: number): string {
   }
   return `${Math.max(1, Math.round(size / 1024))} КБ`;
 }
-
-const dateFormatter = new Intl.DateTimeFormat("ru-RU", {
-  dateStyle: "medium",
-  timeZone: "Europe/Moscow",
-});
 
 export function StudentDocumentArchive({
   documents,
@@ -383,12 +430,7 @@ export function StudentDocumentArchive({
                   {documentTypeLabels[document.documentType]}
                 </span>
                 <div className={styles.metadata}>
-                  <span>
-                    Загружен:{" "}
-                    <time dateTime={document.createdAt.toISOString()}>
-                      {dateFormatter.format(document.createdAt)}
-                    </time>
-                  </span>
+                  <DateTimeStack value={document.createdAt} />
                   <span>Размер: {formatFileSize(document.size)}</span>
                   <span className={styles.originalName}>
                     {document.originalName}

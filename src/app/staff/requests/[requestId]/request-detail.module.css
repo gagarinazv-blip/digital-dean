@@ -8,9 +8,9 @@
 .stageRow,
 .panel {
   min-width: 0;
-  border: 1px solid #eee8e4;
-  border-radius: 14px;
-  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
   box-shadow: var(--shadow-soft);
 }
 
@@ -42,7 +42,7 @@
   top: 50%;
   right: -1px;
   width: 30%;
-  border-top: 1px solid #ddd7d2;
+  border-top: 1px solid var(--color-border-strong);
   content: "";
 }
 
@@ -52,10 +52,10 @@
   flex: 0 0 24px;
   display: grid;
   place-items: center;
-  border: 1px solid #d5cfca;
+  border: 1px solid var(--color-border-strong);
   border-radius: 50%;
-  background: #fff;
-  color: #77716d;
+  background: var(--color-surface);
+  color: var(--color-muted);
   font-size: 11px;
   font-weight: 650;
 }
@@ -80,13 +80,13 @@
 }
 
 .stageComplete .stageMarker {
-  border-color: #cee3d2;
-  background: #e8f4e9;
-  color: #34804c;
+  border-color: var(--color-success-border);
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
 }
 
 .stageCurrent .stageMarker {
-  border: 5px solid #ead3d8;
+  border: 5px solid var(--color-wine-100);
   background: var(--color-wine-900);
   color: transparent;
   box-shadow: 0 0 0 2px rgb(100 28 41 / 8%);
@@ -122,31 +122,31 @@
   align-items: center;
   gap: 12px;
   padding: 14px;
-  border: 1px solid #dceee0;
-  border-radius: 12px;
-  background: linear-gradient(110deg, #edf8ef, #f8fcf8);
+  border: 1px solid var(--color-success-border);
+  border-radius: var(--radius-md);
+  background: linear-gradient(110deg, var(--color-success-bg), var(--color-success-bg));
 }
 
 .review_IN_PROGRESS,
 .review_NEEDS_INFO {
-  border-color: #dceee0;
-  background: linear-gradient(110deg, #edf8ef, #f8fcf8);
+  border-color: var(--color-success-border);
+  background: linear-gradient(110deg, var(--color-success-bg), var(--color-success-bg));
 }
 
 .review_NEW {
-  border-color: #f0e2d5;
-  background: linear-gradient(110deg, #fbf1e8, #fffaf6);
+  border-color: var(--color-warning-border);
+  background: linear-gradient(110deg, var(--color-warning-bg), var(--color-canvas));
 }
 
 .review_READY {
-  border-color: #dceee0;
-  background: linear-gradient(110deg, #edf8ef, #f8fcf8);
+  border-color: var(--color-success-border);
+  background: linear-gradient(110deg, var(--color-success-bg), var(--color-success-bg));
 }
 
 .review_REJECTED,
 .review_CANCELLED {
-  border-color: #f1dfe0;
-  background: linear-gradient(110deg, #fff0f1, #fff9f9);
+  border-color: var(--color-danger-border);
+  background: linear-gradient(110deg, var(--color-danger-bg), var(--color-danger-bg));
 }
 
 .reviewIcon {
@@ -155,20 +155,20 @@
   flex: 0 0 40px;
   display: grid;
   place-items: center;
-  border-radius: 11px;
-  background: #fff;
-  color: #377c4d;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-success-text);
   font-size: 23px;
   font-weight: 550;
 }
 
 .review_NEW .reviewIcon {
-  color: #99651f;
+  color: var(--color-warning-text);
 }
 
 .review_REJECTED .reviewIcon,
 .review_CANCELLED .reviewIcon {
-  color: #aa3945;
+  color: var(--color-danger-text);
 }
 
 .reviewBanner h2 {
@@ -230,7 +230,7 @@
   grid-template-columns: minmax(135px, 0.75fr) minmax(0, 1.25fr);
   gap: 12px;
   padding: 7px 0;
-  border-bottom: 1px solid #f0ece9;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .infoRows dt,
@@ -258,7 +258,7 @@
 .attachmentsSection {
   margin-top: 13px;
   padding-top: 12px;
-  border-top: 1px solid #eee8e4;
+  border-top: 1px solid var(--color-border);
 }
 
 .studentSection h3,
@@ -284,9 +284,9 @@
   height: 40px;
   display: grid;
   place-items: center;
-  border: 1px solid #ead9d8;
-  border-radius: 12px;
-  background: #fbf1ef;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-wine-100);
   color: var(--color-wine-900);
   font-size: 12px;
   font-weight: 700;
@@ -311,7 +311,7 @@
   display: inline-grid;
   place-items: center;
   border-radius: var(--radius-pill);
-  background: #f0ece9;
+  background: var(--color-subtle);
   color: var(--color-ink);
   font-size: 10px;
 }
@@ -331,9 +331,9 @@
   align-items: center;
   gap: 8px;
   padding: 9px;
-  border: 1px solid #eee8e4;
-  border-radius: 9px;
-  background: #fffdfa;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-warning-bg);
 }
 
 .pdfIcon {
@@ -342,9 +342,9 @@
   flex: 0 0 29px;
   display: grid;
   place-items: center;
-  border-radius: 6px;
-  background: #fce8e7;
-  color: #a23c43;
+  border-radius: var(--radius-sm);
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
   font-size: 9px;
   font-weight: 750;
 }
@@ -376,8 +376,8 @@
   flex: 0 0 30px;
   display: grid;
   place-items: center;
-  border: 1px solid #eee8e4;
-  border-radius: 7px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   color: var(--color-ink);
   font-size: 17px;
 }
@@ -442,8 +442,8 @@
 
 .comments :global(.message) {
   padding: 10px;
-  border-radius: 9px;
-  background: #fbf3f5;
+  border-radius: var(--radius-md);
+  background: var(--color-wine-100);
 }
 
 .comments :global(.messageHeader) {
@@ -488,7 +488,7 @@
   bottom: 0;
   left: 11px;
   width: 1px;
-  background: #e9e2df;
+  background: var(--color-subtle);
   content: "";
 }
 
@@ -498,7 +498,7 @@
   height: 23px;
   display: grid;
   place-items: center;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   font-size: 11px;
   font-weight: 700;
 }
@@ -509,9 +509,9 @@
   height: 23px;
   display: grid;
   place-items: center;
-  border: 1px solid #eadbd6;
-  border-radius: 7px;
-  background: #fbf4f0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-canvas);
   color: var(--color-wine-900);
   font-size: 13px;
   font-weight: 700;
@@ -542,7 +542,7 @@
 .commentForm {
   margin-top: 4px;
   padding-top: 10px;
-  border-top: 1px solid #eee8e4;
+  border-top: 1px solid var(--color-border);
 }
 
 .commentForm :global(.form) {
@@ -629,4 +629,14 @@
   .studentAvatar {
     display: none;
   }
+}
+
+.certificateText {
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-size: var(--font-size-body-compact);
+  line-height: 1.5;
+  white-space: pre-line;
 }

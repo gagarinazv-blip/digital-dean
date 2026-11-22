@@ -1,5 +1,6 @@
 "use client";
 
+import { DateTimeStack } from "@/components/date-time-stack";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -30,7 +31,6 @@ import {
   type NotificationTypeFilter,
 } from "@/lib/notification-view-utils";
 import { notificationTypeLabels } from "@/lib/notification-workflow";
-import { getUniversityDateTimeFormatter } from "@/lib/campus-time";
 import styles from "./notifications.module.css";
 
 const typeFilters: Array<{
@@ -43,11 +43,6 @@ const typeFilters: Array<{
   { value: "announcement", label: "Объявления" },
   { value: "opportunity", label: "Возможности" },
 ];
-
-const dateFormatter = getUniversityDateTimeFormatter({
-  dateStyle: "long",
-  timeStyle: "short",
-});
 
 function getTargetLabel(notification: StudentNotificationItem): string {
   switch (notification.targetType) {
@@ -117,9 +112,7 @@ function NotificationRow({
           <span className={styles.rowContext} title={notification.context}>
             {notification.context}
           </span>
-          <time dateTime={notification.createdAt}>
-            {dateFormatter.format(new Date(notification.createdAt))}
-          </time>
+          <DateTimeStack value={notification.createdAt} />
         </span>
       </button>
       <span
@@ -183,9 +176,7 @@ function NotificationDetails({
       <h2 id={`selected-notification-title-${idSuffix}`}>
         {cleanStudentFacingText(notification.title)}
       </h2>
-      <time dateTime={notification.createdAt}>
-        {dateFormatter.format(new Date(notification.createdAt))}
-      </time>
+      <DateTimeStack value={notification.createdAt} />
       <p className={styles.detailText}>
         {cleanStudentFacingText(notification.text)}
       </p>
@@ -203,18 +194,30 @@ function NotificationDetails({
               <div>
                 <dt>Было</dt>
                 <dd>
-                  {[schedule.previousDateLabel, schedule.previousTimeLabel, schedule.previousRoom]
-                    .filter(Boolean)
-                    .join(" · ")}
+                  {schedule.previousStartsAt ? (
+                    <DateTimeStack
+                      end={schedule.previousEndsAt}
+                      value={schedule.previousStartsAt}
+                    />
+                  ) : null}
+                  {schedule.previousRoom ? (
+                    <span>{schedule.previousRoom}</span>
+                  ) : null}
                 </dd>
               </div>
             )}
             <div>
               <dt>Стало</dt>
               <dd>
-                {[schedule.dateLabel, schedule.timeLabel, schedule.room]
-                  .filter(Boolean)
-                  .join(" · ")}
+                {schedule.startsAt ? (
+                  <DateTimeStack
+                    end={schedule.endsAt}
+                    value={schedule.startsAt}
+                  />
+                ) : (
+                  <span>{schedule.dateLabel}</span>
+                )}
+                <span>{schedule.room}</span>
               </dd>
             </div>
           </dl>
@@ -232,8 +235,11 @@ function NotificationDetails({
       {deadline && (
         <div className={styles.statusDetails}>
           <span>Срок задания</span>
-          <strong>{dateFormatter.format(new Date(deadline.dueAt))}</strong>
-          {deadline.remainingLabel && <span>{deadline.remainingLabel}</span>}
+          <DateTimeStack
+            done={deadline.remaining === null}
+            kind="deadline"
+            value={deadline.dueAt}
+          />
           <span>{deadline.statusLabel}</span>
         </div>
       )}

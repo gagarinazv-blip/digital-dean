@@ -1,3 +1,4 @@
+import { DateTimeStack } from "@/components/date-time-stack";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { CampusSection } from "@/components/campus-section";
@@ -15,7 +16,7 @@ import {
   groupEventsByStartDay,
 } from "@/lib/event-digest";
 import { getPublishedDigestEvents } from "@/lib/event-data";
-import { getMoscowDateKey, formatMoscowTime } from "@/lib/campus-time";
+import { getMoscowDateKey } from "@/lib/campus-time";
 import styles from "./digest.module.css";
 
 type DigestPageProps = {
@@ -152,6 +153,10 @@ async function DigestContent({
                               ) : (
                                 <span>Время уточняется</span>
                               )}
+                              <DateTimeStack
+                                end={event.endsAt}
+                                value={event.startsAt}
+                              />
                               <span className={styles.typeBadge}>
                                 {eventTypeLabels[event.type]}
                               </span>

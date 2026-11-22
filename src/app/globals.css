@@ -4,7 +4,7 @@
   --color-subtle: #f6f0eb;
   --color-border: #eae4de;
   --color-ink: #262222;
-  --color-muted: #79716d;
+  --color-muted: #6b635f;
   --color-disabled: #9a938f;
   --color-wine-900: #641c29;
   --color-wine-700: #782b3b;
@@ -12,6 +12,8 @@
   --color-blue-700: #365773;
   --color-blue-100: #eaf0f5;
   --color-blue-300: #c4d0e0;
+  --color-hero: #dce5f0;
+  --color-hero-end: #e8edf4;
   --color-success-bg: #e7f2e8;
   --color-success-text: #2a603b;
   --color-warning-bg: #f7eddb;
@@ -21,7 +23,15 @@
   --color-danger-border: #e9baba;
   --color-new-bg: #ecedef;
   --color-new-text: #4a5057;
-  --color-focus: #c4d0e0;
+  --color-danger-hover: #f5d9d9;
+  --color-warning-border: #e6cf9f;
+  --color-success-border: #bfdcc4;
+  --color-blue-border: #c4d0e0;
+  --color-border-strong: #d5cbc3;
+  --color-control-border: #948a84;
+  --color-backdrop: rgb(38 34 34 / 48%);
+  --color-focus: #365773;
+  --color-focus-on-dark: #c4d0e0;
 
   --font-body: var(--font-onest), Arial, sans-serif;
 
@@ -43,6 +53,8 @@
   --space-5: 20px;
   --space-6: 24px;
   --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
 
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -51,6 +63,11 @@
   --radius-pill: 999px;
 
   --size-touch: 44px;
+  --size-icon-sm: 16px;
+  --size-icon: 20px;
+  --size-drawer: 540px;
+  --size-drawer-full: 1120px;
+  --size-dialog: 440px;
   --size-button-large: 44px;
   --size-field: 44px;
   --size-header-desktop: 76px;
@@ -60,11 +77,12 @@
   --size-sidebar: 224px;
   --size-content-max: 1280px;
 
-  --shadow-soft: 0 4px 16px rgb(38 34 34 / 4%);
+  --shadow-soft: 0 4px 16px rgb(38 34 34 / 6%);
   --shadow-overlay: 0 12px 32px rgb(38 34 34 / 14%);
 
   --motion-fast: 160ms;
   --motion-page: 220ms;
+  --motion-drawer: 220ms;
   --motion-ease: cubic-bezier(0.2, 0.75, 0.25, 1);
 }
 
@@ -172,12 +190,15 @@ main > *:nth-child(3) {
 }
 
 main article[class],
-main [class*="Card"],
-main [class*="card"] {
+main a[class*="Card"] {
   transition:
     transform var(--motion-fast) var(--motion-ease),
     box-shadow var(--motion-fast) var(--motion-ease),
     border-color var(--motion-fast) var(--motion-ease);
+}
+
+body:has(dialog[data-modal][open]) {
+  overflow: hidden;
 }
 
 main [role="alert"],
@@ -229,8 +250,7 @@ details[open] > :not(summary) {
 
 @media (hover: hover) and (pointer: fine) {
   main article[class]:hover,
-  main [class*="Card"]:hover,
-  main [class*="card"]:hover {
+  main a[class*="Card"]:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-soft);
   }

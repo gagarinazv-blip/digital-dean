@@ -1,12 +1,13 @@
 "use client";
 
+import { DateTimeStack } from "@/components/date-time-stack";
 import { useState } from "react";
 import { revealCorporateMailPasswordAction } from "./actions";
 import styles from "./profile.module.css";
 
 type CorporateMailCardProps = {
   email: string | null;
-  issuedDate: string | null;
+  issuedAt: Date | null;
 };
 
 async function copyText(value: string): Promise<void> {
@@ -15,7 +16,7 @@ async function copyText(value: string): Promise<void> {
 
 export function CorporateMailCard({
   email,
-  issuedDate,
+  issuedAt,
 }: CorporateMailCardProps) {
   const [password, setPassword] = useState<string | null>(null);
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -87,7 +88,7 @@ export function CorporateMailCard({
     }
   }
 
-  const isIssued = Boolean(email && issuedDate);
+  const isIssued = Boolean(email && issuedAt);
 
   return (
     <section
@@ -150,8 +151,11 @@ export function CorporateMailCard({
           <p className={styles.mailHint}>
             Рекомендуем сменить пароль после первого входа в почту.
           </p>
-          {issuedDate ? (
-            <p className={styles.mailIssued}>Данные выданы: {issuedDate}</p>
+          {issuedAt ? (
+            <div className={styles.mailIssued}>
+              <span>Данные выданы</span>
+              <DateTimeStack value={issuedAt} />
+            </div>
           ) : null}
           <p className={styles.mailMessage} role="status" aria-live="polite">
             {message}

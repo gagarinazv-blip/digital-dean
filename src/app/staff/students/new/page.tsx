@@ -4,6 +4,8 @@ import { requireStaffContext } from "@/lib/staff";
 import { CreateStudentForm } from "../student-forms";
 import styles from "../students.module.css";
 
+export const instant = false;
+
 export default async function NewStaffStudentPage() {
   await requireStaffContext();
   const groups = await getPrisma().studentGroup.findMany({

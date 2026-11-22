@@ -1,38 +1,21 @@
 import Link from "next/link";
+import { DateTimeStack } from "@/components/date-time-stack";
 import styles from "./deadline-list-item.module.css";
-
-type DeadlineListItemProps = {
-  href: string;
-  title: string;
-  subject: string;
-  dateLabel: string;
-  dateTileCaption: string;
-  dateTileDay: string;
-  countdown: string;
-  tone: "warning" | "danger" | "neutral";
-};
 
 export function DeadlineListItem({
   href,
   title,
   subject,
-  dateLabel,
-  dateTileCaption,
-  dateTileDay,
-  countdown,
-  tone,
-}: DeadlineListItemProps) {
+  dueAt,
+}: {
+  href: string;
+  title: string;
+  subject: string;
+  dueAt: Date;
+}) {
   return (
     <li className={styles.item}>
-      <Link
-        aria-label={`${title} — ${subject}, ${dateLabel}`}
-        className={styles.link}
-        href={href}
-      >
-        <span aria-hidden="true" className={styles.dateTile}>
-          <span>{dateTileCaption}</span>
-          <strong>{dateTileDay}</strong>
-        </span>
+      <Link className={styles.link} href={href}>
         <span className={styles.details}>
           <strong className={styles.title} title={title}>
             {title}
@@ -41,7 +24,7 @@ export function DeadlineListItem({
             {subject}
           </span>
         </span>
-        <span className={`${styles.pill} ${styles[tone]}`}>{countdown}</span>
+        <DateTimeStack align="end" kind="deadline" value={dueAt} />
       </Link>
     </li>
   );

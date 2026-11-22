@@ -1,3 +1,43 @@
+.statusClarifyButton {
+  composes: warning from "../components/ui/controls.module.css";
+}
+
+.button {
+  composes: primary from "../components/ui/controls.module.css";
+}
+
+.secondaryButton {
+  composes: secondary from "../components/ui/controls.module.css";
+}
+
+.statusRejectButton {
+  composes: danger from "../components/ui/controls.module.css";
+}
+
+.input {
+  composes: control from "../components/ui/controls.module.css";
+}
+
+.invalidInput {
+  composes: control from "../components/ui/controls.module.css";
+}
+
+.select {
+  composes: control from "../components/ui/controls.module.css";
+}
+
+.textarea {
+  composes: control from "../components/ui/controls.module.css";
+}
+
+.fileInput {
+  composes: control from "../components/ui/controls.module.css";
+}
+
+.hint {
+  composes: hint from "../components/ui/controls.module.css";
+}
+
 .stack {
   display: grid;
   gap: var(--space-4);
@@ -57,58 +97,11 @@
   font-weight: 500;
 }
 
-.input,
-.invalidInput,
-.select,
-.textarea,
-.fileInput {
-  width: 100%;
-  min-width: 0;
-  min-height: var(--size-field);
-  padding: var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: var(--color-ink);
-  font: inherit;
-  font-size: var(--font-size-body);
-}
-
-.input,
-.invalidInput,
-.select {
-  height: var(--size-field);
-  min-height: var(--size-field);
-  padding: 0 var(--space-4);
-}
-
-.textarea {
-  min-height: 112px;
-  resize: vertical;
-  line-height: 1.5;
-}
-
-.input:focus-visible,
-.invalidInput:focus-visible,
-.select:focus-visible,
-.textarea:focus-visible,
-.fileInput:focus-visible,
-.button:focus-visible,
-.secondaryButton:focus-visible,
-.statusRejectButton:focus-visible,
-.statusClarifyButton:focus-visible,
 .attachmentLink:focus-visible {
   outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }
 
-.input:focus-visible,
-.select:focus-visible,
-.textarea:focus-visible {
-  border-color: var(--color-wine-900);
-}
-
-.invalidInput,
 .input[aria-invalid="true"],
 .select[aria-invalid="true"],
 .textarea[aria-invalid="true"] {
@@ -116,106 +109,10 @@
   background-color: var(--color-danger-bg);
 }
 
-.invalidInput:focus-visible,
 .input[aria-invalid="true"]:focus-visible,
 .select[aria-invalid="true"]:focus-visible,
 .textarea[aria-invalid="true"]:focus-visible {
   outline-color: var(--color-danger-text);
-}
-
-.hint {
-  color: var(--color-muted);
-  font-size: var(--font-size-label);
-  line-height: 1.5;
-  overflow-wrap: break-word;
-}
-
-.button,
-.secondaryButton {
-  width: fit-content;
-  max-width: 100%;
-  min-height: var(--size-touch);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 var(--space-5);
-  border: 0;
-  border-radius: var(--radius-md);
-  font: inherit;
-  font-size: var(--font-size-body-compact);
-  font-weight: 600;
-  text-align: center;
-  text-decoration: none;
-  overflow-wrap: break-word;
-  cursor: pointer;
-}
-
-.button {
-  background: var(--color-wine-900);
-  color: var(--color-surface);
-}
-
-.button:hover:not(:disabled) {
-  background: var(--color-wine-700);
-}
-
-.secondaryButton {
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-ink);
-}
-
-.statusRejectButton,
-.statusClarifyButton {
-  width: fit-content;
-  max-width: 100%;
-  min-height: var(--size-touch);
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-start;
-  padding: 0 var(--space-5);
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
-  font: inherit;
-  font-size: var(--font-size-body-compact);
-  font-weight: 600;
-  text-align: left;
-  overflow-wrap: break-word;
-  cursor: pointer;
-}
-
-.statusRejectButton {
-  border-color: var(--color-danger-border);
-  background: var(--color-danger-bg);
-  color: var(--color-danger-text);
-}
-
-.statusClarifyButton {
-  border-color: #efdfc4;
-  background: #fbf3e5;
-  color: #815b20;
-}
-
-.secondaryButton:hover:not(:disabled) {
-  background: var(--color-subtle);
-}
-
-.statusRejectButton:hover:not(:disabled) {
-  background: #f5d9d9;
-}
-
-.statusClarifyButton:hover:not(:disabled) {
-  background: #f6ead6;
-}
-
-.button:disabled,
-.secondaryButton:disabled,
-.statusRejectButton:disabled,
-.statusClarifyButton:disabled {
-  cursor: wait;
-  background: var(--color-disabled);
-  color: var(--color-surface);
-  opacity: 1;
 }
 
 .error,
@@ -315,6 +212,8 @@
 
 .conversation {
   display: grid;
+  padding: 0;
+  list-style: none;
   gap: var(--space-3);
   min-width: 0;
   margin-top: var(--space-4);
@@ -584,4 +483,11 @@
   .skeletonBlock {
     animation: none;
   }
+}
+
+.messageMeta {
+  min-width: 0;
+  display: grid;
+  justify-items: end;
+  gap: 2px;
 }

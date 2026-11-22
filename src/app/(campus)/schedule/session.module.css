@@ -1,3 +1,11 @@
+.primaryButton {
+  composes: primary from "../../../components/ui/controls.module.css";
+}
+
+.secondaryButton {
+  composes: secondary from "../../../components/ui/controls.module.css";
+}
+
 .sessionPage {
   display: grid;
   min-width: 0;
@@ -93,9 +101,9 @@
 .filters select,
 .filters input {
   min-width: 0;
-  min-height: var(--size-touch);
+  min-height: var(--size-field);
   padding: 0 var(--space-3);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-control-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
   color: var(--color-ink);
@@ -105,7 +113,7 @@
 
 .summaryGrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: var(--space-3);
 }
 
@@ -247,58 +255,11 @@
   overflow-wrap: break-word;
 }
 
-.countdown {
-  display: inline-flex;
-  margin-top: var(--space-3);
-  color: var(--color-blue-700);
-  font-size: var(--font-size-body-compact);
-}
-
 .nearestActions {
   flex: 0 0 auto;
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
-}
-
-.primaryButton,
-.secondaryButton {
-  min-height: var(--size-touch);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 var(--space-4);
-  border: 1px solid var(--color-wine-900);
-  border-radius: var(--radius-md);
-  background: var(--color-wine-900);
-  color: var(--color-surface);
-  font: inherit;
-  font-size: var(--font-size-body-compact);
-  font-weight: 600;
-  text-align: center;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.secondaryButton {
-  border-color: var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-ink);
-}
-
-.primaryButton:hover {
-  background: var(--color-wine-700);
-}
-
-.secondaryButton:hover:not(:disabled) {
-  border-color: var(--color-wine-900);
-  background: var(--color-wine-100);
-  color: var(--color-wine-900);
-}
-
-.secondaryButton:disabled {
-  color: var(--color-disabled);
-  cursor: not-allowed;
 }
 
 .insights {
@@ -810,8 +771,6 @@
 
 .sectionTab:focus-visible,
 .projectionSwitch button:focus-visible,
-.primaryButton:focus-visible,
-.secondaryButton:focus-visible,
 .resetButton:focus-visible,
 .eventSelect:focus-visible,
 .closeDetail:focus-visible,
@@ -913,6 +872,10 @@
   .summaryGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-2);
+  }
+
+  .summaryCard:has([data-date-stack]) {
+    grid-column: 1 / -1;
   }
 
   .summaryCard {
@@ -1204,4 +1167,19 @@
   .progressPassed {
     transition: none;
   }
+}
+
+.attempt {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-block: var(--space-2);
+  border-top: 1px solid var(--color-border);
+}
+
+.riskNote > span {
+  display: block;
+  margin-bottom: 2px;
 }

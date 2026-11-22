@@ -1,3 +1,4 @@
+import { DateTimeStack } from "@/components/date-time-stack";
 import { Suspense } from "react";
 import Link from "next/link";
 import type {
@@ -172,13 +173,12 @@ async function StaffOpportunitiesContent({
                   </div>
                   <h3>{item.title}</h3>
                   <p>{item.organizer}</p>
-                  <p>
-                    Дедлайн: {new Intl.DateTimeFormat("ru-RU", {
-                      dateStyle: "medium",
-                      timeZone: "Europe/Moscow",
-                    }).format(item.deadline)}
-                    {" · "}Заявок: {item._count.applications}
-                  </p>
+                  <p>Заявок: {item._count.applications}</p>
+                  <DateTimeStack
+                    done={item.status !== "PUBLISHED"}
+                    kind="deadline"
+                    value={item.deadline}
+                  />
                 </div>
                 <div className={styles.rowLinks}>
                   <Link href={`/staff/opportunities/${item.id}/edit`}>Редактировать</Link>

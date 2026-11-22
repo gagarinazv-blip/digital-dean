@@ -53,7 +53,12 @@ export function validateRequestForm(
       fields[field.id] = value;
 
       if (field.required && !value) {
-        errors[field.id] = "Заполните это поле.";
+        errors[field.id] =
+          field.kind === "checkbox"
+            ? "Отметьте этот пункт."
+            : field.kind === "file"
+              ? "Приложите файл."
+              : "Заполните это поле.";
         continue;
       }
 
@@ -62,6 +67,17 @@ export function validateRequestForm(
           `Максимальная длина — ${field.maxLength} символов.`;
       } else if (field.kind === "date" && value && !isValidDate(value)) {
         errors[field.id] = "Укажите корректную дату.";
+      } else if (field.kind === "number" && value) {
+        const number = Number(value.replace(",", "."));
+        if (!/^-?\d+(?:[.,]\d+)?$/.test(value) || !Number.isFinite(number)) {
+          errors[field.id] = "Введите число.";
+        } else if (field.min !== undefined && number < field.min) {
+          errors[field.id] = `Значение не может быть меньше ${field.min}.`;
+        } else if (field.max !== undefined && number > field.max) {
+          errors[field.id] = `Значение не может быть больше ${field.max}.`;
+        }
+      } else if (field.kind === "checkbox" && value && value !== "true") {
+        errors[field.id] = "Отметьте этот пункт.";
       } else if (
         field.kind === "select" &&
         value &&

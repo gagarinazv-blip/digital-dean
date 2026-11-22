@@ -1,3 +1,4 @@
+import { DateTimeStack } from "@/components/date-time-stack";
 import { Suspense } from "react";
 import Link from "next/link";
 import type {
@@ -133,14 +134,12 @@ async function ApplicationsContent({
                   {statusLabels[application.status]}
                 </span>
               </div>
-              <p className={styles.meta}>
-                {new Intl.DateTimeFormat("ru-RU", {
-                  dateStyle: "medium",
-                  timeStyle: "short",
-                  timeZone: "Europe/Moscow",
-                }).format(application.submittedAt)}
-                {application.kind === "LATE_REQUEST" ? " · Индивидуальный запрос" : ""}
-              </p>
+              <div className={styles.meta}>
+                <DateTimeStack value={application.submittedAt} />
+                {application.kind === "LATE_REQUEST" ? (
+                  <span>Индивидуальный запрос</span>
+                ) : null}
+              </div>
               {application.staffComment && (
                 <p className={styles.comment}>
                   <strong>Комментарий сотрудника:</strong> {application.staffComment}

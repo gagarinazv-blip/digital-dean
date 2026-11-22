@@ -1,3 +1,4 @@
+import { DateTimeStack } from "@/components/date-time-stack";
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -7,7 +8,7 @@ import {
   cleanStudentFacingText,
   deadlineFormatLabels,
 } from "@/lib/campus-labels";
-import { formatMoscowDateTime, getMoscowDateKey } from "@/lib/campus-time";
+import { getMoscowDateKey } from "@/lib/campus-time";
 import { getDeadlineCalendarHref } from "@/lib/deadline-action";
 import { getStudentDeadline } from "@/lib/deadline-data";
 import { getChecklistProgress } from "@/lib/deadline-progress";
@@ -42,8 +43,6 @@ async function DeadlineContent({ params }: DeadlinePageProps) {
   const now = getDemoNow();
   const title = cleanStudentFacingText(deadline.title);
   const subject = cleanStudentFacingText(deadline.subject);
-  const dueIso = deadline.dueAt.toISOString();
-  const dueLabel = formatMoscowDateTime(deadline.dueAt);
   const dueDateKey = getMoscowDateKey(deadline.dueAt);
   const submitted = deadline.status === "SUBMITTED";
   const remaining = submitted
@@ -90,8 +89,7 @@ async function DeadlineContent({ params }: DeadlinePageProps) {
             </p>
           </div>
           <DeadlineRemaining
-            dueIso={dueIso}
-            dueLabel={dueLabel}
+            dueAt={deadline.dueAt}
             remaining={remaining}
           />
         </div>
@@ -127,7 +125,7 @@ async function DeadlineContent({ params }: DeadlinePageProps) {
               <h3>Как сдавать</h3>
               <DeadlineHandIn
                 deadlineId={deadline.id}
-                dueLabel={dueLabel}
+                dueAt={deadline.dueAt}
                 format={deadline.format}
                 location={deadline.location}
                 taskUrl={deadline.taskUrl}
@@ -147,8 +145,12 @@ async function DeadlineContent({ params }: DeadlinePageProps) {
         <aside aria-labelledby="summary-title" className={styles.sidebar}>
           <h2 id="summary-title">Срок и действия</h2>
           <div className={styles.summary}>
-            <strong>{remaining?.label ?? "Сдано"}</strong>
-            <time dateTime={dueIso}>{dueLabel}</time>
+            {submitted ? <strong>Сдано</strong> : null}
+            <DateTimeStack
+              done={submitted}
+              kind="deadline"
+              value={deadline.dueAt}
+            />
           </div>
           <div className={styles.sidebarActions}>
             <a

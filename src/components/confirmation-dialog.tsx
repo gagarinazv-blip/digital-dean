@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useId, useRef, type ReactNode } from "react";
-import styles from "./confirmation-dialog.module.css";
+import type { ReactNode } from "react";
+import { ModalDialog } from "@/components/ui/modal-dialog";
 
+// Кнопка и компактное окно подтверждения к ней.
 export function ConfirmationDialog({
   buttonClassName,
   buttonLabel,
@@ -18,42 +19,19 @@ export function ConfirmationDialog({
   open: boolean;
   title: string;
 }) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  const titleId = useId();
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) {
-      return;
-    }
-
-    if (open && !dialog.open) {
-      dialog.showModal();
-    } else if (!open && dialog.open) {
-      dialog.close();
-    }
-  }, [open]);
-
   return (
     <>
       <button
+        aria-haspopup="dialog"
         className={buttonClassName}
         onClick={() => onOpenChange(true)}
         type="button"
       >
         {buttonLabel}
       </button>
-      <dialog
-        aria-labelledby={titleId}
-        className={styles.dialog}
-        onClose={() => onOpenChange(false)}
-        ref={dialogRef}
-      >
-        <div className={styles.content}>
-          <h2 id={titleId}>{title}</h2>
-          {children}
-        </div>
-      </dialog>
+      <ModalDialog onClose={() => onOpenChange(false)} open={open} title={title}>
+        {children}
+      </ModalDialog>
     </>
   );
 }

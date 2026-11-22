@@ -1,14 +1,13 @@
+import { DateTimeStack } from "@/components/date-time-stack";
 import type { DeadlineRemaining as Remaining } from "@/lib/deadline-utils";
 import styles from "./deadline-remaining.module.css";
 
 // remaining === null — работа уже сдана, отсчёт не нужен.
 export function DeadlineRemaining({
-  dueIso,
-  dueLabel,
+  dueAt,
   remaining,
 }: {
-  dueIso: string;
-  dueLabel: string;
+  dueAt: Date | string;
   remaining: Remaining | null;
 }) {
   return (
@@ -16,13 +15,10 @@ export function DeadlineRemaining({
       className={styles.remaining}
       data-urgency={remaining?.urgency ?? "submitted"}
     >
-      {remaining && (
-        <span className={styles.urgency}>{remaining.urgencyLabel}</span>
-      )}
-      <strong className={styles.label}>{remaining?.label ?? "Сдано"}</strong>
-      <time className={styles.due} dateTime={dueIso}>
-        {dueLabel}
-      </time>
+      <span className={styles.urgency}>
+        {remaining?.urgencyLabel ?? "Сдано"}
+      </span>
+      <DateTimeStack done={remaining === null} kind="deadline" value={dueAt} />
     </div>
   );
 }

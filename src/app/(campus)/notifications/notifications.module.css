@@ -1,3 +1,11 @@
+.primaryButton {
+  composes: primary from "../../../components/ui/controls.module.css";
+}
+
+.secondaryButton {
+  composes: secondary from "../../../components/ui/controls.module.css";
+}
+
 .center {
   min-width: 0;
   display: grid;
@@ -62,7 +70,7 @@
 }
 
 .typeFilters {
-  flex: 1 1 300px;
+  flex: 1 1 100%;
 }
 
 .search {
@@ -504,37 +512,6 @@
   color: var(--color-ink);
 }
 
-.primaryButton,
-.secondaryButton {
-  width: 100%;
-  height: var(--size-touch);
-  min-height: var(--size-touch);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  padding: 0 var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font: inherit;
-  font-size: var(--font-size-body-compact);
-  font-weight: 600;
-  text-align: center;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.primaryButton {
-  border-color: var(--color-wine-900);
-  background: var(--color-wine-900);
-  color: var(--color-surface);
-}
-
-.secondaryButton {
-  background: var(--color-surface);
-  color: var(--color-ink);
-}
-
 .unavailable {
   width: 100%;
   padding: var(--space-3);
@@ -643,8 +620,6 @@
 .rowMenuItems button:focus-visible,
 .rowMain:focus-visible,
 .selectControl input:focus-visible,
-.primaryButton:focus-visible,
-.secondaryButton:focus-visible,
 .backToList:focus-visible,
 .loadMore:focus-visible,
 .bulkBar button:focus-visible,
@@ -745,5 +720,31 @@
 @media (prefers-reduced-motion: reduce) {
   .skeleton span {
     animation: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .notificationRow {
+    grid-template-columns: 24px minmax(0, 1fr) 32px;
+    gap: var(--space-2);
+  }
+
+  .notificationRow .rowMain {
+    gap: var(--space-2);
+  }
+}
+
+@media (min-width: 481px) and (max-width: 1199px) {
+  .notificationRow {
+    grid-template-columns: 24px minmax(0, 1fr) 44px;
+    grid-template-areas:
+      "select main menu"
+      ". status menu";
+    align-items: start;
+    gap: var(--space-2);
+  }
+
+  .readStatus {
+    justify-self: start;
   }
 }

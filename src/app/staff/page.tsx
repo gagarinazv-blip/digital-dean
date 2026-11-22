@@ -1,19 +1,14 @@
+import { DateTimeStack } from "@/components/date-time-stack";
 import Link from "next/link";
 import { requestStatusLabels, requestTypeLabels } from "@/lib/campus-labels";
 import { getRequestCatalogTitle } from "@/lib/request-catalog";
 import { formatRequestNumber } from "@/lib/request-number";
-import { getUniversityDateTimeFormatter } from "@/lib/campus-time";
 import { getStaffRequestList } from "@/lib/staff-data";
 import styles from "./staff.module.css";
 import workflowStyles from "@/app/request-workflow.module.css";
 import type { RequestStatus } from "@/generated/prisma/enums";
 
 export const instant = false;
-
-const requestDateFormatter = getUniversityDateTimeFormatter({
-  dateStyle: "medium",
-  timeStyle: "short",
-});
 
 const statusSummary: {
   status: RequestStatus;
@@ -208,7 +203,7 @@ export default async function StaffHomePage({
                       </span>
                     </td>
                     <td data-label="Дата подачи" className={styles.dateCell}>
-                      {requestDateFormatter.format(request.createdAt)}
+                      <DateTimeStack value={request.createdAt} />
                     </td>
                     <td data-label="Статус">
                       <span

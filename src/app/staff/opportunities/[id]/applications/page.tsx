@@ -1,3 +1,4 @@
+import { DateTimeStack } from "@/components/date-time-stack";
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -226,14 +227,9 @@ async function StaffApplicationsContent({
                     </span>
                   </div>
                 </header>
-                <p className={styles.applicationDate}>
-                  Подана{" "}
-                  {new Intl.DateTimeFormat("ru-RU", {
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                    timeZone: "Europe/Moscow",
-                  }).format(application.submittedAt)}
-                </p>
+                <div className={styles.applicationDate}>
+                  <DateTimeStack value={application.submittedAt} />
+                </div>
                 {application.motivation && (
                   <section>
                     <h3>Мотивация</h3>

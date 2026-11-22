@@ -1,5 +1,6 @@
 "use client";
 
+import { DateTimeStack } from "@/components/date-time-stack";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -15,7 +16,6 @@ import {
   filterSessionEvents,
   findSessionInsights,
   generateSessionIcs,
-  getSessionCountdown,
   getSessionEventStatusLabel,
   getSessionStatus,
   groupSessionEventsByDate,
@@ -25,7 +25,10 @@ import {
   type SessionFilters,
   type SessionStatusFilter,
 } from "@/lib/session-utils";
-import { getUniversityDateTimeFormatter } from "@/lib/campus-time";
+import {
+  getUniversityDateTimeFormatter,
+  parseMoscowDateTime,
+} from "@/lib/campus-time";
 import { getMonthCalendarDays, shiftScheduleDate } from "@/lib/schedule-view-utils";
 import {
   ScheduleFilterMenu,
@@ -127,6 +130,15 @@ function eventStatus(
   return { label, className };
 }
 
+function SessionDate({ event }: { event: SessionEventView }) {
+  return (
+    <DateTimeStack
+      end={parseMoscowDateTime(event.date, event.endTime)}
+      value={parseMoscowDateTime(event.date, event.startTime)}
+    />
+  );
+}
+
 function EventCard({
   event,
   selected,
@@ -155,7 +167,7 @@ function EventCard({
         type="button"
       >
         <span className={styles.eventTime}>
-          {event.startTime}–{event.endTime}
+          <SessionDate event={event} />
         </span>
         <span className={styles.eventMain}>
           <strong title={event.subject}>{event.subject}</strong>
@@ -210,7 +222,7 @@ function EventDetails({
       <span className={styles.eyebrow}>СОБЫТИЕ СЕССИИ</span>
       <h4 id="selected-session-title">{event.subject}</h4>
       <p>{event.controlLabel} · {event.teacher}</p>
-      <p>{dateLabel(event.date, { day: "numeric", month: "long", year: "numeric" })} · {event.startTime}–{event.endTime}</p>
+      <SessionDate event={event} />
       <p>{event.room}</p>
       <button className={styles.secondaryButton} onClick={onDownload} type="button">
         В календарь
@@ -269,12 +281,17 @@ export function SessionView({
     else router.push(href, { scroll: false });
   }
 
-  const activeFilters: SessionFilters = parseSessionFilters(
-    searchParams.toString(),
+  const search = searchParams.toString();
+  const activeFilters: SessionFilters = useMemo(
+    () => parseSessionFilters(search),
+    [search],
   );
   const projection = params.get("projection") === "calendar" ? "calendar" : "feed";
   const selectedEventId = params.get("event") ?? "";
-  const allEvents = selectedSemester?.events ?? [];
+  const allEvents = useMemo(
+    () => selectedSemester?.events ?? [],
+    [selectedSemester],
+  );
   const selectedEvent = allEvents.find((event) => event.id === selectedEventId);
   const monthAnchor = getSafeDateKey(
     params.get("date"),
@@ -286,7 +303,7 @@ export function SessionView({
   );
   const visibleEvents = useMemo(
     () => filterSessionEvents(allEvents, activeFilters, todayKey),
-    [allEvents, activeFilters.controlType, activeFilters.query, activeFilters.status, todayKey],
+    [allEvents, activeFilters, todayKey],
   );
   const eventGroups = useMemo(
     () => groupSessionEventsByDate(visibleEvents),
@@ -605,11 +622,11 @@ export function SessionView({
         </article>
         <article className={styles.summaryCard}>
           <span>Следующее событие</span>
-          <strong>
-            {nearestEvent
-              ? getSessionCountdown(nearestEvent.date, nearestEvent.startTime, todayKey, nowTime)
-              : "Нет предстоящих"}
-          </strong>
+          {nearestEvent ? (
+            <SessionDate event={nearestEvent} />
+          ) : (
+            <strong>Нет предстоящих</strong>
+          )}
         </article>
         {summary.debts > 0 && (
           <article className={`${styles.summaryCard} ${styles.summaryDebt}`}>
@@ -665,17 +682,10 @@ export function SessionView({
             <div className={styles.nearestCopy}>
               <h3 id="nearest-session-title">{nearestEvent.subject}</h3>
               <p>
-                {dateLabel(nearestEvent.date, {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "long",
-                })}{" "}
-                · {nearestEvent.startTime}–{nearestEvent.endTime} · {nearestEvent.controlLabel}
+                {nearestEvent.controlLabel} · {nearestEvent.room} ·{" "}
+                {nearestEvent.teacher}
               </p>
-              <p>{nearestEvent.room} · {nearestEvent.teacher}</p>
-              <strong className={styles.countdown}>
-                {getSessionCountdown(nearestEvent.date, nearestEvent.startTime, todayKey, nowTime)}
-              </strong>
+              <SessionDate event={nearestEvent} />
             </div>
             <div className={styles.nearestActions}>
               <button
@@ -752,8 +762,7 @@ export function SessionView({
               {eventGroups.map(({ date, events }) => (
                 <section className={styles.dateGroup} key={date}>
                   <h4>
-                    {dateLabel(date, { weekday: "short", day: "numeric", month: "long" })}
-                    <span> · {getSessionCountdown(date, events[0]?.startTime ?? "00:00", todayKey, nowTime)}</span>
+                    <DateTimeStack allDay value={date} />
                   </h4>
                   {events.map((event) => (
                     <EventCard
@@ -868,7 +877,9 @@ export function SessionView({
               </div>
             </div>
             <section aria-live="polite" className={styles.dayEvents}>
-              <h4>{dateLabel(selectedDay, { weekday: "long", day: "numeric", month: "long" })}</h4>
+              <h4>
+                <DateTimeStack allDay value={selectedDay} />
+              </h4>
               {selectedDayEvents.length ? selectedDayEvents.map((event) => (
                 <EventCard
                   event={event}
@@ -922,7 +933,12 @@ export function SessionView({
                   <summary>
                     <span className={styles.resultSubject}>
                       <strong>{subject.name}</strong>
-                      <small>{subject.controlLabel} · {subject.resultDate ? dateLabel(subject.resultDate, { day: "numeric", month: "long" }) : "Дата не указана"}</small>
+                      <small>{subject.controlLabel}</small>
+                      {subject.resultDate ? (
+                        <DateTimeStack allDay value={subject.resultDate} />
+                      ) : (
+                        <small>Дата не указана</small>
+                      )}
                     </span>
                     <span className={subject.resultStatus === "ACADEMIC_DEBT" ? styles.resultDebt : styles.resultPassed}>
                       {subject.resultStatus === "ACADEMIC_DEBT" ? "Не сдано" : subject.resultValue}
@@ -932,9 +948,15 @@ export function SessionView({
                   <div className={styles.attemptHistory}>
                     <strong>История попыток</strong>
                     {subject.attempts.map((attempt) => (
-                      <p key={`${subject.id}-${attempt.number}`}>
-                        №{attempt.number} · {dateLabel(attempt.date, { day: "numeric", month: "long" })} · {attempt.value}
-                      </p>
+                      <div
+                        className={styles.attempt}
+                        key={`${subject.id}-${attempt.number}`}
+                      >
+                        <span>
+                          №{attempt.number} · {attempt.value}
+                        </span>
+                        <DateTimeStack allDay align="end" value={attempt.date} />
+                      </div>
                     ))}
                     {subject.attempts.length === 0 && <p>История попыток не опубликована.</p>}
                   </div>
@@ -976,11 +998,17 @@ export function SessionView({
                       <span className={styles.statusBadge + " " + styles.debt}>Академическая задолженность</span>
                       <h4>{subject.name}</h4>
                       <p>Попыток: {subject.attemptCount} · {subject.teacher}</p>
-                      <p className={styles.riskNote}>
-                        {resit
-                          ? `Пересдача назначена на ${dateLabel(resit.date, { day: "numeric", month: "long" })}.`
-                          : "Дата пересдачи не назначена. Уточните срок ликвидации задолженности в деканате."}
-                      </p>
+                      {resit ? (
+                        <div className={styles.riskNote}>
+                          <span>Пересдача назначена</span>
+                          <SessionDate event={resit} />
+                        </div>
+                      ) : (
+                        <p className={styles.riskNote}>
+                          Дата пересдачи не назначена. Уточните срок ликвидации
+                          задолженности в деканате.
+                        </p>
+                      )}
                     </div>
                     {resit ? (
                       <button

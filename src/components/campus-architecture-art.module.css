@@ -23,7 +23,7 @@
   inset: 0;
   background: linear-gradient(
     90deg,
-    #dce5f0 0%,
+    var(--color-hero) 0%,
     rgb(220 229 240 / 88%) 8%,
     rgb(220 229 240 / 32%) 44%,
     transparent 100%

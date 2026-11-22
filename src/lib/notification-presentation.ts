@@ -23,7 +23,6 @@ import {
   formatMoscowDateTime,
   formatMoscowTime,
   formatMoscowWeekdayDate,
-  getUniversityDateTimeFormatter,
   getMoscowDateTime,
   getMoscowDateKey,
 } from "@/lib/campus-time";
@@ -44,11 +43,6 @@ type RawNotification = {
   createdAt: Date;
   readAt: Date | null;
 };
-
-const dateTimeFormatter = getUniversityDateTimeFormatter({
-  dateStyle: "long",
-  timeStyle: "short",
-});
 
 export async function presentStudentNotifications(
   rows: RawNotification[],
@@ -160,7 +154,7 @@ export async function presentStudentNotifications(
       row.targetId,
     );
     let source = notificationTypeLabels[row.type];
-    let context = dateTimeFormatter.format(row.createdAt);
+    let context = source;
     const details: NotificationDetails = {};
     if (
       row.type === "SCHEDULE_CHANGE" ||
@@ -188,12 +182,16 @@ export async function presentStudentNotifications(
           timeLabel,
           previousTimeLabel: null,
           previousDateLabel: null,
+          startsAt: startsAt.toISOString(),
+          endsAt: endsAt.toISOString(),
+          previousStartsAt: null,
+          previousEndsAt: null,
           previousRoom: null,
           room: item.room,
           changeNote: null,
         };
         source = cleanStudentFacingText(item.planItem.name);
-        context = `${source} · ${dateLabel} · открыть сессию`;
+        context = `${source} · открыть сессию`;
       }
     } else if (
       row.type === "SCHEDULE_CHANGE" &&
@@ -234,12 +232,16 @@ export async function presentStudentNotifications(
             formatMoscowWeekdayDate(originalStartsAt) !== dateLabel
               ? formatMoscowWeekdayDate(originalStartsAt)
               : null,
+          startsAt: startsAt?.toISOString() ?? null,
+          endsAt: endsAt?.toISOString() ?? null,
+          previousStartsAt: originalStartsAt?.toISOString() ?? null,
+          previousEndsAt: originalEndsAt?.toISOString() ?? null,
           previousRoom: item.originalRoom,
           room: item.room,
           changeNote: item.changeNote,
         };
         source = cleanStudentFacingText(item.subject.name);
-        context = `${source} · ${dateLabel} · открыть расписание`;
+        context = `${source} · открыть расписание`;
       }
     } else if (row.type === "REQUEST_STATUS" && row.targetId) {
       const request = requestById.get(row.targetId);
@@ -279,7 +281,7 @@ export async function presentStudentNotifications(
               : getDeadlineRemaining(deadline.dueAt, now, deadline.format),
         };
         source = cleanStudentFacingText(deadline.subject);
-        context = `${source} · ${dateTimeFormatter.format(deadline.dueAt)} · открыть задание`;
+        context = `${source} · открыть задание`;
       }
     }
     if (targetAvailable === false) href = null;

@@ -5,10 +5,11 @@
 }
 
 .header {
+  --color-focus: var(--color-focus-on-dark);
   position: relative;
   z-index: 20;
   min-height: 56px;
-  background: #282525;
+  background: var(--color-ink);
   color: var(--color-surface);
 }
 
@@ -36,7 +37,7 @@
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-wine-900);
 }
@@ -173,11 +174,11 @@
   gap: 5px;
   padding: 20px 9px;
   overflow: hidden;
-  border-right: 1px solid #eee7e3;
+  border-right: 1px solid var(--color-border);
   background:
     radial-gradient(ellipse 180px 145px at 50% 103%, transparent 58%, rgb(167 129 111 / 10%) 59%, transparent 60%),
     radial-gradient(ellipse 210px 175px at 50% 104%, transparent 59%, rgb(167 129 111 / 9%) 60%, transparent 61%),
-    linear-gradient(180deg, #fff 0%, #fbf8f6 100%);
+    linear-gradient(180deg, var(--color-surface) 0%, var(--color-canvas) 100%);
 }
 
 .navigationTitle {
@@ -194,15 +195,15 @@
   align-items: center;
   gap: 10px;
   padding: 7px 10px;
-  border-radius: 9px;
-  color: #5e5855;
+  border-radius: var(--radius-md);
+  color: var(--color-muted);
   font-size: 12px;
   font-weight: 550;
   text-decoration: none;
 }
 
 .navigationLink:hover {
-  background: #f3ece8;
+  background: var(--color-subtle);
   color: var(--color-ink);
 }
 
@@ -213,9 +214,9 @@
 }
 
 .navigationLink[aria-current="page"] {
-  background: linear-gradient(110deg, #7a1d35, #681c2b);
+  background: var(--color-wine-900);
   color: var(--color-surface);
-  box-shadow: 0 3px 8px rgb(100 28 41 / 15%);
+  box-shadow: var(--shadow-soft);
 }
 
 .content {

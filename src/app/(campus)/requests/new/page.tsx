@@ -5,10 +5,8 @@ import { CampusSection } from "@/components/campus-section";
 import { NewRequestForm } from "@/app/(campus)/requests/request-forms";
 import { getCertificateForms } from "@/lib/certificate-forms";
 import { requireStudentContext } from "@/lib/student";
-import {
-  getRequestFieldValues,
-  type RequestProfileSnapshot,
-} from "@/lib/request-catalog";
+import { getRequestFieldValues } from "@/lib/request-catalog";
+import { getRequestProfileSnapshot } from "@/lib/request-profile";
 import { getStudentRequest } from "@/lib/student-request-data";
 import workflowStyles from "@/app/request-workflow.module.css";
 import styles from "./request-page.module.css";
@@ -77,15 +75,7 @@ export default async function NewRequestPage({
     };
   }
 
-  const profile: RequestProfileSnapshot = {
-    fullName: student.fullName,
-    faculty: student.faculty,
-    direction: student.direction,
-    course: student.course,
-    groupName: student.group.name,
-    recordBookNumber: student.recordBookNumber,
-    studyForm: student.studyForm,
-  };
+  const profile = getRequestProfileSnapshot(student);
   const selectedService =
     services.find((service) => service.code === initialValues?.catalogCode) ??
     services[0];
