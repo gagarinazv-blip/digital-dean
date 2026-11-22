@@ -152,6 +152,18 @@ enum StaffNotificationType {
   REQUEST_REASSIGNED
 }
 
+enum EventType {
+  CONFERENCE
+  SPEAKER_MEETING
+  MASTER_CLASS
+  OTHER
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+}
+
 model User {
   id                       Int                        @id @default(autoincrement())
   login                    String                     @unique
@@ -166,6 +178,7 @@ model User {
   studentAuditLogs         StudentAuditLog[]
   uploadedPortfolioItems   PortfolioItem[]             @relation("PortfolioItemUploader")
   staffNotifications       StaffNotification[]         @relation("StaffNotificationRecipient")
+  createdEvents            Event[]                    @relation("EventCreator")
   createdAt                DateTime                   @default(now())
 }
 
@@ -247,6 +260,26 @@ model StaffProfile {
   assignedRequests Request[] @relation("AssignedStaffRequests")
   assignmentHistoryFrom RequestAssignmentHistory[] @relation("RequestAssignmentHistoryFrom")
   assignmentHistoryTo   RequestAssignmentHistory[] @relation("RequestAssignmentHistoryTo")
+}
+
+model Event {
+  id              Int         @id @default(autoincrement())
+  title           String      @db.VarChar(120)
+  type            EventType
+  description     String?     @db.VarChar(1000)
+  startsAt        DateTime    @db.Timestamptz(3)
+  endsAt          DateTime    @db.Timestamptz(3)
+  location        String      @db.VarChar(160)
+  host            String      @db.VarChar(160)
+  registrationUrl String?     @db.VarChar(2048)
+  status          EventStatus @default(DRAFT)
+  createdById     Int
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  createdBy       User        @relation("EventCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([startsAt, status])
+  @@index([createdById])
 }
 
 model StudentGroup {

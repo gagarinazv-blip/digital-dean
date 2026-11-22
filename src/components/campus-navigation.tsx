@@ -9,7 +9,6 @@ import {
   HomeSimple,
   Menu,
   Page,
-  TaskList,
   User,
   Xmark,
 } from "iconoir-react";
@@ -17,15 +16,56 @@ import { useEffect, useRef, useState } from "react";
 import styles from "./campus-navigation.module.css";
 
 const navigation = [
-  { href: "/", label: "Сегодня", icon: HomeSimple },
-  { href: "/schedule", label: "Расписание", icon: Calendar },
-  { href: "/grades", label: "Успеваемость", icon: GraphUp },
-  { href: "/documents", label: "Документы", icon: Page },
-  { href: "/requests", label: "Заявки", icon: TaskList },
-  { href: "/notifications", label: "Уведомления", icon: Bell },
-  { href: "/profile", label: "Профиль", icon: User },
+  {
+    href: "/",
+    label: "Сегодня",
+    icon: <HomeSimple aria-hidden="true" strokeWidth={1.8} />,
+  },
+  {
+    href: "/schedule",
+    label: "Расписание",
+    icon: <Calendar aria-hidden="true" strokeWidth={1.8} />,
+  },
+  {
+    href: "/digest",
+    label: "Дайджест событий",
+    icon: (
+      <svg
+        aria-hidden="true"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+        viewBox="0 0 24 24"
+      >
+        <rect x="3" y="5" width="18" height="16" rx="2" />
+        <path d="M16 3v4M8 3v4M3 10h18M8 14h3m-3 3h7" />
+        <path d="m18 13 .7 1.4 1.5.2-1.1 1.1.3 1.5-1.4-.7-1.3.7.2-1.5-1.1-1.1 1.5-.2z" />
+      </svg>
+    ),
+  },
+  {
+    href: "/grades",
+    label: "Успеваемость",
+    icon: <GraphUp aria-hidden="true" strokeWidth={1.8} />,
+  },
+  {
+    href: "/help",
+    label: "Справки и обращения",
+    icon: <Page aria-hidden="true" strokeWidth={1.8} />,
+  },
+  {
+    href: "/notifications",
+    label: "Уведомления",
+    icon: <Bell aria-hidden="true" strokeWidth={1.8} />,
+  },
+  {
+    href: "/profile",
+    label: "Профиль",
+    icon: <User aria-hidden="true" strokeWidth={1.8} />,
+  },
 ] as const;
-
 const unreadCountEvent = "campus:unread-notification-count";
 
 export function CampusNavigation({
@@ -98,10 +138,14 @@ export function CampusNavigation({
         aria-label="Разделы кабинета"
       >
         {navigation.map((item) => {
+          const isHelpRoute =
+            item.href === "/help" &&
+            (pathname.startsWith("/documents") ||
+              pathname.startsWith("/requests"));
           const isCurrent =
             pathname === item.href ||
             (item.href !== "/" && pathname.startsWith(`${item.href}/`)) ||
-            (item.href === "/documents" && pathname.startsWith("/help"));
+            isHelpRoute;
 
           return (
             <Link
@@ -118,11 +162,7 @@ export function CampusNavigation({
               title={item.label}
             >
               <span className={styles.icon}>
-                <item.icon
-                  aria-hidden="true"
-                  className={styles.iconSvg}
-                  strokeWidth={1.8}
-                />
+                <span className={styles.iconSvg}>{item.icon}</span>
                 {item.href === "/notifications" && unreadCount > 0 && (
                   <span aria-hidden="true" className={styles.unreadBadge}>
                     {unreadCount > 99 ? "99+" : unreadCount}

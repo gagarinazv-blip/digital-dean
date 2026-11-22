@@ -9,6 +9,7 @@ const navigationItems = [
   { href: "/staff", label: "Заявки", icon: "requests" },
   { href: "/staff/students", label: "Студенты", icon: "students" },
   { href: "/staff/achievements", label: "Достижения", icon: "achievements" },
+  { href: "/staff/events", label: "Дайджест событий", icon: "events" },
 ] as const;
 
 export function StaffNavigation() {
@@ -24,6 +25,8 @@ export function StaffNavigation() {
             pathname.startsWith("/staff/students/")) ||
           (item.href === "/staff/achievements" &&
             pathname.startsWith("/staff/achievements")) ||
+          (item.href === "/staff/events" &&
+            pathname.startsWith("/staff/events/")) ||
           (item.href === "/staff" &&
             (pathname.startsWith("/staff/requests") ||
               pathname === "/staff"));
@@ -49,8 +52,17 @@ export function StaffNavigation() {
                 strokeWidth="1.8"
                 viewBox="0 0 24 24"
               >
-                <path d="M4 5h16v14H4z" />
-                <path d="m8 15 2.5-3 2 2 2.5-4 3 5M8 8h.01" />
+                {item.icon === "achievements" ? (
+                  <>
+                    <path d="M4 5h16v14H4z" />
+                    <path d="m8 15 2.5-3 2 2 2.5-4 3 5M8 8h.01" />
+                  </>
+                ) : (
+                  <>
+                    <rect x="3" y="5" width="18" height="16" rx="2" />
+                    <path d="M16 3v4M8 3v4M3 10h18M8 14h3m-3 3h7" />
+                  </>
+                )}
               </svg>
             )}
             {item.label}
