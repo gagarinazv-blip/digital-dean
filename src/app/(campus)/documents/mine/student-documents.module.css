@@ -1,0 +1,332 @@
+.archive {
+  display: grid;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+.uploadButton,
+.primaryButton,
+.secondaryButton,
+.dangerButton {
+  min-height: var(--size-touch);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--font-size-body-compact);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.uploadButton,
+.primaryButton {
+  background: var(--color-wine-900);
+  color: var(--color-surface);
+}
+
+.uploadButton:hover,
+.primaryButton:hover {
+  background: var(--color-wine-700);
+}
+
+.secondaryButton {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+
+.dangerButton {
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
+}
+
+.uploadButton:focus-visible,
+.primaryButton:focus-visible,
+.secondaryButton:focus-visible,
+.dangerButton:focus-visible,
+.filterField input:focus-visible,
+.filterField select:focus-visible,
+.field input:focus-visible,
+.field select:focus-visible,
+.actionMenu summary:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) repeat(2, minmax(160px, 0.75fr));
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.filterField,
+.field {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-2);
+  color: var(--color-muted);
+  font-size: var(--font-size-label);
+  font-weight: 600;
+}
+
+.filterField input,
+.filterField select,
+.field input,
+.field select {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--size-touch);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+  font-weight: 400;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.list {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.fileIcon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-md);
+  background: var(--color-wine-100);
+  color: var(--color-wine-900);
+  font-size: var(--font-size-label);
+  font-weight: 700;
+}
+
+.cardContent {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.cardTitle {
+  color: var(--color-ink);
+  font-size: var(--font-size-h3);
+  font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: break-word;
+}
+
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  color: var(--color-muted);
+  font-size: var(--font-size-label);
+  line-height: 1.5;
+}
+
+.badge {
+  width: fit-content;
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-blue-100);
+  color: var(--color-blue-700);
+  font-size: var(--font-size-label);
+  font-weight: 600;
+}
+
+.cardActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.textLink {
+  min-height: var(--size-touch);
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--color-wine-900);
+  font-size: var(--font-size-label);
+  font-weight: 600;
+}
+
+.textLink:hover {
+  background: var(--color-wine-100);
+}
+
+.textLink:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.actionMenu {
+  position: relative;
+}
+
+.actionMenu summary {
+  min-height: var(--size-touch);
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-ink);
+  font-size: var(--font-size-label);
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.actionMenu summary::-webkit-details-marker {
+  display: none;
+}
+
+.actionMenu[open] .menuItems {
+  position: absolute;
+  z-index: 2;
+  top: calc(100% + var(--space-1));
+  right: 0;
+  min-width: 180px;
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: 0 8px 24px rgb(26 23 25 / 12%);
+}
+
+.menuItems > button,
+.menuItems :global(button) {
+  width: 100%;
+  min-height: var(--size-touch);
+  justify-content: flex-start;
+  padding-inline: var(--space-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.menuItems > button:hover,
+.menuItems :global(button):hover {
+  background: var(--color-subtle);
+}
+
+.dialogContent {
+  display: grid;
+  gap: var(--space-4);
+  min-width: min(420px, calc(100vw - 48px));
+}
+
+.dialogContent p {
+  color: var(--color-muted);
+  font-size: var(--font-size-body-compact);
+  line-height: 1.5;
+}
+
+.dialogActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.feedbackError {
+  color: var(--color-danger-text);
+  font-size: var(--font-size-label);
+  line-height: 1.45;
+}
+
+.feedbackSuccess {
+  color: var(--color-success-text);
+  font-size: var(--font-size-label);
+  line-height: 1.45;
+}
+
+.uploadForm {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.uploadForm input[type="file"] {
+  padding-block: var(--space-2);
+}
+
+.originalName {
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 720px) {
+  .filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .card {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: var(--space-3);
+  }
+
+  .fileIcon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .cardActions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+
+  .dialogActions > button {
+    flex: 1 1 120px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menuItems {
+    scroll-behavior: auto;
+  }
+}

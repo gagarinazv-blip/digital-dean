@@ -12,6 +12,8 @@
     "db:down": "docker compose down",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "db:seed:opportunities": "tsx prisma/seed-opportunities.ts"
     "db:seed:deadlines": "tsx prisma/seed-deadlines.ts",
     "db:studio": "prisma studio"
   },

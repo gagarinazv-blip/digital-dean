@@ -7,7 +7,26 @@ import { PrismaPg } from "@prisma/adapter-pg";
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
 export function getPrisma(): PrismaClient {
-  if (globalForPrisma.prisma) return globalForPrisma.prisma;
+  const cachedPrisma = globalForPrisma.prisma;
+  if (
+    cachedPrisma &&
+    typeof cachedPrisma.portfolioFolder !== "undefined" &&
+    typeof cachedPrisma.portfolioItem !== "undefined" &&
+    typeof cachedPrisma.studentDocument !== "undefined" &&
+    typeof cachedPrisma.opportunity !== "undefined" &&
+    typeof cachedPrisma.opportunityApplication !== "undefined" &&
+    typeof cachedPrisma.opportunityBookmark !== "undefined" &&
+    typeof cachedPrisma.applicationFile !== "undefined" &&
+    typeof cachedPrisma.certificateForm !== "undefined"
+  ) {
+    return cachedPrisma;
+  }
+  if (cachedPrisma) {
+    delete globalForPrisma.prisma;
+    void cachedPrisma.$disconnect().catch(() => {
+      console.error("Stale Prisma client disconnect failed.");
+    });
+  }
 
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {

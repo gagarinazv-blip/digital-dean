@@ -41,6 +41,7 @@ const typeFilters: Array<{
   { value: "deadline", label: "Дедлайны" },
   { value: "request", label: "Заявки" },
   { value: "announcement", label: "Объявления" },
+  { value: "opportunity", label: "Возможности" },
 ];
 
 const dateFormatter = getUniversityDateTimeFormatter({

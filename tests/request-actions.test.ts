@@ -9,6 +9,7 @@ const {
   requireStudentContextMock,
   requireStaffContextMock,
   findRequestMock,
+  findCertificateFormMock,
   updateRequestManyMock,
   createCommentMock,
   upsertRequestMock,
@@ -27,6 +28,7 @@ const {
   requireStudentContextMock: vi.fn(),
   requireStaffContextMock: vi.fn(),
   findRequestMock: vi.fn(),
+  findCertificateFormMock: vi.fn(),
   updateRequestManyMock: vi.fn(),
   createCommentMock: vi.fn(),
   upsertRequestMock: vi.fn(),
@@ -62,6 +64,7 @@ vi.mock("@/lib/staff", () => ({
 
 vi.mock("@/lib/prisma", () => ({
   getPrisma: vi.fn(() => ({
+    certificateForm: { findFirst: findCertificateFormMock },
     request: {
       findFirst: findRequestMock,
       findUnique: findAssignmentRequestMock,
@@ -127,6 +130,22 @@ beforeEach(() => {
     status: "NEEDS_INFO",
     assignedToId: null,
     type: "CERTIFICATE",
+  });
+  findCertificateFormMock.mockResolvedValue({
+    code: "STUDY_CERTIFICATE",
+    title: "Справка об обучении",
+    description: "Подтверждение факта обучения в учебном заведении.",
+    executionDays: 5,
+    active: true,
+    fields: [
+      {
+        id: "purpose",
+        label: "Куда предоставляется / цель",
+        kind: "text",
+        required: true,
+        maxLength: 300,
+      },
+    ],
   });
   updateRequestManyMock.mockResolvedValue({ count: 1 });
   createCommentMock.mockResolvedValue({});
@@ -195,6 +214,10 @@ describe("request actions", () => {
           studentId: 20,
           catalogCode: "STUDY_CERTIFICATE",
           formFields: { purpose: "для места работы" },
+          formSchemaSnapshot: expect.objectContaining({
+            code: "STUDY_CERTIFICATE",
+            title: "Справка об обучении",
+          }),
           profileSnapshot: expect.objectContaining({
             fullName: "Аэлитта Ветрова-Даль",
             groupName: "TEST-01",

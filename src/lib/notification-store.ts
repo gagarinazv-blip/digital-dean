@@ -16,6 +16,7 @@ const notificationTypes: NotificationType[] = [
   "DEADLINE",
   "REQUEST_STATUS",
   "ANNOUNCEMENT",
+  "OPPORTUNITY_STATUS",
 ];
 
 export type NotificationStoreSnapshot = NotificationFeedPage & {
@@ -32,6 +33,7 @@ function emptyTypeCounts(): NotificationTypeCounts {
     DEADLINE: 0,
     REQUEST_STATUS: 0,
     ANNOUNCEMENT: 0,
+    OPPORTUNITY_STATUS: 0,
   };
 }
 

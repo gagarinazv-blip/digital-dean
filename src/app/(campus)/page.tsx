@@ -200,14 +200,6 @@ async function CampusToday() {
               {welcomeDateFormatter.format(todayDate)} · группа{" "}
               {getStudentFacingGroupName(data.student.group.name)}
             </p>
-            <Link className={styles.notificationLink} href="/notifications">
-              {data.unreadNotificationCount > 0 && (
-                <span aria-hidden="true" className={styles.notificationDot} />
-              )}
-              {data.unreadNotificationCount > 0
-                ? `${data.unreadNotificationCount} новых уведомлений`
-                : "Уведомления"}
-            </Link>
           </div>
         </div>
       </section>
@@ -527,11 +519,13 @@ async function CampusToday() {
                   title={getRequestCatalogTitle(
                     data.latestRequest.catalogCode,
                     requestTypeLabels[data.latestRequest.type],
+                    data.latestRequest.formSchemaSnapshot,
                   )}
                 >
                   {getRequestCatalogTitle(
                     data.latestRequest.catalogCode,
                     requestTypeLabels[data.latestRequest.type],
+                    data.latestRequest.formSchemaSnapshot,
                   )}
                 </strong>
                 <span

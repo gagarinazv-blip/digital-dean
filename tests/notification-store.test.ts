@@ -28,6 +28,7 @@ const page: NotificationFeedPage = {
     DEADLINE: 0,
     REQUEST_STATUS: 1,
     ANNOUNCEMENT: 0,
+    OPPORTUNITY_STATUS: 0,
   },
   hasMore: false,
   nextCursor: null,

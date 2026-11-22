@@ -28,6 +28,7 @@ vi.mock("@/lib/sms-provider", () => ({
 }));
 
 import { headers } from "next/headers";
+import { formatStudentPhoneInput } from "../src/lib/phone-utils";
 import {
   normalizeStudentPhone,
   requestStudentPasswordResetCode,
@@ -92,6 +93,15 @@ beforeEach(() => {
 });
 
 describe("student phone login validation", () => {
+  it("formats Russian phone input consistently while preserving legacy logins", () => {
+    expect(formatStudentPhoneInput("9000000001")).toBe("+7 (900) 000-00-01");
+    expect(formatStudentPhoneInput("8 900 000-00-01")).toBe(
+      "+7 (900) 000-00-01",
+    );
+    expect(formatStudentPhoneInput("+12025550123")).toBe("+12025550123");
+    expect(formatStudentPhoneInput("student.old")).toBe("student.old");
+  });
+
   it.each([
     ["+7 (900) 000-00-01", "+79000000001"],
     ["8 900 000-00-01", "+79000000001"],

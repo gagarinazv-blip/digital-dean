@@ -25,6 +25,40 @@ export function normalizeStudentPhone(value: string): string | null {
   return null;
 }
 
+export function formatStudentPhoneInput(value: string): string {
+  const trimmed = value.trim();
+  if (/[a-zа-я]/i.test(trimmed)) {
+    return value;
+  }
+
+  const digits = trimmed.replace(/\D/g, "");
+  if (trimmed.startsWith("+") && !digits.startsWith("7")) {
+    return `+${digits.slice(0, 15)}`;
+  }
+
+  const national = (
+    digits.startsWith("7") || digits.startsWith("8")
+      ? digits.slice(1)
+      : digits
+  ).slice(0, 10);
+  if (!national) {
+    return "";
+  }
+
+  const area = national.slice(0, 3);
+  const first = national.slice(3, 6);
+  const second = national.slice(6, 8);
+  const third = national.slice(8, 10);
+  return [
+    "+7",
+    area ? ` (${area}` : "",
+    national.length >= 3 ? ")" : "",
+    first ? ` ${first}` : "",
+    second ? `-${second}` : "",
+    third ? `-${third}` : "",
+  ].join("");
+}
+
 export function looksLikePhoneInput(value: string): boolean {
   return /^\s*(?:\+|[\d(])/.test(value);
 }
