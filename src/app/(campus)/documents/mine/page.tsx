@@ -28,6 +28,8 @@ async function MineContent() {
       eyebrow="Документы и заявки"
       headerAction={<UploadDocumentDialog buttonLabel="Загрузить документ" />}
       title="Мои документы"
+      illustration="documents"
+      tone="blue"
     >
       <StudentDocumentArchive documents={documents} />
     </CampusSection>

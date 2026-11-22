@@ -191,7 +191,7 @@
   color: var(--color-ink);
   font-size: 15px;
   font-weight: 700;
-  text-transform: capitalize;
+  
 }
 
 .dayHeader > span {
@@ -396,4 +396,8 @@
   .formActions {
     flex-direction: column-reverse;
   }
+}
+
+.dayHeader h2::first-letter {
+  text-transform: uppercase;
 }

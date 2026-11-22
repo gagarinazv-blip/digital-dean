@@ -1,3 +1,4 @@
+import { SectionHeader } from "@/components/section-header";
 import { Suspense } from "react";
 import Link from "next/link";
 import type { Prisma } from "@/generated/prisma/client";
@@ -61,15 +62,18 @@ async function StaffStudentsContent({
         <span aria-hidden="true">/</span>
         <span>Студенты</span>
       </nav>
-      <header className={styles.heading}>
-        <div>
-          <h1>Студенты</h1>
-          <p>Поиск и управление данными учётных записей студентов.</p>
-        </div>
-        <Link className={styles.primaryButton} href="/staff/students/new">
-          Добавить студента
-        </Link>
-      </header>
+      <SectionHeader
+        action={
+          <Link className={styles.primaryButton} href="/staff/students/new">
+            Добавить студента
+          </Link>
+        }
+        description="Поиск и управление данными учётных записей студентов."
+        eyebrow="Рабочее место"
+        illustration="students"
+        title="Студенты"
+        tone="sage"
+      />
 
       <section className={styles.panel} aria-labelledby="student-list-title">
         <div className={styles.panelHeading}>

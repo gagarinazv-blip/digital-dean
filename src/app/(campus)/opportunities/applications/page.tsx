@@ -75,6 +75,8 @@ async function ApplicationsContent({
     <CampusSection
       eyebrow="Возможности"
       title="Мои заявки на участие"
+      illustration="opportunities"
+      tone="sand"
       description="Отслеживайте решения сотрудников и управляйте своими заявками."
     >
       {success && (

@@ -118,6 +118,8 @@ async function GradesContent({ searchParams }: Required<GradesPageProps>) {
     <CampusSection
       eyebrow="Учебные результаты"
       title="Успеваемость"
+      illustration="grades"
+      tone="sage"
       description="Результаты обучения, оценки и академический прогресс"
     >
       {dataset?.semesters.length ? (
@@ -156,6 +158,8 @@ function GradesFallback() {
     <CampusSection
       eyebrow="Учебные результаты"
       title="Успеваемость"
+      illustration="grades"
+      tone="sage"
       description="Загружаем данные текущего студента."
     >
       <div aria-busy="true" className={styles.gradesSkeleton}>

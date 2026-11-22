@@ -65,6 +65,8 @@ async function DigestContent({
     <CampusSection
       eyebrow="Внеучебная жизнь"
       title="Дайджест событий"
+      illustration="digest"
+      tone="wine"
       description={`Неделя · ${formatDigestWeekRange(week)}`}
     >
       <div className={styles.workspace}>
@@ -139,6 +141,7 @@ async function DigestContent({
                           <li
                             className={styles.eventCard}
                             data-past={isPast}
+                            data-type={event.type}
                             key={event.id}
                           >
                             <div className={styles.eventTopline}>
@@ -206,6 +209,8 @@ function DigestFallback() {
     <CampusSection
       eyebrow="Внеучебная жизнь"
       title="Дайджест событий"
+      illustration="digest"
+      tone="wine"
       description="Загружаем мероприятия недели."
     >
       <div aria-busy="true" className={styles.loading}>

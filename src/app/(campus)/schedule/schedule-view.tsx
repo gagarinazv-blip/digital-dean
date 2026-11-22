@@ -44,6 +44,7 @@ import { DateTimeStack } from "@/components/date-time-stack";
 import { useDemoNow } from "@/components/demo-now";
 import { Drawer } from "@/components/ui/drawer";
 import controls from "@/components/ui/controls.module.css";
+import { MonthCalendar } from "./month-calendar";
 import styles from "./schedule.module.css";
 
 export type ScheduleLessonView = {
@@ -802,10 +803,6 @@ export function ScheduleView({
   const monthDays = useMemo(
     () => (view === "month" ? getMonthCalendarDays(selectedDate) : []),
     [selectedDate, view],
-  );
-  const dayCounts = useMemo(
-    () => new Map(filteredDays.map((day) => [day.key, day.lessons.length])),
-    [filteredDays],
   );
   const allChanges = days
     .flatMap((day) => day.lessons)
@@ -1601,52 +1598,18 @@ export function ScheduleView({
 
       {view === "month" && (
         <>
-          <div
-            aria-label="Календарь занятий на месяц"
-            className={styles.monthGrid}
-            onKeyDown={(event) => {
-              const target = event.target;
-              if (!(target instanceof HTMLButtonElement)) return;
-              focusAdjacentDate(event, target.dataset.date ?? selectedDate);
-            }}
-            role="group"
-          >
-            {weekdayLabels.map((weekday) => (
-              <span className={styles.monthWeekday} key={weekday}>
-                {weekday}
-              </span>
-            ))}
-            {monthDays.map((dateKey) => {
-              const count = dayCounts.get(dateKey) ?? 0;
-              const isCurrentMonth = dateKey.slice(0, 7) === selectedDate.slice(0, 7);
-              return (
-                <button
-                  aria-current={dateKey === todayKey ? "date" : undefined}
-                  aria-label={`${makeDayDateLabel(dateKey)}, занятий: ${count}`}
-                  aria-pressed={dateKey === openDayKey}
-                  className={`${styles.monthDay} ${
-                    isCurrentMonth ? "" : styles.outsideMonth
-                  } ${dateKey === todayKey ? styles.monthToday : ""} ${
-                    dateKey === openDayKey ? styles.monthSelected : ""
-                  }`}
-                  data-date={dateKey}
-                  data-schedule-day={dateKey}
-                  id={`schedule-date-${dateKey}`}
-                  key={dateKey}
-                  onClick={() => openDayPanel(dateKey)}
-                  type="button"
-                >
-                  <strong>{Number(dateKey.slice(8, 10))}</strong>
-                  {count > 0 && (
-                    <span className={styles.monthLessonCount}>
-                      {count} {count === 1 ? "пара" : "пар"}
-                    </span>
-                  )}
-                  {count === 0 && <span className={styles.monthNoLessons}>—</span>}
-                </button>
-              );
-            })}
-          </div>
+          <MonthCalendar
+            dateKeys={monthDays}
+            days={filteredDays}
+            formatDay={makeDayDateLabel}
+            now={now}
+            onKeyDown={focusAdjacentDate}
+            onOpenDay={openDayPanel}
+            onOpenLesson={openLesson}
+            openDayKey={openDayKey}
+            selectedMonth={selectedDate.slice(0, 7)}
+            todayKey={todayKey}
+          />
           <div className={styles.monthUpcoming}>
             <h2>Занятия в выбранном месяце</h2>
             {daysWithLessons.length > 0 ? (

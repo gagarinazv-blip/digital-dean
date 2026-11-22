@@ -2,7 +2,6 @@ import { DateTimeStack } from "@/components/date-time-stack";
 import { Suspense } from "react";
 import Link from "next/link";
 import { CampusLoading, CampusSection } from "@/components/campus-section";
-import { CampusArchitectureArt } from "@/components/campus-architecture-art";
 import { EmptyState } from "@/components/empty-state";
 import type { Prisma } from "@/generated/prisma/client";
 import type {
@@ -492,7 +491,18 @@ export async function HelpWorkspace({
 
   return (
     <CampusSection
-      eyebrow="Сервисы кампуса"
+      eyebrow="Сервисы для студентов"
+      headerAction={
+        requestProfile && catalogEntries.length > 0 ? (
+          <RequestWindow
+            profile={requestProfile}
+            services={catalogEntries}
+            triggerLabel="Новая заявка"
+          />
+        ) : null
+      }
+      illustration={activeTab === "portfolio" ? "achievements" : "documents"}
+      tone={activeTab === "portfolio" ? "sand" : "blue"}
       title={
         activeTab === "requests"
           ? "Мои заявки"
@@ -509,36 +519,10 @@ export async function HelpWorkspace({
             ? "Документы, подготовленные деканатом по вашим заявкам."
             : activeTab === "portfolio"
               ? "Ваши дипломы, сертификаты и другие достижения."
-              : "Справки и услуги деканата — подайте заявку и следите за её обработкой."
+              : "Каталог услуг, отправка заявления и история общения с деканатом — в одном разделе."
       }
     >
       <div className={styles.pageContent}>
-        {activeTab === "catalog" && (
-          <section className={styles.hero} aria-label="Документы и заявки">
-            <div className={styles.heroArt} aria-hidden="true">
-              <CampusArchitectureArt
-                priority
-                sizes="(max-width: 767px) 0px, (max-width: 1099px) 36vw, 32vw"
-              />
-            </div>
-            <div className={styles.heroContent}>
-              <p className={styles.heroKicker}>Сервисы для студентов</p>
-              <h2>Документы и заявки — онлайн</h2>
-              <p>
-                Каталог услуг, отправка заявления и история общения с деканатом
-                — в одном разделе.
-              </p>
-              {requestProfile && catalogEntries.length > 0 ? (
-                <RequestWindow
-                  profile={requestProfile}
-                  services={catalogEntries}
-                  triggerLabel="Новая заявка"
-                />
-              ) : null}
-            </div>
-          </section>
-        )}
-
         {activeTab === "catalog" ? (
           <>
             <form action="/documents" className={styles.filterBar} role="search">

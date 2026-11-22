@@ -1,3 +1,4 @@
+import { SectionHeader } from "@/components/section-header";
 import { DateTimeStack } from "@/components/date-time-stack";
 import Link from "next/link";
 import { requestStatusLabels, requestTypeLabels } from "@/lib/campus-labels";
@@ -54,10 +55,12 @@ export default async function StaffHomePage({
         <span aria-hidden="true">/</span>
         <span>Заявки</span>
       </div>
-      <header className={styles.pageHeading}>
-        <h1>Очередь заявок</h1>
-        <p>Обработка и контроль заявок, поданных студентами вашего факультета.</p>
-      </header>
+      <SectionHeader
+        description="Обработка и контроль заявок, поданных студентами вашего факультета."
+        eyebrow="Деканат"
+        illustration="requests"
+        title="Очередь заявок"
+      />
 
       <section aria-label="Сводка заявок" className={styles.summary}>
         {statusSummary.map(({ status, title, tone }) => (

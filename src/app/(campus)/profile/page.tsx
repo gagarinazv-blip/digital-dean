@@ -61,6 +61,16 @@ async function ProfileContent() {
               {getStudentFacingGroupName(student.group.name)}
             </p>
           </div>
+          {/* Декоративный SVG: оптимизация next/image для вектора не нужна. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            alt=""
+            className={styles.heroIllustration}
+            decoding="async"
+            height={768}
+            src="/illustrations/profile.svg"
+            width={1024}
+          />
           <span className={styles.heroAccent} aria-hidden="true" />
         </section>
 

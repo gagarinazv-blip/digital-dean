@@ -496,6 +496,8 @@ async function CatalogContent({
     <CampusSection
       eyebrow="Возможности"
       title="Каталог"
+      illustration="opportunities"
+      tone="sand"
       description="Программы, события и наборы для студентов."
     >
       <OpportunityCategories

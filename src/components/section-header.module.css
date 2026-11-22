@@ -1,0 +1,153 @@
+.header {
+  --header-from: var(--color-hero);
+  --header-to: var(--color-wine-100);
+  --header-ring: rgb(54 87 115 / 14%);
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+  min-height: 148px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-6);
+  overflow: hidden;
+  padding: var(--space-5) var(--space-8);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  background: linear-gradient(
+    105deg,
+    var(--header-from) 0%,
+    color-mix(in srgb, var(--header-from) 50%, var(--header-to)) 48%,
+    var(--header-to) 100%
+  );
+}
+
+.header[data-tone="wine"] {
+  --header-from: var(--color-wine-100);
+  --header-to: var(--color-hero-end);
+  --header-ring: rgb(100 28 41 / 12%);
+}
+
+.header[data-tone="sand"] {
+  --header-from: var(--color-warning-bg);
+  --header-to: var(--color-wine-100);
+  --header-ring: rgb(118 83 29 / 14%);
+}
+
+.header[data-tone="sage"] {
+  --header-from: var(--color-success-bg);
+  --header-to: var(--color-hero-end);
+  --header-ring: rgb(42 96 59 / 13%);
+}
+
+/* Тонкие окружности задают глубину и не мешают тексту. */
+.rings {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background:
+    radial-gradient(circle 190px at 82% 118%, transparent 99%, var(--header-ring) 99.4% 100%, transparent 100%),
+    radial-gradient(circle 270px at 82% 118%, transparent 99.2%, var(--header-ring) 99.6% 100%, transparent 100%),
+    radial-gradient(circle 360px at 82% 118%, transparent 99.4%, var(--header-ring) 99.7% 100%, transparent 100%);
+  pointer-events: none;
+}
+
+.copy {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: var(--space-1);
+}
+
+.eyebrow {
+  color: var(--color-blue-700);
+  font-size: var(--font-size-label);
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.header[data-tone="wine"] .eyebrow {
+  color: var(--color-wine-900);
+}
+
+.header[data-tone="sand"] .eyebrow {
+  color: var(--color-warning-text);
+}
+
+.header[data-tone="sage"] .eyebrow {
+  color: var(--color-success-text);
+}
+
+.title {
+  color: var(--color-ink);
+  font-size: var(--font-size-h1);
+  font-weight: 600;
+  line-height: 38px;
+  letter-spacing: -0.02em;
+  overflow-wrap: break-word;
+}
+
+.description {
+  max-width: 62ch;
+  color: var(--color-muted);
+  font-size: var(--font-size-body-compact);
+  line-height: 20px;
+}
+
+.action {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.illustration {
+  width: auto;
+  height: 132px;
+  margin-block: calc(-1 * var(--space-3));
+  animation: illustration-enter 480ms var(--motion-ease) both;
+}
+
+@keyframes illustration-enter {
+  from {
+    opacity: 0;
+    transform: translate(16px, 6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 680px) {
+  .header {
+    min-height: 0;
+    gap: var(--space-3);
+    padding: var(--space-4);
+  }
+
+  .title {
+    font-size: var(--font-size-h1-mobile);
+    line-height: 30px;
+  }
+
+  .illustration {
+    height: 76px;
+    align-self: end;
+    margin: 0 calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) 0;
+  }
+}
+
+@media (max-width: 360px) {
+  .illustration {
+    height: 60px;
+  }
+}
+
+@media print {
+  .illustration,
+  .rings {
+    display: none;
+  }
+}

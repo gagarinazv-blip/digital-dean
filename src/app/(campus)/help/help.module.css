@@ -12,55 +12,10 @@
   min-width: 0;
 }
 
-.hero {
-  position: relative;
-  min-height: 190px;
-  display: flex;
-  overflow: hidden;
-  padding: var(--space-6);
-  border: 1px solid var(--color-blue-300);
-  border-radius: var(--radius-card);
-  background: linear-gradient(110deg, var(--color-hero) 0%, var(--color-hero) 52%, var(--color-hero-end) 100%);
-}
-
-.heroArt {
-  position: absolute;
-  inset: 0 0 0 auto;
-  width: 43%;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.heroContent {
-  position: relative;
-  z-index: 1;
-  width: min(100%, 750px);
-  display: grid;
-  justify-items: start;
-  gap: var(--space-2);
-}
-
-.heroKicker,
 .kicker {
   color: var(--color-blue-700);
   font-size: var(--font-size-caption);
   font-weight: 600;
-}
-
-.hero h2 {
-  max-width: 700px;
-  color: var(--color-ink);
-  font-size: clamp(24px, 2.4vw, 32px);
-  font-weight: 600;
-  line-height: 1.2;
-  overflow-wrap: break-word;
-}
-
-.heroContent > p:not(.heroKicker) {
-  max-width: 640px;
-  color: var(--color-muted);
-  font-size: var(--font-size-body-compact);
-  line-height: 1.5;
 }
 
 .serviceLink:focus-visible,
@@ -989,20 +944,6 @@
     gap: var(--space-4);
   }
 
-  .hero {
-    min-height: 210px;
-    padding: var(--space-4);
-  }
-
-  .heroArt {
-    width: 38%;
-    opacity: 0.75;
-  }
-
-  .hero h2 {
-    font-size: 24px;
-  }
-
   .filterBar {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -1152,9 +1093,6 @@
 }
 
 @media (max-width: 380px) {
-  .hero {
-    padding: var(--space-4);
-  }
 
   .sectionHeading {
     flex-direction: column;

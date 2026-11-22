@@ -1,3 +1,4 @@
+import { SectionHeader } from "@/components/section-header";
 import { DateTimeStack } from "@/components/date-time-stack";
 import { Suspense } from "react";
 import Link from "next/link";
@@ -88,13 +89,13 @@ async function StaffOpportunitiesContent({
   ]);
   return (
     <main className={styles.page}>
-      <header className={styles.pageHeader}>
-        <div>
-          <p className={styles.eyebrow}>Сотрудникам</p>
-          <h1>Возможности</h1>
-          <p>Каталог программ, наборов и мероприятий для студентов.</p>
-        </div>
-      </header>
+      <SectionHeader
+        description="Каталог программ, наборов и мероприятий для студентов."
+        eyebrow="Рабочее место"
+        illustration="programs"
+        title="Возможности"
+        tone="sand"
+      />
 
       <details className={styles.createPanel}>
         <summary>Добавить возможность</summary>

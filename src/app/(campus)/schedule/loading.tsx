@@ -6,6 +6,8 @@ export default function ScheduleLoading() {
     <CampusSection
       eyebrow="Учебный план"
       title="Расписание"
+      illustration="schedule"
+      tone="blue"
       description="Загружаем расписание вашей группы."
     >
       <div aria-busy="true" className={styles.scheduleSkeleton}>

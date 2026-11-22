@@ -15,6 +15,8 @@ export default async function NotificationsPage() {
     <CampusSection
       eyebrow="Новости и сроки"
       title="Уведомления"
+      illustration="notifications"
+      tone="wine"
       description="Важное об учёбе, расписании и заявках."
     >
       <Suspense

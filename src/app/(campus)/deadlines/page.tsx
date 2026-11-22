@@ -21,6 +21,8 @@ export default async function DeadlinesPage() {
     <CampusSection
       eyebrow="Учебные задания"
       title="Задания и сроки"
+      illustration="grades"
+      tone="sage"
       description="Ваши текущие задания и даты сдачи."
     >
       {deadlines.length === 0 ? (

@@ -1,3 +1,4 @@
+import { SectionHeader } from "@/components/section-header";
 import { DateTimeStack } from "@/components/date-time-stack";
 import { Suspense } from "react";
 import { connection } from "next/server";
@@ -52,13 +53,13 @@ async function StaffEventsContent({
 
   return (
     <main className={styles.page}>
-      <header className={styles.pageHeading}>
-        <div>
-          <p className={styles.eyebrow}>Рабочее место</p>
-          <h1>Дайджест событий</h1>
-          <p>{formatDigestWeekRange(week)} · события и черновики</p>
-        </div>
-      </header>
+      <SectionHeader
+        description={`${formatDigestWeekRange(week)} · события и черновики`}
+        eyebrow="Рабочее место"
+        illustration="events"
+        title="Дайджест событий"
+        tone="wine"
+      />
 
       <section className={styles.workspace}>
         <EventCreatePanel />
