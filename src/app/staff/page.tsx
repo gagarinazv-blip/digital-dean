@@ -183,6 +183,7 @@ export default async function StaffHomePage({
                           {getRequestCatalogTitle(
                             request.catalogCode,
                             requestTypeLabels[request.type],
+                            request.formSchemaSnapshot,
                           )}
                         </span>
                       </span>

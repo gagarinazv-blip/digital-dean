@@ -9,6 +9,7 @@ const notificationTypes: NotificationType[] = [
   "DEADLINE",
   "REQUEST_STATUS",
   "ANNOUNCEMENT",
+  "OPPORTUNITY_STATUS",
 ];
 
 export const notificationTypeLabels: Record<NotificationType, string> = {
@@ -16,6 +17,7 @@ export const notificationTypeLabels: Record<NotificationType, string> = {
   DEADLINE: "Дедлайн",
   REQUEST_STATUS: "Изменение статуса заявки",
   ANNOUNCEMENT: "Объявление",
+  OPPORTUNITY_STATUS: "Статус заявки на участие",
 };
 
 const targetByType: Record<
@@ -26,6 +28,7 @@ const targetByType: Record<
   DEADLINE: "DEADLINE",
   REQUEST_STATUS: "REQUEST",
   ANNOUNCEMENT: null,
+  OPPORTUNITY_STATUS: "OPPORTUNITY_APPLICATION",
 };
 
 export function isNotificationPublicId(value: string): boolean {
@@ -79,5 +82,7 @@ export function buildNotificationTargetHref(
         : null;
     case "ACADEMIC_SESSION":
       return null;
+    case "OPPORTUNITY_APPLICATION":
+      return `/opportunities/applications#application-${encodeURIComponent(targetId)}`;
   }
 }

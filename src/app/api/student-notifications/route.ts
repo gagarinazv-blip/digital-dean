@@ -132,6 +132,7 @@ export async function GET(
           DEADLINE: page.typeCounts.DEADLINE ?? 0,
           REQUEST_STATUS: page.typeCounts.REQUEST_STATUS ?? 0,
           ANNOUNCEMENT: page.typeCounts.ANNOUNCEMENT ?? 0,
+          OPPORTUNITY_STATUS: page.typeCounts.OPPORTUNITY_STATUS ?? 0,
         },
       },
       { headers: privateHeaders },

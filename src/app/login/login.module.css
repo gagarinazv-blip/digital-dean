@@ -44,52 +44,6 @@
   font-size: var(--font-size-body-compact);
 }
 
-.topbarSearch {
-  width: 260px;
-  min-height: 47px;
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  margin-left: auto;
-  padding: 0 var(--space-4);
-  border-radius: var(--radius-pill);
-  background: rgb(255 255 255 / 10%);
-  color: rgb(255 255 255 / 72%);
-  font-size: var(--font-size-label);
-}
-
-.topbarSearch svg {
-  width: 19px;
-  height: 19px;
-  flex: 0 0 auto;
-}
-
-.topbarActions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-6);
-}
-
-.topbarActions > svg {
-  width: 21px;
-  height: 21px;
-}
-
-.topbarAvatar {
-  width: 46px;
-  height: 46px;
-  display: grid;
-  place-items: center;
-  border-radius: var(--radius-pill);
-  background: var(--color-surface);
-  color: var(--color-wine-900);
-}
-
-.topbarAvatar svg {
-  width: 22px;
-  height: 22px;
-}
-
 .page {
   min-height: calc(100dvh - var(--size-header-desktop));
   display: flex;
@@ -379,9 +333,6 @@
     padding: 0 var(--space-6);
   }
 
-  .topbarSearch {
-    width: 220px;
-  }
 }
 
 @media (max-width: 680px) {
@@ -404,9 +355,7 @@
     height: 24px;
   }
 
-  .topbarDescriptor,
-  .topbarSearch,
-  .topbarActions {
+  .topbarDescriptor {
     display: none;
   }
 

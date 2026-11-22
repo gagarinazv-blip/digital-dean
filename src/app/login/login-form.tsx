@@ -5,10 +5,10 @@ import {
   useEffect,
   useRef,
   useState,
-  type ChangeEvent,
   type KeyboardEvent,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { PhoneInput } from "@/components/phone-input";
 import {
   loginAction,
   requestStudentPasswordResetCodeAction,
@@ -25,116 +25,6 @@ const initialCodeState: StudentCodeRequestState = {};
 
 type LoginRole = "student" | "staff";
 type StudentLoginStep = "password" | "request-code" | "verify-code";
-
-function formatPhoneInput(value: string): string {
-  const trimmed = value.trim();
-  if (/[a-zа-я]/i.test(trimmed)) {
-    return value;
-  }
-  const digits = trimmed.replace(/\D/g, "");
-  if (trimmed.startsWith("+") && !digits.startsWith("7")) {
-    return `+${digits.slice(0, 15)}`;
-  }
-
-  const national = (
-    digits.startsWith("7") || digits.startsWith("8")
-      ? digits.slice(1)
-      : digits
-  ).slice(0, 10);
-  if (!national) {
-    return "";
-  }
-
-  const area = national.slice(0, 3);
-  const first = national.slice(3, 6);
-  const second = national.slice(6, 8);
-  const third = national.slice(8, 10);
-  return [
-    "+7",
-    area ? ` (${area}` : "",
-    national.length >= 3 ? ")" : "",
-    first ? ` ${first}` : "",
-    second ? `-${second}` : "",
-    third ? `-${third}` : "",
-  ].join("");
-}
-
-function PhoneField({
-  describedBy,
-  error,
-  errorMessage,
-  id,
-  onChange,
-  value,
-}: {
-  describedBy?: string;
-  error: boolean;
-  errorMessage?: string;
-  id: string;
-  onChange: (value: string) => void;
-  value: string;
-}) {
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  function handleChange(event: ChangeEvent<HTMLInputElement>) {
-    const rawValue = event.currentTarget.value;
-    if (/[a-zа-я]/i.test(rawValue)) {
-      onChange(rawValue);
-      return;
-    }
-    const selection = event.currentTarget.selectionStart ?? rawValue.length;
-    const digitsBeforeCaret = rawValue.slice(0, selection).replace(/\D/g, "")
-      .length;
-    const formattedValue = formatPhoneInput(rawValue);
-    onChange(formattedValue);
-
-    requestAnimationFrame(() => {
-      const input = inputRef.current;
-      if (!input) {
-        return;
-      }
-      if (digitsBeforeCaret === 0) {
-        input.setSelectionRange(formattedValue.startsWith("+7") ? 2 : 1, formattedValue.startsWith("+7") ? 2 : 1);
-        return;
-      }
-      let digitCount = 0;
-      let caret = formattedValue.length;
-      for (let index = 0; index < formattedValue.length; index += 1) {
-        if (/\d/.test(formattedValue[index])) {
-          digitCount += 1;
-          if (digitCount === digitsBeforeCaret) {
-            caret = index + 1;
-            break;
-          }
-        }
-      }
-      input.setSelectionRange(caret, caret);
-    });
-  }
-
-  return (
-    <>
-      <input
-        aria-describedby={describedBy}
-        aria-invalid={error || undefined}
-        autoComplete="username"
-        id={id}
-        maxLength={24}
-        onChange={handleChange}
-        placeholder="+7 (900) 000-00-01"
-        ref={inputRef}
-        required
-        type="text"
-        value={value}
-      />
-      {errorMessage && (
-        <span className={styles.fieldError} id={describedBy} role="alert">
-          {errorMessage}
-        </span>
-      )}
-    </>
-  );
-}
 
 function ActionError({
   id,
@@ -164,7 +54,7 @@ function StaffCredentialsForm() {
         <label htmlFor="login-staff-username">
           Телефон или служебный логин
         </label>
-        <input
+        <PhoneInput
           aria-describedby={
             state.phoneError
               ? "login-staff-phone-error"
@@ -179,6 +69,8 @@ function StaffCredentialsForm() {
           name="login"
           placeholder="+7 (900) 000-00-00 или staff.demo"
           required
+          inputMode="text"
+          inputType="text"
         />
         {state.phoneError && (
           <span
@@ -233,16 +125,29 @@ function StudentPasswordLogin({
         <label htmlFor="login-student-phone">
           Телефон или прежний логин
         </label>
-        <PhoneField
-          describedBy={
+        <PhoneInput
+          aria-describedby={
             state.phoneError ? "login-student-phone-error" : undefined
           }
-          error={Boolean(state.phoneError)}
-          errorMessage={state.phoneError}
+          aria-invalid={Boolean(state.phoneError) || undefined}
+          autoComplete="username"
           id="login-student-phone"
-          onChange={onPhoneChange}
+          inputType="text"
+          maxLength={128}
+          onValueChange={onPhoneChange}
+          placeholder="+7 (900) 000-00-01"
+          required
           value={phone}
         />
+        {state.phoneError && (
+          <span
+            className={styles.fieldError}
+            id="login-student-phone-error"
+            role="alert"
+          >
+            {state.phoneError}
+          </span>
+        )}
         <p className={styles.fieldHint}>
           Аккаунты без привязанного телефона могут войти по прежнему логину.
         </p>
@@ -309,13 +214,25 @@ function StudentCodeRequest({
       </p>
       <div className={styles.field}>
         <label htmlFor="login-student-code-phone">Номер телефона</label>
-        <PhoneField
-          describedBy={state.error ? "login-student-code-error" : undefined}
-          error={Boolean(state.error)}
+        <PhoneInput
+          aria-describedby={state.error ? "login-student-code-error" : undefined}
+          aria-invalid={Boolean(state.error) || undefined}
+          autoComplete="tel"
           id="login-student-code-phone"
-          onChange={setPhone}
+          onValueChange={setPhone}
+          placeholder="+7 (900) 000-00-01"
+          required
           value={phone}
         />
+        {state.error && (
+          <span
+            className={styles.fieldError}
+            id="login-student-code-error"
+            role="alert"
+          >
+            {state.error}
+          </span>
+        )}
         <input name="phone" type="hidden" value={phone} />
       </div>
       <ActionError id="login-student-code-error" message={state.error} />

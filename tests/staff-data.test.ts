@@ -132,6 +132,7 @@ describe("staff request access", () => {
           publicId: true,
           type: true,
           catalogCode: true,
+          formSchemaSnapshot: true,
           status: true,
           createdAt: true,
           student: {

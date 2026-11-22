@@ -13,9 +13,11 @@ type StaffSummary = {
 
 export function StaffLayout({
   children,
+  isManagerAccount,
   staff,
 }: {
   children: ReactNode;
+  isManagerAccount: boolean;
   staff: StaffSummary;
 }) {
   return (
@@ -65,7 +67,7 @@ export function StaffLayout({
             </form>
           </div>
         </div>
-        <StaffNavigation />
+        <StaffNavigation isManagerAccount={isManagerAccount} />
       </header>
       <div className={styles.content}>{children}</div>
     </div>

@@ -1,5 +1,8 @@
 import "dotenv/config";
 import bcrypt from "bcryptjs";
+import { randomUUID } from "node:crypto";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 import type { Prisma } from "../src/generated/prisma/client";
@@ -13,6 +16,7 @@ import { syncDeadlineSeed } from "./deadline-seed";
 import { getDemoNotificationState } from "./notification-seed-data";
 import { getDemoNow } from "../src/lib/demo-date";
 import {
+  getMoscowCalendarWeek,
   getMoscowDateKey,
   UNIVERSITY_TIME_ZONE,
 } from "../src/lib/campus-time";
@@ -26,6 +30,7 @@ import {
   testSeedStudentAccounts,
   type DemoStudentSeedAccount,
 } from "./demo-account-data";
+import { opportunitySeeds } from "./opportunity-seed-data";
 
 const alphaCorporateMailPassword = "Demo-Mail-Alpha-Only-2026!";
 
@@ -200,6 +205,168 @@ function getGroupId(groupIds: Map<string, number>, name: string): number {
   return id;
 }
 
+async function seedPortfolioDemo(prisma: PrismaClient): Promise<void> {
+  const demoStaff = await prisma.user.findUnique({
+    where: { login: "staff.demo" },
+    select: { id: true },
+  });
+  if (!demoStaff) {
+    throw new Error("Portfolio seed staff account is missing.");
+  }
+
+  const students = await prisma.student.findMany({
+    where: { user: { login: { in: ["student.alpha", "student.beta"] } } },
+    select: { id: true, userId: true, user: { select: { login: true } } },
+  });
+  const studentByLogin = new Map(
+    students.map((student) => [student.user.login, student]),
+  );
+  const fixtures = [
+    { login: "student.alpha", folder: "Научные проекты", title: "Сертификат участника научной конференции", category: "SCIENCE", eventName: "Вымышленная конференция по дипломатии", eventDate: "2026-03-15", role: "Участник", source: "STUDENT", kind: "pdf" },
+    { login: "student.alpha", folder: "Научные проекты", title: "Диплом олимпиады по международным отношениям", category: "COMPETITION", eventName: "Вымышленная студенческая олимпиада", eventDate: "2026-04-20", role: "Призёр", source: "STAFF", kind: "png" },
+    { login: "student.alpha", folder: "Волонтёрство", title: "Сертификат волонтёра проекта «Тёплый город»", category: "VOLUNTEERING", eventName: "Вымышленная городская акция", eventDate: "2025-11-02", role: "Организатор", source: "STUDENT", kind: "pdf" },
+    { login: "student.alpha", folder: null, title: "Подтверждение участия в студенческом форуме", category: "OTHER", eventName: "Вымышленный студенческий форум", eventDate: "2025-10-10", role: "Организатор", source: "STAFF", kind: "png" },
+    { login: "student.alpha", folder: null, title: "Диплом факультетского шахматного турнира", category: "SPORT", eventName: "Вымышленный шахматный турнир", eventDate: "2025-05-18", role: "Победитель", source: "STUDENT", kind: "pdf" },
+    { login: "student.beta", folder: "Творческие работы", title: "Сертификат участника творческого конкурса", category: "CREATIVITY", eventName: "Вымышленный конкурс плаката", eventDate: "2026-02-12", role: "Участник", source: "STUDENT", kind: "png" },
+    { login: "student.beta", folder: null, title: "Диплом конкурса студенческих проектов", category: "COMPETITION", eventName: "Вымышленный конкурс проектов", eventDate: "2025-12-05", role: "Призёр", source: "STAFF", kind: "pdf" },
+  ] as const;
+  const uploadDirectory = resolve(
+    process.env.UPLOAD_DIR ?? "./storage/uploads",
+  );
+  const pdfPlaceholder = Buffer.from(
+    "%PDF-1.4\n1 0 obj<<>>\nendobj\ntrailer<<>>\n%%EOF\n",
+    "utf8",
+  );
+  const pngPlaceholder = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+    "base64",
+  );
+
+  for (const login of ["student.alpha", "student.beta"] as const) {
+    const student = studentByLogin.get(login);
+    if (!student) {
+      throw new Error("Portfolio seed student account is missing.");
+    }
+    const folderNames = [
+      ...new Set(
+        fixtures
+          .filter((fixture) => fixture.login === login && fixture.folder)
+          .map((fixture) => fixture.folder as string),
+      ),
+    ];
+    for (const name of folderNames) {
+      const normalizedName = name.normalize("NFKC").toLocaleLowerCase("ru-RU");
+      await prisma.portfolioFolder.upsert({
+        where: {
+          studentId_normalizedName: {
+            studentId: student.id,
+            normalizedName,
+          },
+        },
+        create: { studentId: student.id, name, normalizedName },
+        update: {},
+      });
+    }
+  }
+
+  for (const fixture of fixtures) {
+    const student = studentByLogin.get(fixture.login);
+    if (!student) {
+      throw new Error("Portfolio seed student account is missing.");
+    }
+    const existing = await prisma.portfolioItem.findFirst({
+      where: { studentId: student.id, title: fixture.title },
+      select: { id: true },
+    });
+    if (existing) continue;
+
+    const folder = fixture.folder
+      ? await prisma.portfolioFolder.findUnique({
+          where: {
+            studentId_normalizedName: {
+              studentId: student.id,
+              normalizedName: fixture.folder
+                .normalize("NFKC")
+                .toLocaleLowerCase("ru-RU"),
+            },
+          },
+          select: { id: true },
+        })
+      : null;
+    const extension = fixture.kind;
+    const mimeType =
+      extension === "pdf"
+        ? "application/pdf"
+        : "image/png";
+    const storedName = `${randomUUID()}.${extension}`;
+    const data = extension === "pdf" ? pdfPlaceholder : pngPlaceholder;
+    await mkdir(uploadDirectory, { recursive: true, mode: 0o700 });
+    await writeFile(resolve(uploadDirectory, storedName), data, {
+      flag: "wx",
+      mode: 0o600,
+    });
+    try {
+      await prisma.portfolioItem.create({
+        data: {
+          studentId: student.id,
+          folderId: folder?.id ?? null,
+          title: fixture.title,
+          category: fixture.category,
+          eventName: fixture.eventName,
+          eventDate: new Date(`${fixture.eventDate}T00:00:00.000Z`),
+          role: fixture.role,
+          storedName,
+          originalName: `demo-${storedName}`,
+          mimeType,
+          size: data.length,
+          source: fixture.source,
+          uploadedById:
+            fixture.source === "STAFF" ? demoStaff.id : student.userId,
+        },
+      });
+    } catch (error) {
+      try {
+        await unlink(resolve(uploadDirectory, storedName));
+      } catch {
+        console.error("Portfolio seed file cleanup failed.");
+      }
+      throw error;
+    }
+  }
+
+  const alpha = studentByLogin.get("student.alpha");
+  if (alpha) {
+    const documents = [
+      ["Паспорт — демонстрационный скан", "PASSPORT", "pdf", pdfPlaceholder],
+      ["СНИЛС — демонстрационный скан", "SNILS", "png", pngPlaceholder],
+    ] as const;
+    for (const [title, documentType, extension, data] of documents) {
+      const existing = await prisma.studentDocument.findFirst({
+        where: { studentId: alpha.id, title },
+        select: { id: true },
+      });
+      if (existing) continue;
+      const storedName = `${randomUUID()}.${extension}`;
+      await mkdir(uploadDirectory, { recursive: true, mode: 0o700 });
+      await writeFile(resolve(uploadDirectory, storedName), data, {
+        flag: "wx",
+        mode: 0o600,
+      });
+      await prisma.studentDocument.create({
+        data: {
+          studentId: alpha.id,
+          title,
+          documentType,
+          storedName,
+          originalName: `demo-${storedName}`,
+          mimeType: extension === "pdf" ? "application/pdf" : "image/png",
+          size: data.length,
+        },
+      });
+    }
+  }
+}
+
 async function main() {
   if (process.env.NODE_ENV === "production") {
     throw new Error("The test seed cannot be run in production.");
@@ -331,8 +498,14 @@ async function main() {
       await tx.student.deleteMany({
         where: { userId: { in: users.map((user) => user.id) } },
       });
+      await tx.session.deleteMany({
+        where: { userId: { in: users.map((user) => user.id) } },
+      });
       await tx.user.deleteMany({
-        where: { login: { in: managedLogins } },
+        where: {
+          login: { in: managedLogins },
+          OR: [{ role: "STUDENT" }, { createdEvents: { none: {} } }],
+        },
       });
       await tx.studentGroup.deleteMany({
         where: {
@@ -609,20 +782,30 @@ async function main() {
       const staffProfileIds = new Map<string, number>();
       const staffUserIds = new Map<string, number>();
       for (const [index, account] of staffAccounts.entries()) {
-        const user = await tx.user.create({
-          data: {
-            login: account.login,
+        const staffProfileData = {
+          fullName: account.fullName,
+          position: account.position,
+          department: account.department,
+          phone: account.phone,
+          isSupervisor: account.isSupervisor,
+        };
+        const user = await tx.user.upsert({
+          where: { login: account.login },
+          update: {
             passwordHash: staffPasswordHashes[index],
             role: "STAFF",
             staffProfile: {
-              create: {
-                fullName: account.fullName,
-                position: account.position,
-                department: account.department,
-                phone: account.phone,
-                isSupervisor: account.isSupervisor,
+              upsert: {
+                update: staffProfileData,
+                create: staffProfileData,
               },
             },
+          },
+          create: {
+            login: account.login,
+            passwordHash: staffPasswordHashes[index],
+            role: "STAFF",
+            staffProfile: { create: staffProfileData },
           },
           include: { staffProfile: { select: { id: true } } },
         });
@@ -805,6 +988,109 @@ async function main() {
           requestTargets.set(login, {
             publicId: created.publicId,
             status: created.status,
+          });
+        }
+      }
+
+      const opportunityIds: number[] = [];
+      for (const [index, seed] of opportunitySeeds.entries()) {
+        const deadline = new Date(
+          seedNow.getTime() + seed.offset * 24 * 60 * 60 * 1000,
+        );
+        const opportunityData = {
+          title: seed.title,
+          type: seed.type,
+          organizer: seed.organizer,
+          shortDescription: `Вымышленная возможность: ${seed.title}.`,
+          description: `Демо-описание возможности «${seed.title}». Условия и участники вымышлены и предназначены для проверки интерфейса.`,
+          requirements: "Подготовьте краткую мотивацию и проверьте условия участия.",
+          deadline,
+          allowLateRequests: seed.allowLateRequests ?? false,
+          lateRequestsUntil: seed.allowLateRequests
+            ? new Date(deadline.getTime() + 7 * 24 * 60 * 60 * 1000)
+            : null,
+          directions: [seed.direction],
+          minCourse: index % 4 === 0 ? 2 : null,
+          maxCourse: index % 5 === 0 ? 4 : null,
+          allowedFaculties: [],
+          format: seed.format,
+          location: seed.location ?? "Кампус, аудитория 204",
+          startsAt: null,
+          endsAt: null,
+          cost: seed.cost,
+          costNote: seed.costNote ?? null,
+          officialUrl: `https://example.com/opportunities/${index + 1}`,
+          eventDate: seed.type === "CONFERENCE" ? deadline : null,
+          requiredDocuments: [
+            { key: "resume", title: "Резюме", required: index % 3 === 0 },
+            { key: "statement", title: "Эссе или мотивационное письмо", required: false },
+          ],
+          details: seed.details,
+          status: seed.status,
+          createdById: demoStaffUserId!,
+        };
+        const existing = await tx.opportunity.findFirst({
+          where: { title: seed.title },
+          select: { id: true },
+        });
+        const opportunity = existing
+          ? await tx.opportunity.update({
+              where: { id: existing.id },
+              data: opportunityData,
+            })
+          : await tx.opportunity.create({ data: opportunityData });
+        opportunityIds.push(opportunity.id);
+      }
+
+      const applicationStatuses = [
+        "SUBMITTED",
+        "IN_REVIEW",
+        "NEEDS_INFO",
+        "ACCEPTED",
+        "REJECTED",
+        "WITHDRAWN",
+      ] as const;
+      for (const [index, opportunityId] of opportunityIds.entries()) {
+        if (opportunitySeeds[index].status === "DRAFT") continue;
+        const studentId = index % 2 === 0 ? alphaStudentId : betaStudentId;
+        const existingApplication = await tx.opportunityApplication.findFirst({
+          where: { opportunityId, studentId },
+        });
+        if (!existingApplication) {
+          await tx.opportunityApplication.create({
+            data: {
+              opportunityId,
+              studentId,
+              kind: opportunitySeeds[index].allowLateRequests
+                ? "LATE_REQUEST"
+                : "STANDARD",
+              status: applicationStatuses[index % applicationStatuses.length],
+              motivation: "Вымышленная мотивация студента для демонстрации сценария.",
+              studentSnapshot: {
+                fullName:
+                  index % 2 === 0
+                    ? "Елизавета Воронцова"
+                    : "Александр Фёдоров",
+                groupName: index % 2 === 0 ? "TEST-ACADEMIC-31A" : "TEST-ACADEMIC-32B",
+                course: 3,
+                faculty:
+                  index % 2 === 0
+                    ? "Факультет прикладных вычислений"
+                    : "Факультет международных отношений",
+              },
+              staffComment:
+                applicationStatuses[index % applicationStatuses.length] ===
+                "IN_REVIEW"
+                  ? "Заявка передана на рассмотрение."
+                  : null,
+              decidedById:
+                applicationStatuses[index % applicationStatuses.length] ===
+                  "ACCEPTED" ||
+                applicationStatuses[index % applicationStatuses.length] ===
+                  "REJECTED"
+                  ? demoStaffUserId
+                  : null,
+            },
           });
         }
       }
@@ -1005,8 +1291,198 @@ async function main() {
           },
         });
       }
+
+      const currentDigestWeek = getMoscowCalendarWeek(seedNow);
+      const digestFixtures = [
+        {
+          weekOffset: 0,
+          dayOffset: 0,
+          start: "14:00",
+          end: "15:30",
+          title: "Конференция о цифровой дипломатии",
+          type: "CONFERENCE",
+          location: "Аудитория Д-204",
+          host: "Анна Вересова",
+          status: "PUBLISHED",
+          url: "https://example.com/register/1",
+        },
+        {
+          weekOffset: 0,
+          dayOffset: 1,
+          start: "16:00",
+          end: "17:00",
+          title: "Разговор с культурным атташе",
+          type: "SPEAKER_MEETING",
+          location: "Зал заседаний Б-310",
+          host: "Марк Левин",
+          status: "PUBLISHED",
+          url: "https://example.com/register/2",
+        },
+        {
+          weekOffset: 0,
+          dayOffset: 2,
+          start: "12:30",
+          end: "14:00",
+          title: "Мастер-класс по публичным выступлениям",
+          type: "MASTER_CLASS",
+          location: "Аудитория В-115",
+          host: "Елена Соколова",
+          status: "PUBLISHED",
+          url: "https://example.com/register/3",
+        },
+        {
+          weekOffset: 0,
+          dayOffset: 2,
+          start: "17:00",
+          end: "18:00",
+          title: "Встреча клуба международных исследований",
+          type: "OTHER",
+          location: "Коворкинг А-02",
+          host: "Илья Миронов",
+          status: "DRAFT",
+          url: "https://example.com/register/4",
+        },
+        {
+          weekOffset: 0,
+          dayOffset: 3,
+          start: "15:00",
+          end: "16:30",
+          title: "Научный семинар по региональным исследованиям",
+          type: "CONFERENCE",
+          location: "Аудитория Г-418",
+          host: "Дарья Ветрова",
+          status: "PUBLISHED",
+          url: "https://example.com/register/5",
+        },
+        {
+          weekOffset: 0,
+          dayOffset: 4,
+          start: "13:00",
+          end: "14:30",
+          title: "Мастер-класс по академическому письму",
+          type: "MASTER_CLASS",
+          location: "Компьютерный класс Е-102",
+          host: "Павел Орлов",
+          status: "PUBLISHED",
+          url: "https://example.com/register/6",
+        },
+        {
+          weekOffset: 0,
+          dayOffset: 5,
+          start: "11:00",
+          end: "12:00",
+          title: "Встреча с выпускницей международной организации",
+          type: "SPEAKER_MEETING",
+          location: "Аудитория А-207",
+          host: "София Мельник",
+          status: "DRAFT",
+          url: "https://example.com/register/7",
+        },
+        {
+          weekOffset: 0,
+          dayOffset: 6,
+          start: "14:00",
+          end: "15:00",
+          title: "Открытая дискуссия о городских проектах",
+          type: "OTHER",
+          location: "Лекторий В-001",
+          host: "Роман Тихонов",
+          status: "PUBLISHED",
+          url: "https://example.com/register/8",
+        },
+        {
+          weekOffset: 1,
+          dayOffset: 0,
+          start: "15:00",
+          end: "16:30",
+          title: "Конференция молодых исследователей",
+          type: "CONFERENCE",
+          location: "Аудитория Д-204",
+          host: "Мария Белова",
+          status: "PUBLISHED",
+          url: "https://example.com/register/9",
+        },
+        {
+          weekOffset: 1,
+          dayOffset: 1,
+          start: "17:00",
+          end: "18:00",
+          title: "Встреча с переводчиком международных переговоров",
+          type: "SPEAKER_MEETING",
+          location: "Зал заседаний Б-310",
+          host: "Алексей Неверов",
+          status: "PUBLISHED",
+          url: "https://example.com/register/10",
+        },
+        {
+          weekOffset: 1,
+          dayOffset: 3,
+          start: "12:00",
+          end: "13:30",
+          title: "Мастер-класс по аналитической презентации",
+          type: "MASTER_CLASS",
+          location: "Аудитория В-115",
+          host: "Кира Ланская",
+          status: "PUBLISHED",
+          url: "https://example.com/register/11",
+        },
+        {
+          weekOffset: 1,
+          dayOffset: 4,
+          start: "16:00",
+          end: "17:00",
+          title: "Дискуссия о студенческих инициативах",
+          type: "OTHER",
+          location: "Коворкинг А-02",
+          host: "Никита Рощин",
+          status: "DRAFT",
+          url: "https://example.com/register/12",
+        },
+        {
+          weekOffset: 1,
+          dayOffset: 6,
+          start: "13:00",
+          end: "14:00",
+          title: "Встреча с экспертом по международному праву",
+          type: "SPEAKER_MEETING",
+          location: "Аудитория Г-418",
+          host: "Вера Литвинова",
+          status: "PUBLISHED",
+          url: "https://example.com/register/13",
+        },
+      ] as const;
+
+      for (const fixture of digestFixtures) {
+        const eventDate = new Date(currentDigestWeek.startDate);
+        eventDate.setUTCDate(
+          eventDate.getUTCDate() + fixture.weekOffset * 7 + fixture.dayOffset,
+        );
+        const startsAt = dateTimeInMoscow(eventDate, fixture.start);
+        const existingEvent = await tx.event.findFirst({
+          where: { title: fixture.title, startsAt },
+          select: { id: true },
+        });
+        if (existingEvent) continue;
+
+        const endsAt = dateTimeInMoscow(eventDate, fixture.end);
+        await tx.event.create({
+          data: {
+            title: fixture.title,
+            type: fixture.type,
+            description: "Вымышленное тестовое мероприятие для демонстрации раздела.",
+            startsAt,
+            endsAt,
+            location: fixture.location,
+            host: fixture.host,
+            registrationUrl: fixture.url,
+            status: fixture.status,
+            createdById: demoStaffUserId,
+          },
+        });
+      }
     });
 
+    await seedPortfolioDemo(prisma);
     console.log("Тестовые данные созданы.");
   } finally {
     await prisma.$disconnect();

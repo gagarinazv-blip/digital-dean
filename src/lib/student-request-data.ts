@@ -11,6 +11,7 @@ const requestListSelection = {
   publicId: true,
   type: true,
   catalogCode: true,
+  formSchemaSnapshot: true,
   comment: true,
   status: true,
   createdAt: true,
@@ -82,6 +83,7 @@ export async function getStudentDocuments() {
       publicId: true,
       type: true,
       catalogCode: true,
+      formSchemaSnapshot: true,
       updatedAt: true,
       comments: {
         where: { visibility: "PUBLIC" },
@@ -108,6 +110,7 @@ export async function getStudentDocuments() {
         publicId: request.publicId,
         type: request.type,
         catalogCode: request.catalogCode,
+        formSchemaSnapshot: request.formSchemaSnapshot,
         updatedAt: request.updatedAt,
       })),
     ),

@@ -4,6 +4,8 @@ import { CampusLoading } from "@/components/campus-section";
 import { countUnreadStudentNotifications } from "@/lib/notification-data";
 import { requireStudentContext } from "@/lib/student";
 
+export const instant = false;
+
 export default async function CampusRouteLayout({
   children,
 }: {
