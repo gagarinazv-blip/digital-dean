@@ -1,5 +1,7 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import type { Prisma } from "@/generated/prisma/client";
+import { CampusLoading } from "@/components/campus-section";
 import { getPrisma } from "@/lib/prisma";
 import { requireStaffContext } from "@/lib/staff";
 import {
@@ -8,7 +10,19 @@ import {
 } from "@/lib/staff-student-filters";
 import styles from "./students.module.css";
 
-export default async function StaffStudentsPage({
+export default function StaffStudentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<StudentListSearchParams>;
+}) {
+  return (
+    <Suspense fallback={<CampusLoading label="список студентов" />}>
+      <StaffStudentsContent searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+async function StaffStudentsContent({
   searchParams,
 }: {
   searchParams: Promise<StudentListSearchParams>;
