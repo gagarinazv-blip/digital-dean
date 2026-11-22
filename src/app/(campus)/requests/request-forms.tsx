@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
+import { RequestFieldInput } from "@/components/request-field-input";
 import {
   getRequestProfileEntries,
+  formatDeliveryMethods,
   getRequestCatalogEntry,
   type RequestCatalogEntry,
-  type RequestCatalogField,
   type RequestProfileSnapshot,
 } from "@/lib/request-catalog";
 import { validateRequestForm } from "@/lib/request-validation";
@@ -47,10 +48,15 @@ export function NewRequestForm({
   publicId,
   initialValues,
   services,
+  formId,
+  onStatusChange,
 }: {
   profile: RequestProfileSnapshot;
   publicId: string;
   services: readonly RequestCatalogEntry[];
+  /** Задан в окне заказа: кнопки отправки находятся в его панели действий. */
+  formId?: string;
+  onStatusChange?: (status: { isDirty: boolean; pending: boolean }) => void;
   initialValues?: {
     catalogCode: string;
     fields: Record<string, string>;
@@ -74,6 +80,8 @@ export function NewRequestForm({
   const [dismissedServerErrors, setDismissedServerErrors] = useState<
     Record<string, true>
   >({});
+  const [hasFiles, setHasFiles] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
   const serverFieldErrors = state.fieldErrors ?? {};
   const service = getRequestCatalogEntry(catalogCode, services);
   const validation = validateRequestForm({
@@ -83,6 +91,22 @@ export function NewRequestForm({
   }, services);
 
   const profileEntries = getRequestProfileEntries(profile) ?? [];
+  const isDirty =
+    hasFiles ||
+    description.trim() !== "" ||
+    Object.values(fields).some((value) => value !== "");
+
+  useEffect(() => {
+    onStatusChange?.({ isDirty, pending });
+  }, [isDirty, onStatusChange, pending]);
+
+  function focusFirstInvalid() {
+    requestAnimationFrame(() =>
+      formRef.current
+        ?.querySelector<HTMLElement>("[aria-invalid=true]")
+        ?.focus(),
+    );
+  }
 
   function getFieldError(fieldId: string): string | undefined {
     return (
@@ -95,14 +119,20 @@ export function NewRequestForm({
     <form
       action={formAction}
       className={styles.form}
+      id={formId}
       noValidate
+      // React очищает форму после действия, даже если сервер вернул ошибку.
+      // Значения хранятся в состоянии, а файлы вернуть нельзя: не сбрасываем.
+      onReset={(event) => event.preventDefault()}
       onSubmit={(event) => {
         setShowValidation(true);
         setDismissedServerErrors({});
         if (!validation.valid) {
           event.preventDefault();
+          focusFirstInvalid();
         }
       }}
+      ref={formRef}
     >
       <input name="requestPublicId" type="hidden" value={publicId} />
 
@@ -148,7 +178,9 @@ export function NewRequestForm({
         </select>
         <p className={styles.hint} id="request-type-description">
           {service?.description} Срок исполнения: обычно {service?.executionDays}{" "}
-          рабочих дней.
+          рабочих дней. Получение:{" "}
+          {formatDeliveryMethods(service?.deliveryMethods).toLocaleLowerCase("ru-RU")}
+          {service?.requiresApproval ? ", потребуется согласование" : ""}.
         </p>
         {getFieldError("catalogCode") && (
           <p className={styles.error} id="request-type-error" role="alert">
@@ -181,10 +213,10 @@ export function NewRequestForm({
       </section>
 
       {service?.fields.map((field) => (
-        <RequestCatalogFieldInput
+        <RequestFieldInput
           error={getFieldError(field.id)}
           field={field}
-          key={field.id}
+          key={`${service.code}-${field.id}`}
           onBlur={() => setShowValidation(true)}
           onChange={(value) => {
             setFields((current) => ({ ...current, [field.id]: value }));
@@ -239,6 +271,9 @@ export function NewRequestForm({
           id="request-files"
           multiple
           name="files"
+          onChange={(event) =>
+            setHasFiles(Boolean(event.currentTarget.files?.length))
+          }
           type="file"
         />
         <p className={styles.hint}>
@@ -248,6 +283,7 @@ export function NewRequestForm({
       </div>
 
       <ActionFeedback state={state} />
+      {formId ? null : (
       <div className={styles.formActions}>
         <button className={styles.button} disabled={pending} type="submit">
           {pending ? "Отправляем…" : "Отправить заявку"}
@@ -256,76 +292,8 @@ export function NewRequestForm({
           Отмена
         </Link>
       </div>
+      )}
     </form>
-  );
-}
-
-function RequestCatalogFieldInput({
-  field,
-  value,
-  error,
-  onChange,
-  onBlur,
-}: {
-  field: RequestCatalogField;
-  value: string;
-  error?: string;
-  onChange: (value: string) => void;
-  onBlur: () => void;
-}) {
-  const inputId = `request-field-${field.id}`;
-  const hintId = `${inputId}-hint`;
-  const errorId = `${inputId}-error`;
-  const describedBy = error ? `${hintId} ${errorId}` : hintId;
-
-  return (
-    <div className={styles.field}>
-      <label htmlFor={inputId}>{field.label}</label>
-      {field.kind === "select" ? (
-        <select
-          aria-describedby={describedBy}
-          aria-invalid={Boolean(error)}
-          className={styles.select}
-          id={inputId}
-          name={`field.${field.id}`}
-          onBlur={onBlur}
-          onChange={(event) => onChange(event.currentTarget.value)}
-          required={field.required}
-          value={value}
-        >
-          <option value="">Выберите значение</option>
-          {field.options.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      ) : (
-        <input
-          aria-describedby={describedBy}
-          aria-invalid={Boolean(error)}
-          className={error ? styles.invalidInput : styles.input}
-          id={inputId}
-          maxLength={field.kind === "text" ? field.maxLength : undefined}
-          name={`field.${field.id}`}
-          onBlur={onBlur}
-          onChange={(event) => onChange(event.currentTarget.value)}
-          required={field.required}
-          type={field.kind === "date" ? "date" : "text"}
-          value={value}
-        />
-      )}
-      <p className={styles.hint} id={hintId}>
-        {field.kind === "text" && field.maxLength
-          ? `До ${field.maxLength} символов.`
-          : "Обязательное поле."}
-      </p>
-      {error && (
-        <p className={styles.error} id={errorId} role="alert">
-          {error}
-        </p>
-      )}
-    </div>
   );
 }
 

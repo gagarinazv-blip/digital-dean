@@ -1,4 +1,6 @@
+import { DateTimeStack } from "@/components/date-time-stack";
 import Link from "next/link";
+import { RequestFieldValue } from "@/components/request-field-value";
 import { CampusSection } from "@/components/campus-section";
 import { RequestConversation } from "@/components/request-conversation";
 import {
@@ -20,21 +22,11 @@ import {
 } from "@/lib/request-catalog";
 import { getStudentRequest } from "@/lib/student-request-data";
 import { formatRequestNumber } from "@/lib/request-number";
-import { getUniversityDateTimeFormatter } from "@/lib/campus-time";
 import type { RequestStatus, RequestType } from "@/generated/prisma/enums";
 import workflowStyles from "@/app/request-workflow.module.css";
 import styles from "./request-detail.module.css";
 
 export const instant = false;
-
-const requestDateFormatter = getUniversityDateTimeFormatter({
-  dateStyle: "long",
-});
-
-const requestDateTimeFormatter = getUniversityDateTimeFormatter({
-  dateStyle: "medium",
-  timeStyle: "short",
-});
 
 const requestStatusClasses: Record<RequestStatus, string> = {
   NEW: workflowStyles.statusNew,
@@ -168,6 +160,9 @@ export default async function StudentRequestPage({
     resultAttachments.length > 0,
   );
   const title = getPageTitle(request.status, request.type, serviceTitle);
+  const requestAttachments = request.comments.flatMap(
+    (comment) => comment.attachments,
+  );
   const formEntries = getRequestFieldEntries(
     request.catalogCode,
     request.formFields,
@@ -500,9 +495,7 @@ export default async function StudentRequestPage({
                       </span>
                       <div className={styles.timelineContent}>
                         <strong>Заявка создана</strong>
-                        <time dateTime={request.createdAt.toISOString()}>
-                          {requestDateTimeFormatter.format(request.createdAt)}
-                        </time>
+                        <DateTimeStack value={request.createdAt} />
                       </div>
                     </li>
                   )}
@@ -527,9 +520,7 @@ export default async function StudentRequestPage({
                               ? "Заявка обработана"
                               : requestStatusLabels[entry.status]}
                           </strong>
-                          <time dateTime={entry.changedAt.toISOString()}>
-                            {requestDateTimeFormatter.format(entry.changedAt)}
-                          </time>
+                          <DateTimeStack value={entry.changedAt} />
                           <span>{author}</span>
                           {entry.comment && (
                             <p title={entry.comment}>{entry.comment}</p>
@@ -564,7 +555,12 @@ export default async function StudentRequestPage({
                     {formEntries.map((entry) => (
                       <div key={entry.id}>
                         <dt>{entry.label}</dt>
-                        <dd>{entry.value}</dd>
+                        <dd>
+                          <RequestFieldValue
+                            attachments={requestAttachments}
+                            entry={entry}
+                          />
+                        </dd>
                       </div>
                     ))}
                     {request.comment && (
@@ -616,9 +612,7 @@ export default async function StudentRequestPage({
                   </span>
                   <div className={styles.timelineContent}>
                     <strong>{requestStatusLabels[entry.status]}</strong>
-                    <time dateTime={entry.changedAt.toISOString()}>
-                      {requestDateTimeFormatter.format(entry.changedAt)}
-                    </time>
+                    <DateTimeStack value={entry.changedAt} />
                     {entry.comment && <p>{entry.comment}</p>}
                   </div>
                 </li>
@@ -666,12 +660,16 @@ function RequestMetadata({
       </div>
       <div>
         <dt>Дата отправки</dt>
-        <dd>{requestDateFormatter.format(request.createdAt)}</dd>
+        <dd>
+          <DateTimeStack value={request.createdAt} />
+        </dd>
       </div>
       {request.updatedAt.getTime() !== request.createdAt.getTime() && (
         <div>
           <dt>Последнее действие</dt>
-          <dd>{requestDateTimeFormatter.format(request.updatedAt)}</dd>
+          <dd>
+            <DateTimeStack value={request.updatedAt} />
+          </dd>
         </div>
       )}
     </dl>

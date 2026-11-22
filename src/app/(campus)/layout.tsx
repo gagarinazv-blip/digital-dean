@@ -1,6 +1,8 @@
 import { Suspense, type ReactNode } from "react";
 import { CampusLayout } from "@/components/campus-layout";
 import { CampusLoading } from "@/components/campus-section";
+import { DemoNowProvider } from "@/components/demo-now";
+import { DEMO_NOW, getDemoNow } from "@/lib/demo-date";
 import { countUnreadStudentNotifications } from "@/lib/notification-data";
 import { requireStudentContext } from "@/lib/student";
 
@@ -28,11 +30,16 @@ async function ProtectedCampus({ children }: { children: ReactNode }) {
     student.id,
   );
   return (
-    <CampusLayout
-      student={student}
-      unreadNotificationCount={unreadNotificationCount}
+    <DemoNowProvider
+      isFrozen={DEMO_NOW !== null}
+      nowIso={getDemoNow().toISOString()}
     >
-      {children}
-    </CampusLayout>
+      <CampusLayout
+        student={student}
+        unreadNotificationCount={unreadNotificationCount}
+      >
+        {children}
+      </CampusLayout>
+    </DemoNowProvider>
   );
 }

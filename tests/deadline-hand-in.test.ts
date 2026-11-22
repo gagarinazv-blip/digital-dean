@@ -10,7 +10,7 @@ function render(format: DeadlineFormat, taskUrl: string | null) {
   return renderToStaticMarkup(
     createElement(DeadlineHandIn, {
       deadlineId: "d1",
-      dueLabel: "вторник, 24 ноября, 10:00",
+      dueAt: "2026-11-24T07:00:00.000Z",
       format,
       location: "Корпус А, аудитория 214",
       showCalendar: true,
@@ -48,7 +48,8 @@ describe("deadline action by format", () => {
 
       expect(markup).toContain(`<dt>${placeLabel}</dt>`);
       expect(markup).toContain("Корпус А, аудитория 214");
-      expect(markup).toContain("вторник, 24 ноября, 10:00");
+      expect(markup).toContain("24 ноября 2026");
+      expect(markup).toContain("10:00");
       expect(markup).toContain('href="/api/deadlines/d1/calendar"');
       expect(markup).not.toContain("Открыть задание");
     },

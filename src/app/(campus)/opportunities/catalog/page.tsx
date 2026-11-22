@@ -1,3 +1,4 @@
+import { DateTimeStack } from "@/components/date-time-stack";
 import { Suspense } from "react";
 import Link from "next/link";
 import type {
@@ -91,20 +92,6 @@ function updateQuery(
   if (value === null) next.delete(key);
   else next.set(key, value);
   return `/opportunities/catalog${next.size ? `?${next.toString()}` : ""}`;
-}
-
-function dateLabel(date: Date): string {
-  return new Intl.DateTimeFormat("ru-RU", {
-    dateStyle: "long",
-    timeZone: "Europe/Moscow",
-  }).format(date);
-}
-
-function deadlineText(deadline: Date, now: Date): string {
-  const days = Math.ceil((deadline.getTime() - now.getTime()) / 86_400_000);
-  if (days < 0) return "Приём закрыт";
-  if (days === 0) return "Последний день";
-  return `Осталось ${days} ${days === 1 ? "день" : days < 5 ? "дня" : "дней"}`;
 }
 
 function valueForCard(value: unknown): string {
@@ -730,9 +717,6 @@ async function CatalogContent({
                   opportunity.details as Record<string, unknown>,
                 ).details;
                 const isOpen = opportunity.deadline.getTime() >= now.getTime();
-                const remainingDays = Math.ceil(
-                  (opportunity.deadline.getTime() - now.getTime()) / 86_400_000,
-                );
                 const eligibility = isStudentEligible(opportunity, student);
                 const returnTo = encodeURIComponent(currentPath);
                 const status = applicationByOpportunity.get(opportunity.id);
@@ -809,9 +793,14 @@ async function CatalogContent({
                         </span>
                       )}
                     </div>
-                    <p className={`${styles.deadline} ${isOpen && remainingDays < 3 ? styles.urgent : ""} ${!isOpen ? styles.closed : ""}`}>
-                      {isOpen ? `Дедлайн: ${dateLabel(opportunity.deadline)} · ${deadlineText(opportunity.deadline, now)}` : "Приём закрыт"}
-                    </p>
+                    <div className={`${styles.deadline} ${!isOpen ? styles.closed : ""}`}>
+                      <span>{isOpen ? "Дедлайн" : "Приём закрыт"}</span>
+                      <DateTimeStack
+                        done={!isOpen}
+                        kind="deadline"
+                        value={opportunity.deadline}
+                      />
+                    </div>
                     {status && (
                       <p className={styles.applicationStatus}>
                         Моя заявка: {applicationStatusLabels[status] ?? status}

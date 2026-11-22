@@ -217,6 +217,14 @@ export function getMoscowDateTime(date: Date, time: Date): Date {
   );
 }
 
+/** Дата (ГГГГ-ММ-ДД) и время (ЧЧ:ММ) по московским часам. */
+export function parseMoscowDateTime(dateKey: string, clockTime: string): Date {
+  return getMoscowDateTime(
+    new Date(`${dateKey}T00:00:00.000Z`),
+    new Date(`1970-01-01T${clockTime}:00.000Z`),
+  );
+}
+
 export function getMoscowDateTimeOnDate(date: Date, timeSource = new Date()) {
   const timeParts = getNumericParts(moscowDateTimeFormatter, timeSource);
   return moscowWallClockAsUtc(

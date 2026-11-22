@@ -1,20 +1,43 @@
 import type { RequestType } from "@/generated/prisma/enums";
 
-export type RequestCatalogField =
-  | {
-      id: string;
-      label: string;
-      kind: "text" | "date";
-      required: boolean;
-      maxLength?: number;
-    }
-  | {
-      id: string;
-      label: string;
-      kind: "select";
-      required: boolean;
-      options: readonly { value: string; label: string }[];
-    };
+type RequestCatalogFieldBase = {
+  id: string;
+  label: string;
+  hint?: string;
+  required: boolean;
+};
+
+export type RequestCatalogField = RequestCatalogFieldBase &
+  (
+    | { kind: "text" | "date"; maxLength?: number }
+    | { kind: "number"; min?: number; max?: number }
+    | { kind: "checkbox" | "file" }
+    | {
+        kind: "select";
+        options: readonly { value: string; label: string }[];
+      }
+  );
+
+export type RequestCatalogFieldKind = RequestCatalogField["kind"];
+
+export const requestCatalogFieldKindLabels: Record<
+  RequestCatalogFieldKind,
+  string
+> = {
+  text: "Текст",
+  number: "Число",
+  date: "Дата",
+  select: "Выпадающий список",
+  checkbox: "Флажок",
+  file: "Файл",
+};
+
+export const certificateDeliveryLabels = {
+  ELECTRONIC: "Электронно",
+  DEAN_OFFICE: "В деканате",
+} as const;
+
+export type CertificateDelivery = keyof typeof certificateDeliveryLabels;
 
 export type RequestCatalogEntry = {
   code: string;
@@ -24,6 +47,10 @@ export type RequestCatalogEntry = {
   description: string;
   executionDays: number;
   fields: readonly RequestCatalogField[];
+  version?: number;
+  deliveryMethods?: readonly CertificateDelivery[];
+  requiresApproval?: boolean;
+  template?: string;
 };
 
 export type RequestCatalogSnapshot = Omit<RequestCatalogEntry, "active">;
@@ -146,7 +173,61 @@ export function getRequestCatalogSnapshot(
         ? record.requestType
         : "CERTIFICATE",
     fields,
+    // В снимках старых заявок этих сведений нет.
+    version:
+      typeof record.version === "number" && Number.isSafeInteger(record.version)
+        ? record.version
+        : 1,
+    deliveryMethods: parseDeliveryMethods(record.deliveryMethods),
+    requiresApproval: record.requiresApproval === true,
+    template: typeof record.template === "string" ? record.template : "",
   };
+}
+
+function parseDeliveryMethods(value: unknown): CertificateDelivery[] {
+  const methods = Array.isArray(value)
+    ? value.filter(
+        (method): method is CertificateDelivery =>
+          typeof method === "string" && method in certificateDeliveryLabels,
+      )
+    : [];
+  return methods.length > 0 ? methods : ["ELECTRONIC"];
+}
+
+export function formatDeliveryMethods(
+  methods: readonly CertificateDelivery[] | undefined,
+): string {
+  return parseDeliveryMethods(methods)
+    .map((method, index) =>
+      index === 0
+        ? certificateDeliveryLabels[method]
+        : certificateDeliveryLabels[method].toLocaleLowerCase("ru-RU"),
+    )
+    .join(" или ");
+}
+
+const templatePlaceholders = ["ФИО", "группа", "дата"] as const;
+const placeholderPattern = /\{\{\s*([^{}]*?)\s*\}\}/g;
+
+export function getUnknownTemplatePlaceholders(template: string): string[] {
+  return [...template.matchAll(placeholderPattern)]
+    .map((match) => match[1])
+    .filter((name) => !templatePlaceholders.some((known) => known === name));
+}
+
+export function renderCertificateTemplate(
+  template: string,
+  values: { fullName: string; groupName: string; date: string },
+): string {
+  const replacements: Record<string, string> = {
+    ФИО: values.fullName,
+    группа: values.groupName,
+    дата: values.date,
+  };
+  return template.replace(
+    placeholderPattern,
+    (match, name: string) => replacements[name] ?? match,
+  );
 }
 
 export function createRequestCatalogSnapshot(
@@ -164,6 +245,10 @@ export function createRequestCatalogSnapshot(
         ? { options: field.options.map((option) => ({ ...option })) }
         : {}),
     })),
+    version: entry.version ?? 1,
+    deliveryMethods: [...parseDeliveryMethods(entry.deliveryMethods)],
+    requiresApproval: entry.requiresApproval ?? false,
+    template: entry.template ?? "",
   };
 }
 
@@ -186,7 +271,7 @@ export function getRequestFieldEntries(
   code: string | null | undefined,
   value: unknown,
   snapshot?: unknown,
-): { id: string; label: string; value: string }[] {
+): { id: string; label: string; value: string; kind: RequestCatalogFieldKind }[] {
   const savedSnapshot = getRequestCatalogSnapshot(snapshot);
   const service =
     savedSnapshot && savedSnapshot.code === code
@@ -207,8 +292,12 @@ export function getRequestFieldEntries(
       field.kind === "select"
         ? (field.options.find((option) => option.value === rawValue)?.label ??
           rawValue)
-        : rawValue;
-    return [{ id: field.id, label: field.label, value: displayValue }];
+        : field.kind === "checkbox"
+          ? "Да"
+          : rawValue;
+    return [
+      { id: field.id, label: field.label, value: displayValue, kind: field.kind },
+    ];
   });
 }
 
@@ -229,7 +318,8 @@ export function getRequestFieldValues(
 
   return Object.fromEntries(
     service.fields.flatMap((field) => {
-      const fieldValue = fields[field.id];
+      // Файл прежней заявки нужно приложить заново.
+      const fieldValue = field.kind === "file" ? "" : fields[field.id];
       return fieldValue ? [[field.id, fieldValue]] : [];
     }),
   );
@@ -296,6 +386,11 @@ function getUnknownRecord(value: unknown): Record<string, unknown> | null {
   return Object.fromEntries(Object.entries(value));
 }
 
+function parseOptionalNumber(value: unknown): number | null | undefined {
+  if (value === undefined || value === null) return undefined;
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
 function parseRequestCatalogField(value: unknown): RequestCatalogField | null {
   const record = getUnknownRecord(value);
   if (
@@ -305,9 +400,41 @@ function parseRequestCatalogField(value: unknown): RequestCatalogField | null {
     typeof record.label !== "string" ||
     !record.label.trim() ||
     record.label.length > 120 ||
-    typeof record.required !== "boolean"
+    typeof record.required !== "boolean" ||
+    (record.hint !== undefined &&
+      (typeof record.hint !== "string" || record.hint.length > 200))
   ) {
     return null;
+  }
+
+  const hint = typeof record.hint === "string" ? record.hint.trim() : "";
+  const base = {
+    id: record.id,
+    label: record.label.trim(),
+    required: record.required,
+    ...(hint ? { hint } : {}),
+  };
+
+  if (record.kind === "checkbox" || record.kind === "file") {
+    return { ...base, kind: record.kind };
+  }
+
+  if (record.kind === "number") {
+    const min = parseOptionalNumber(record.min);
+    const max = parseOptionalNumber(record.max);
+    if (
+      min === null ||
+      max === null ||
+      (min !== undefined && max !== undefined && min > max)
+    ) {
+      return null;
+    }
+    return {
+      ...base,
+      kind: "number",
+      ...(min !== undefined ? { min } : {}),
+      ...(max !== undefined ? { max } : {}),
+    };
   }
 
   if (record.kind === "text" || record.kind === "date") {
@@ -321,10 +448,8 @@ function parseRequestCatalogField(value: unknown): RequestCatalogField | null {
       return null;
     }
     return {
-      id: record.id,
-      label: record.label.trim(),
+      ...base,
       kind: record.kind,
-      required: record.required,
       ...(typeof record.maxLength === "number"
         ? { maxLength: record.maxLength }
         : {}),
@@ -354,13 +479,7 @@ function parseRequestCatalogField(value: unknown): RequestCatalogField | null {
     ) {
       return null;
     }
-    return {
-      id: record.id,
-      label: record.label.trim(),
-      kind: "select",
-      required: record.required,
-      options,
-    };
+    return { ...base, kind: "select", options };
   }
 
   return null;

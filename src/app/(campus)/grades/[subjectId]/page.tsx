@@ -1,12 +1,10 @@
+import { DateTimeStack } from "@/components/date-time-stack";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { AcademicResultStatus } from "@/generated/prisma/enums";
 import { controlTypeLabels } from "@/lib/campus-labels";
-import {
-  formatCampusDate,
-  formatUniversityClockTime,
-} from "@/lib/campus-time";
+import { getMoscowDateTime } from "@/lib/campus-time";
 import { getAcademicRecords } from "@/lib/academic-records";
 import { analyzeGrade } from "@/lib/grade-analysis";
 import { getGradebookEntry } from "@/lib/gradebook-data";
@@ -104,9 +102,14 @@ export default async function SubjectPage({ params }: SubjectPageProps) {
             <div>
               <dt>{assessmentName}</dt>
               <dd>
-                {session
-                  ? `${formatCampusDate(session.date)}, ${formatUniversityClockTime(session.startTime)}`
-                  : "Дата не опубликована"}
+                {session ? (
+                  <DateTimeStack
+                    end={getMoscowDateTime(session.date, session.endTime)}
+                    value={getMoscowDateTime(session.date, session.startTime)}
+                  />
+                ) : (
+                  "Дата не опубликована"
+                )}
               </dd>
             </div>
             <div>
@@ -160,10 +163,8 @@ export default async function SubjectPage({ params }: SubjectPageProps) {
               <ul className={styles.attempts}>
                 {subject.result.attempts.map((attempt) => (
                   <li key={attempt.id}>
-                    <span>
-                      Попытка {attempt.attemptNumber} ·{" "}
-                      {formatCampusDate(attempt.date)}
-                    </span>
+                    <span>Попытка {attempt.attemptNumber}</span>
+                    <DateTimeStack allDay value={attempt.date} />
                     <strong>{attempt.value}</strong>
                   </li>
                 ))}
@@ -240,11 +241,11 @@ export default async function SubjectPage({ params }: SubjectPageProps) {
                             : "Не получено"}
                         </td>
                         <td data-label="Дата">
-                          {component.date
-                            ? formatCampusDate(
-                                new Date(`${component.date}T12:00:00`),
-                              )
-                            : "—"}
+                          {component.date ? (
+                            <DateTimeStack allDay value={component.date} />
+                          ) : (
+                            "—"
+                          )}
                         </td>
                         <td data-label="Баллы">
                           {component.status === "RECEIVED"
@@ -412,10 +413,10 @@ export default async function SubjectPage({ params }: SubjectPageProps) {
               <li key={session.id}>
                 <div>
                   <strong>{assessmentName}</strong>
-                  <span>
-                    {formatCampusDate(session.date)},{" "}
-                    {formatUniversityClockTime(session.startTime)}
-                  </span>
+                  <DateTimeStack
+                    end={getMoscowDateTime(session.date, session.endTime)}
+                    value={getMoscowDateTime(session.date, session.startTime)}
+                  />
                 </div>
                 <span
                   className={

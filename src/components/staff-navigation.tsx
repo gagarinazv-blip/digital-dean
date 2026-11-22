@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Calendar, GraphUp, TaskList, User } from "iconoir-react";
+import { Calendar, GraphUp, PageEdit, Suitcase, TaskList, User } from "iconoir-react";
 import styles from "./staff-layout.module.css";
 
 const navigationItems = [
@@ -10,11 +10,11 @@ const navigationItems = [
   { href: "/staff/students", label: "Студенты", icon: User },
   { href: "/staff/achievements", label: "Достижения", icon: GraphUp },
   { href: "/staff/events", label: "Дайджест событий", icon: Calendar },
-  { href: "/staff/opportunities", label: "Возможности", icon: TaskList },
+  { href: "/staff/opportunities", label: "Возможности", icon: Suitcase },
   {
     href: "/staff/certificate-forms",
-    label: "Формы справок",
-    icon: TaskList,
+    label: "Виды справок",
+    icon: PageEdit,
     managerOnly: true,
   },
 ] as const;

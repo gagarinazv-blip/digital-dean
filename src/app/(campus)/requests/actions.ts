@@ -6,7 +6,11 @@ import { assertSameSiteRequest } from "@/lib/auth";
 import { getActiveCertificateForm } from "@/lib/certificate-forms";
 import { getPrisma } from "@/lib/prisma";
 import { createRequestCatalogSnapshot } from "@/lib/request-catalog";
-import { validateRequestUploads } from "@/lib/request-attachments";
+import {
+  validateRequestUploads,
+  type PreparedRequestAttachment,
+} from "@/lib/request-attachments";
+import { getRequestProfileSnapshot } from "@/lib/request-profile";
 import { validateRequestForm } from "@/lib/request-validation";
 import type { RequestActionState } from "@/lib/request-action-state";
 import {
@@ -71,15 +75,33 @@ export async function createRequestAction(
     };
   }
 
+  // Файлы полей формы проверяются вместе с остальными вложениями.
+  const fieldUploads: {
+    fieldKey: string;
+    files: PreparedRequestAttachment[];
+  }[] = [];
+  const fileErrors: Record<string, string> = {};
+  for (const field of service.fields) {
+    if (field.kind !== "file") continue;
+    const result = await validateRequestUploads(
+      formData.getAll(`file.${field.id}`).slice(0, 1),
+    );
+    if (!result.ok) fileErrors[field.id] = result.error;
+    else if (result.files.length > 0) {
+      fieldUploads.push({ fieldKey: field.id, files: result.files });
+    }
+    rawFields[field.id] = result.ok ? (result.files[0]?.fileName ?? "") : "file";
+  }
+
   const validated = validateRequestForm({
     catalogCode: service.code,
     fields: rawFields,
     description: formData.get("description"),
   }, [service]);
-  if (!validated.valid) {
+  if (!validated.valid || Object.keys(fileErrors).length > 0) {
     return {
       ...(validated.errors.fields ? { error: validated.errors.fields } : {}),
-      fieldErrors: validated.errors,
+      fieldErrors: { ...validated.errors, ...fileErrors },
     };
   }
   const validatedService = validated.service;
@@ -95,6 +117,13 @@ export async function createRequestAction(
       return { error: uploads.error };
     }
 
+    const attachments = [
+      ...fieldUploads.flatMap(({ fieldKey, files }) =>
+        files.map((file) => ({ ...file, fieldKey })),
+      ),
+      ...uploads.files,
+    ];
+
     request = await getPrisma().$transaction(async (tx) =>
       tx.request.upsert({
         where: { publicId: rawPublicId },
@@ -106,15 +135,7 @@ export async function createRequestAction(
           formFields: validated.fields,
           formSchemaSnapshot: createRequestCatalogSnapshot(validatedService),
           comment: content || null,
-          profileSnapshot: {
-            fullName: student.fullName,
-            faculty: student.faculty,
-            direction: student.direction,
-            course: student.course,
-            groupName: student.group.name,
-            recordBookNumber: student.recordBookNumber,
-            studyForm: student.studyForm,
-          },
+          profileSnapshot: getRequestProfileSnapshot(student),
           status: "NEW",
           statusHistory: {
             create: {
@@ -124,14 +145,14 @@ export async function createRequestAction(
               comment: "Заявка подана студентом.",
             },
           },
-          ...(content || uploads.files.length > 0
+          ...(content || attachments.length > 0
             ? {
                 comments: {
                   create: {
                     authorUserId: userId,
                     visibility: "PUBLIC",
                     content: content || "Документы приложены к заявке.",
-                    attachments: { create: uploads.files },
+                    attachments: { create: attachments },
                   },
                 },
               }

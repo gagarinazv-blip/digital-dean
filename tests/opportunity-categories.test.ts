@@ -81,9 +81,10 @@ describe("opportunity categories", () => {
       }),
     );
 
-    expect(markup.match(/role="group"/g)).toHaveLength(4);
-    expect(markup.match(/Наука и карьера/g)).toHaveLength(2);
-    expect(markup.match(/Студенческая жизнь/g)).toHaveLength(2);
+    // Мобильная панель рисует список только после открытия.
+    expect(markup.match(/role="group"/g)).toHaveLength(2);
+    expect(markup.match(/Наука и карьера/g)).toHaveLength(1);
+    expect(markup.match(/Студенческая жизнь/g)).toHaveLength(1);
     expect(markup).toContain('aria-current="true"');
     expect(markup).toContain(
       'aria-label="Спортивный центр, 2 возможности, выбрано"',
@@ -111,7 +112,6 @@ describe("opportunity categories", () => {
     expect(markup).toContain('aria-label="Конкурсы, 0 возможностей"');
     expect(markup).toContain("Категория: Спортивный центр (2)");
     expect(markup).toContain('aria-expanded="false"');
-    expect(markup).toContain("Готово");
   });
 
   it("wraps pills and gives the mobile sheet touch-sized targets", () => {

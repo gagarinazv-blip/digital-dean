@@ -28,7 +28,6 @@ const navigation = [
   { href: "/notifications", label: "Уведомления", icon: Bell },
   { href: "/profile", label: "Профиль", icon: User },
 ] as const;
-const unreadCountEvent = "campus:unread-notification-count";
 
 export function CampusNavigation({
   studentId,

@@ -3,7 +3,7 @@ import { connection } from "next/server";
 import { notFound, redirect } from "next/navigation";
 import { CampusSection } from "@/components/campus-section";
 import { getPrisma } from "@/lib/prisma";
-import { DEMO_NOW, getDemoNow } from "@/lib/demo-date";
+import { getDemoNow } from "@/lib/demo-date";
 import { controlTypeLabels } from "@/lib/campus-labels";
 import { getAcademicRecords } from "@/lib/academic-records";
 import { getGradebookEntry } from "@/lib/gradebook-data";
@@ -81,6 +81,8 @@ function toLessonView(lesson: ScheduleLesson): ScheduleLessonView {
       lesson.originalStartsAt && lesson.originalEndsAt
         ? `${formatMoscowTime(lesson.originalStartsAt)}–${formatMoscowTime(lesson.originalEndsAt)}`
         : null,
+    originalStartsAtIso: lesson.originalStartsAt?.toISOString() ?? null,
+    originalEndsAtIso: lesson.originalEndsAt?.toISOString() ?? null,
     originalRoom: lesson.originalRoom,
     room: lesson.room,
     teacher: lesson.teacher,
@@ -300,7 +302,6 @@ async function ScheduleContent({
         nextLesson={nextLesson ? toLessonView(nextLesson) : null}
         groupName={getStudentFacingGroupName(student.group.name)}
         filters={filters}
-        isDemoTime={Boolean(DEMO_NOW)}
         openDayKey={openDayKey}
       />
     </CampusSection>

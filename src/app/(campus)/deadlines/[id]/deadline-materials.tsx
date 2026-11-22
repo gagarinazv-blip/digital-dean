@@ -1,3 +1,4 @@
+import { DateTimeStack } from "@/components/date-time-stack";
 import {
   EmptyPage,
   Link as LinkIcon,
@@ -14,7 +15,6 @@ import {
   deadlineMaterialKindLabels,
   deadlineUploaderRoleLabels,
 } from "@/lib/campus-labels";
-import { formatUniversityDateTime } from "@/lib/campus-time";
 import { getSafeExternalUrl } from "@/lib/deadline-action";
 import { formatFileSize } from "@/lib/file-size";
 import workflowStyles from "@/app/request-workflow.module.css";
@@ -68,11 +68,7 @@ function MaterialCard({ material }: { material: DeadlineMaterialView }) {
           {deadlineUploaderRoleLabels[material.uploadedByRole]}
         </p>
         <p>
-          <time dateTime={material.uploadedAt.toISOString()}>
-            {formatUniversityDateTime(material.uploadedAt, {
-              dateStyle: "long",
-            })}
-          </time>
+          <DateTimeStack value={material.uploadedAt} />
         </p>
       </div>
       <div className={styles.materialActions}>

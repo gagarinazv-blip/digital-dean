@@ -38,7 +38,7 @@
   padding: var(--space-6);
   border: 1px solid var(--color-blue-300);
   border-radius: var(--radius-card);
-  background: linear-gradient(110deg, #dce5f0 0%, #e8edf4 100%);
+  background: linear-gradient(110deg, var(--color-hero) 0%, var(--color-hero-end) 100%);
 }
 
 .avatar {
@@ -238,6 +238,9 @@
 
 .mailLabel,
 .mailIssued {
+  display: grid;
+  justify-items: start;
+  gap: 2px;
   color: var(--color-muted);
   font-size: var(--font-size-caption);
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { DateTimeStack } from "@/components/date-time-stack";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Bell } from "iconoir-react";
@@ -13,7 +14,6 @@ import {
 import { DeadlinePreview } from "@/components/deadline-preview";
 import { NotificationSymbol } from "@/components/notification-symbol";
 import { cleanStudentFacingText } from "@/lib/campus-labels";
-import { getUniversityDateTimeFormatter } from "@/lib/campus-time";
 import { useStudentNotificationStore } from "@/lib/notification-store";
 import type {
   NotificationDeadlineDetails,
@@ -21,20 +21,6 @@ import type {
 } from "@/lib/notification-types";
 import { notificationTypeLabels } from "@/lib/notification-workflow";
 import styles from "./notification-bell.module.css";
-
-const dateFormatter = getUniversityDateTimeFormatter({
-  day: "numeric",
-  month: "short",
-});
-
-function relativeTime(value: string): string {
-  const difference = Math.max(0, Date.now() - new Date(value).getTime());
-  if (difference < 60_000) return "только что";
-  if (difference < 3_600_000) return `${Math.floor(difference / 60_000)} мин`;
-  if (difference < 86_400_000) return `${Math.floor(difference / 3_600_000)} ч`;
-  if (difference < 172_800_000) return "вчера";
-  return dateFormatter.format(new Date(value));
-}
 
 export function NotificationBell({
   initialUnreadCount,
@@ -259,9 +245,7 @@ export function NotificationBell({
                       <span className={styles.context} title={notification.context}>
                         {notification.context}
                       </span>
-                      <time dateTime={notification.createdAt}>
-                        {relativeTime(notification.createdAt)}
-                      </time>
+                      <DateTimeStack value={notification.createdAt} />
                     </span>
                     {notification.readAt === null && (
                       <span aria-label="Непрочитано" className={styles.unread} />

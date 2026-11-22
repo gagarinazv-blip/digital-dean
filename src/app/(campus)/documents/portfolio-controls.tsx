@@ -4,10 +4,11 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import type { PortfolioSource } from "@/generated/prisma/enums";
+import controls from "@/components/ui/controls.module.css";
 import {
-  PortfolioUploadForm,
+  PortfolioItemDrawer,
   type PortfolioEditableItem,
-} from "./portfolio-upload-form";
+} from "./portfolio-item-drawer";
 import styles from "./portfolio.module.css";
 
 type Item = PortfolioEditableItem & {
@@ -59,6 +60,7 @@ export function PortfolioItemControls({
   );
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  const [moveError, setMoveError] = useState("");
   const [deleteOpen, setDeleteOpen] = useState(false);
   const canEdit = isStaff
     ? item.source === "STAFF"
@@ -70,7 +72,7 @@ export function PortfolioItemControls({
   async function moveItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPending(true);
-    setError("");
+    setMoveError("");
     try {
       await postPortfolioAction({
         action: "move-item",
@@ -79,7 +81,7 @@ export function PortfolioItemControls({
       });
       router.refresh();
     } catch (actionError) {
-      setError(
+      setMoveError(
         actionError instanceof Error
           ? actionError.message
           : "Не удалось переместить запись.",
@@ -126,25 +128,27 @@ export function PortfolioItemControls({
               ))}
             </select>
           </label>
-          <button className={styles.secondaryButton} disabled={pending} type="submit">
+          <button className={controls.secondary} disabled={pending} type="submit">
             Переместить
           </button>
         </form>
       ) : null}
       {canEdit ? (
-        <details className={styles.editDetails}>
-          <summary className={styles.secondaryButton}>Редактировать</summary>
-          <PortfolioUploadForm
-            isStaff={isStaff}
-            item={item}
-          />
-        </details>
+        <PortfolioItemDrawer
+          isStaff={isStaff}
+          item={item}
+          triggerClassName={controls.secondary}
+          triggerLabel="Редактировать"
+        />
       ) : null}
       {canDelete ? (
         <ConfirmationDialog
-          buttonClassName={styles.dangerButton}
+          buttonClassName={controls.danger}
           buttonLabel="Удалить"
-          onOpenChange={setDeleteOpen}
+          onOpenChange={(open) => {
+            setError("");
+            setDeleteOpen(open);
+          }}
           open={deleteOpen}
           title="Удалить запись портфолио?"
         >
@@ -152,14 +156,14 @@ export function PortfolioItemControls({
           {error ? <p className={styles.error} role="alert">{error}</p> : null}
           <div className={styles.dialogActions}>
             <button
-              className={styles.secondaryButton}
+              className={controls.secondary}
               onClick={() => setDeleteOpen(false)}
               type="button"
             >
               Отмена
             </button>
             <button
-              className={styles.dangerButton}
+              className={controls.danger}
               disabled={pending}
               onClick={() => void deleteItem()}
               type="button"
@@ -169,7 +173,7 @@ export function PortfolioItemControls({
           </div>
         </ConfirmationDialog>
       ) : null}
-      {error && !canDelete ? <p className={styles.error} role="alert">{error}</p> : null}
+      {moveError ? <p className={styles.error} role="alert">{moveError}</p> : null}
     </div>
   );
 }
@@ -239,7 +243,7 @@ export function PortfolioFolderManager({
           placeholder="Новая папка"
           value={name}
         />
-        <button className={styles.secondaryButton} disabled={pending || !name.trim()} type="submit">
+        <button className={controls.secondary} disabled={pending || !name.trim()} type="submit">
           Создать папку
         </button>
       </form>
@@ -257,12 +261,12 @@ export function PortfolioFolderManager({
               maxLength={60}
               name="name"
             />
-            <button className={styles.secondaryButton} disabled={pending} type="submit">
+            <button className={controls.secondary} disabled={pending} type="submit">
               Переименовать
             </button>
           </form>
           <ConfirmationDialog
-            buttonClassName={styles.dangerButton}
+            buttonClassName={controls.danger}
             buttonLabel="Удалить папку"
             onOpenChange={(open) => setDeleteId(open ? folder.id : null)}
             open={deleteId === folder.id}
@@ -272,14 +276,14 @@ export function PortfolioFolderManager({
             {error ? <p className={styles.error} role="alert">{error}</p> : null}
             <div className={styles.dialogActions}>
               <button
-                className={styles.secondaryButton}
+                className={controls.secondary}
                 onClick={() => setDeleteId(null)}
                 type="button"
               >
                 Отмена
               </button>
               <button
-                className={styles.dangerButton}
+                className={controls.danger}
                 disabled={pending}
                 onClick={() =>
                   void sendAction({

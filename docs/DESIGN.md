@@ -14,7 +14,7 @@
 | subtle | #F6F0EB | вторичные плашки, быстрые действия |
 | border | #EAE4DE | рамки карточек и полей |
 | ink (content/primary) | #262222 | основной текст, тёмная шапка |
-| muted (content/secondary) | #79716D | вторичный текст, подписи |
+| muted (content/secondary) | #6B635F | вторичный текст, подписи (контраст ≥ 4.5 на всех фонах) |
 | disabled | #9A938F | неактивное |
 | wine-900 (action/primary) | #641C29 | главные кнопки, активный пункт меню |
 | wine-700 (primaryHover) | #782B3B | hover главной кнопки |
@@ -26,6 +26,10 @@
 | warningBg / warningText | #F7EDDB / #76531D | предупреждения |
 | dangerBg / dangerText | #FAE5E5 / #8B2828 | ошибки, «Отклонена», срочный дедлайн |
 | newBg / newText | #ECEDEF / #4A5057 | статус «Подана» (новая) |
+
+| border-strong / control-border | #D5CBC3 / #948A84 | рамки вторичных кнопок / полей ввода |
+| hero / hero-end | #DCE5F0 / #E8EDF4 | фон hero-блоков |
+| focus / focus-on-dark | #365773 / #C4D0E0 | обводка фокуса на светлом / в тёмной шапке |
 
 Фокус: видимая обводка (border/focus), не убирать outline.
 
@@ -74,6 +78,13 @@ Mobile 360 (проверять и 390), Tablet 768 (боковая рейка 72
 - RequestStatus (pill), RequestCard / «Строка заявки», Card Module/Lesson/Deadline/Request Summary.
 - NotificationItem (8 вариантов: тип, прочитано/непрочитано).
 - Шапка, Навигация, Боковая панель, Фильтр, Пустое состояние, Сообщение об ошибке, Подтверждение, Скелетон.
+
+### Общие компоненты в коде
+- `src/components/ui/controls.module.css` — кнопки (primary, secondary, danger, warning, ghost, iconButton; hover, focus, disabled, `aria-busy`), поля, подсказки и ошибки, чекбоксы, бейджи, карточки. Модули страниц берут их через `composes`.
+- `FormField` — подпись, подсказка и ошибка поля с `aria-describedby`.
+- `Drawer` — панель справа (`side`) или окно (`full`); закрытие крестиком, Esc и фоном, подтверждение несохранённых изменений. `ModalDialog` / `ConfirmDialog` — компактные подтверждения.
+- `DateTimeStack` — дата в две строки: день и «время · через сколько». Отсчёт от `getDemoNow` через `DemoNowProvider`.
+- `EmptyState` — пустые состояния.
 
 ## 4. Экраны и макеты
 

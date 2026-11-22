@@ -18,7 +18,13 @@ async function DocumentsContent({
 }) {
   const query = await searchParams;
   if (query.tab === "portfolio") {
-    redirect("/opportunities/portfolio");
+    const params = new URLSearchParams();
+    for (const name of ["q", "category", "year", "folder"] as const) {
+      const value = query[name];
+      if (typeof value === "string" && value) params.set(name, value);
+    }
+    const suffix = params.size > 0 ? `?${params.toString()}` : "";
+    redirect(`/opportunities/portfolio${suffix}`);
   }
   return <HelpWorkspace searchParams={searchParams} defaultTab="catalog" />;
 }

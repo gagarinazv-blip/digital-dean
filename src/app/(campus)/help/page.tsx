@@ -1,3 +1,4 @@
+import { DateTimeStack } from "@/components/date-time-stack";
 import { Suspense } from "react";
 import Link from "next/link";
 import { CampusLoading, CampusSection } from "@/components/campus-section";
@@ -12,34 +13,27 @@ import type {
 import { requestStatusLabels, requestTypeLabels } from "@/lib/campus-labels";
 import { getCertificateForms } from "@/lib/certificate-forms";
 import {
+  formatDeliveryMethods,
   getRequestCatalogTitle,
 } from "@/lib/request-catalog";
+import { getRequestProfileSnapshot } from "@/lib/request-profile";
 import {
   getStudentDocuments,
   getStudentRequest,
   getStudentRequests,
 } from "@/lib/student-request-data";
 import { formatRequestNumber } from "@/lib/request-number";
-import { getUniversityDateTimeFormatter } from "@/lib/campus-time";
 import { getStudentPortfolio } from "@/lib/portfolio";
-import { requireStudent } from "@/lib/student";
+import { requireStudent, requireStudentContext } from "@/lib/student";
 import { getPrisma } from "@/lib/prisma";
 import {
   opportunityDirectionLabels,
   opportunityTypeConfig,
 } from "@/lib/opportunity-catalog";
 import { PortfolioView } from "@/app/(campus)/documents/portfolio-view";
+import { RequestWindow } from "@/app/(campus)/requests/request-window";
 import { RequestSearchForm } from "./request-search-form";
 import styles from "./help.module.css";
-
-const requestDateFormatter = getUniversityDateTimeFormatter({
-  dateStyle: "medium",
-});
-
-const requestDateTimeFormatter = getUniversityDateTimeFormatter({
-  dateStyle: "medium",
-  timeStyle: "short",
-});
 
 const requestStatuses = Object.keys(requestStatusLabels) as RequestStatus[];
 const opportunityApplicationStatusLabels = {
@@ -168,12 +162,10 @@ function RecentRequests({
                   </strong>
                   <span>{formatRequestNumber(request.id)}</span>
                 </span>
-                <time
+                <DateTimeStack
                   className={styles.recentRequestDate}
-                  dateTime={request.createdAt.toISOString()}
-                >
-                  {requestDateFormatter.format(request.createdAt)}
-                </time>
+                  value={request.createdAt}
+                />
                 <span
                   className={styles.statusBadge}
                   data-status={request.status}
@@ -233,10 +225,20 @@ function SelectedRequestPanel({
           {requestStatusLabels[request.status]}
         </span>
       </div>
-      <p className={styles.detailDates}>
-        Подана {requestDateFormatter.format(request.createdAt)} · Обновлена{" "}
-        {requestDateTimeFormatter.format(request.updatedAt)}
-      </p>
+      <dl className={styles.detailDates}>
+        <div>
+          <dt>Подана</dt>
+          <dd>
+            <DateTimeStack value={request.createdAt} />
+          </dd>
+        </div>
+        <div>
+          <dt>Обновлена</dt>
+          <dd>
+            <DateTimeStack value={request.updatedAt} />
+          </dd>
+        </div>
+      </dl>
 
       {requestMessage && (
         <section className={styles.staffMessage}>
@@ -251,10 +253,7 @@ function SelectedRequestPanel({
             </h3>
             <p>{requestMessage}</p>
             {latestStaffMessage && (
-              <span>
-                Комментарий от деканата ·{" "}
-                {requestDateTimeFormatter.format(latestStaffMessage.createdAt)}
-              </span>
+              <DateTimeStack value={latestStaffMessage.createdAt} />
             )}
           </div>
         </section>
@@ -310,9 +309,7 @@ function SelectedRequestPanel({
                 </span>
                 <div className={styles.timelineContent}>
                   <strong>{requestStatusLabels[entry.status]}</strong>
-                  <time dateTime={entry.changedAt.toISOString()}>
-                    {requestDateTimeFormatter.format(entry.changedAt)}
-                  </time>
+                  <DateTimeStack value={entry.changedAt} />
                   <p>
                     {entry.comment ??
                       (entry.status === "NEW"
@@ -410,6 +407,10 @@ export async function HelpWorkspace({
       : null;
   const catalogEntries =
     activeTab === "catalog" ? await getCertificateForms() : [];
+  const requestProfile =
+    activeTab === "catalog"
+      ? getRequestProfileSnapshot((await requireStudentContext()).student)
+      : null;
   const visibleServices = catalogEntries
     .filter((service) => service.active)
     .filter((service) => {
@@ -527,9 +528,13 @@ export async function HelpWorkspace({
                 Каталог услуг, отправка заявления и история общения с деканатом
                 — в одном разделе.
               </p>
-              <Link className={styles.primaryButton} href="/requests/new">
-                Новая заявка <span aria-hidden="true">→</span>
-              </Link>
+              {requestProfile && catalogEntries.length > 0 ? (
+                <RequestWindow
+                  profile={requestProfile}
+                  services={catalogEntries}
+                  triggerLabel="Новая заявка"
+                />
+              ) : null}
             </div>
           </section>
         )}
@@ -595,7 +600,8 @@ export async function HelpWorkspace({
                         {service.description}
                       </p>
                       <span className={styles.serviceMeta}>
-                        Электронно · до {service.executionDays} рабочих дней
+                        {formatDeliveryMethods(service.deliveryMethods)} · до{" "}
+                        {service.executionDays} рабочих дней
                       </span>
                       <div className={styles.requirements}>
                         <strong>Для оформления</strong>
@@ -606,12 +612,15 @@ export async function HelpWorkspace({
                           <li>Данные профиля студента</li>
                         </ul>
                       </div>
-                      <Link
-                        className={styles.serviceLink}
-                        href={`/requests/new?service=${service.code}`}
-                      >
-                        Выбрать услугу <span aria-hidden="true">→</span>
-                      </Link>
+                      {requestProfile ? (
+                        <RequestWindow
+                          profile={requestProfile}
+                          serviceCode={service.code}
+                          services={catalogEntries}
+                          triggerClassName={styles.serviceAction}
+                          triggerLabel="Заказать"
+                        />
+                      ) : null}
                     </article>
                   ))}
                 </div>
@@ -708,9 +717,9 @@ export async function HelpWorkspace({
                           )}
                         </h3>
                         <p>
-                          Заявка {formatRequestNumber(document.requestId)} ·{" "}
-                          {requestDateFormatter.format(document.updatedAt)}
+                          Заявка {formatRequestNumber(document.requestId)}
                         </p>
+                        <DateTimeStack value={document.updatedAt} />
                       </div>
                     </div>
                     <a
@@ -817,9 +826,10 @@ export async function HelpWorkspace({
                               {formatRequestNumber(request.id)}
                             </span>
                           </span>
-                          <time className={styles.requestListDate}>
-                            {requestDateFormatter.format(request.createdAt)}
-                          </time>
+                          <DateTimeStack
+                            className={styles.requestListDate}
+                            value={request.createdAt}
+                          />
                           <span className={styles.requestListStatus}>
                             <span
                               className={styles.statusBadge}

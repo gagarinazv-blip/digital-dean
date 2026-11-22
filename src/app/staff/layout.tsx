@@ -1,6 +1,8 @@
 import { Suspense, type ReactNode } from "react";
 import { StaffLayout } from "@/components/staff-layout";
 import { CampusLoading } from "@/components/campus-section";
+import { DemoNowProvider } from "@/components/demo-now";
+import { DEMO_NOW, getDemoNow } from "@/lib/demo-date";
 import { requireStaffContext } from "@/lib/staff";
 
 export const instant = false;
@@ -24,8 +26,13 @@ export default async function StaffRouteLayout({
 async function ProtectedStaff({ children }: { children: ReactNode }) {
   const { staff, isManagerAccount } = await requireStaffContext();
   return (
-    <StaffLayout isManagerAccount={isManagerAccount} staff={staff}>
-      {children}
-    </StaffLayout>
+    <DemoNowProvider
+      isFrozen={DEMO_NOW !== null}
+      nowIso={getDemoNow().toISOString()}
+    >
+      <StaffLayout isManagerAccount={isManagerAccount} staff={staff}>
+        {children}
+      </StaffLayout>
+    </DemoNowProvider>
   );
 }

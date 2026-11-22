@@ -36,9 +36,9 @@
 
 .subjectPicker select {
   width: 100%;
-  min-height: var(--size-touch);
+  min-height: var(--size-field);
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-control-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
   color: var(--color-ink);
@@ -72,7 +72,7 @@
   padding: var(--space-3) var(--space-4);
   border: 1px solid var(--color-wine-100);
   border-radius: var(--radius-card);
-  background: #faeff0;
+  background: var(--color-wine-100);
   color: var(--color-wine-900);
 }
 
@@ -249,9 +249,9 @@
 .invalidInput {
   width: min(100%, 120px);
   min-width: 0;
-  min-height: var(--size-touch);
+  min-height: var(--size-field);
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-control-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
   color: var(--color-ink);
@@ -368,7 +368,7 @@
   overflow: hidden;
   border-radius: var(--radius-card);
   background:
-    linear-gradient(110deg, #cbd9ec 0%, #d7e1ef 62%, #e8edf4 100%);
+    linear-gradient(110deg, var(--color-blue-300) 0%, var(--color-hero) 62%, var(--color-hero-end) 100%);
 }
 
 .totalScore {

@@ -40,6 +40,10 @@ import {
   ScheduleSectionTabs,
   ScheduleToolbar,
 } from "./schedule-toolbar";
+import { DateTimeStack } from "@/components/date-time-stack";
+import { useDemoNow } from "@/components/demo-now";
+import { Drawer } from "@/components/ui/drawer";
+import controls from "@/components/ui/controls.module.css";
 import styles from "./schedule.module.css";
 
 export type ScheduleLessonView = {
@@ -57,6 +61,8 @@ export type ScheduleLessonView = {
   timeLabel: string;
   originalDateLabel: string | null;
   originalTimeLabel: string | null;
+  originalStartsAtIso?: string | null;
+  originalEndsAtIso?: string | null;
   originalRoom: string | null;
   room: string;
   teacher: string;
@@ -121,14 +127,6 @@ function formatClock(minutes: number): string {
   ).padStart(2, "0")}`;
 }
 
-function formatRelativeMinutes(minutes: number): string {
-  const value = Math.max(0, minutes);
-  if (value < 60) return `${value} мин`;
-  const hours = Math.floor(value / 60);
-  const remainder = value % 60;
-  return remainder ? `${hours} ч ${remainder} мин` : `${hours} ч`;
-}
-
 function formatPairCount(count: number): string {
   const lastTwo = count % 100;
   const last = count % 10;
@@ -182,17 +180,6 @@ function makeDayPanelTitle(dateKey: string): string {
     .toLocaleLowerCase("ru");
 }
 
-function findScrollableAncestor(element: HTMLElement | null): HTMLElement | null {
-  let current = element?.parentElement ?? null;
-  while (current && current !== document.body) {
-    if (/(auto|scroll)/.test(window.getComputedStyle(current).overflowY)) {
-      return current;
-    }
-    current = current.parentElement;
-  }
-  return null;
-}
-
 function getLessonHref(
   lesson: ScheduleLessonView,
   view: ScheduleViewMode,
@@ -201,18 +188,8 @@ function getLessonHref(
   return buildScheduleHref(view, lesson.dateKey, filters, lesson.databaseId);
 }
 
-function useScheduleClock(nowIso: string, isDemoTime: boolean) {
-  const [now, setNow] = useState(() => new Date(nowIso));
-
-  useEffect(() => {
-    if (isDemoTime) return;
-    const timer = window.setInterval(() => setNow(new Date()), 30_000);
-    return () => window.clearInterval(timer);
-  }, [isDemoTime]);
-
-  return new Date(
-    isDemoTime ? Date.parse(nowIso) : Math.max(Date.parse(nowIso), now.getTime()),
-  );
+function useScheduleClock(nowIso: string) {
+  return useDemoNow() ?? new Date(nowIso);
 }
 
 function TimelineLesson({
@@ -436,9 +413,17 @@ export function LessonAgenda({
             >
               <span className={styles.agendaTime}>
                 {lesson.status === "CANCELLED" ? (
-                  <s>{lesson.timeLabel}</s>
+                  <s>
+                    <DateTimeStack
+                      end={lesson.endsAtIso}
+                      value={lesson.startsAtIso}
+                    />
+                  </s>
                 ) : (
-                  lesson.timeLabel
+                  <DateTimeStack
+                    end={lesson.endsAtIso}
+                    value={lesson.startsAtIso}
+                  />
                 )}
               </span>
               <span className={`${styles.statusBadge} ${status.className}`}>
@@ -494,164 +479,128 @@ export function LessonAgenda({
   );
 }
 
-function FocusDrawer({
+function focusVisible(selector: string) {
+  requestAnimationFrame(() => {
+    const isFocusLost =
+      !document.activeElement || document.activeElement === document.body;
+    if (!isFocusLost) return;
+    [...document.querySelectorAll<HTMLElement>(selector)]
+      .find((element) => element.getClientRects().length > 0)
+      ?.focus();
+  });
+}
+
+// Открытое окно задаёт адрес страницы. Закрываем его сразу, а адрес меняется
+// следом, поэтому закрытое значение запоминаем до смены адреса.
+function useDismissable(key: string | null, close: () => void) {
+  const [dismissedKey, setDismissedKey] = useState<string | null>(null);
+  if (dismissedKey !== null && dismissedKey !== key) setDismissedKey(null);
+  return {
+    open: key !== null && key !== dismissedKey,
+    dismiss: () => {
+      setDismissedKey(key);
+      close();
+    },
+  };
+}
+
+function LessonDrawer({
   lesson,
   groupName,
   close,
 }: {
-  lesson: ScheduleLessonView;
+  lesson: ScheduleLessonView | null;
   groupName: string;
   close: () => void;
 }) {
-  const closeRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    const previouslyFocused =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    requestAnimationFrame(() => closeRef.current?.focus());
-
-    const onKeyDown = (event: globalThis.KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        close();
-        return;
-      }
-      if (event.key !== "Tab") return;
-      const dialog = document.getElementById("schedule-lesson-dialog");
-      const focusable = dialog?.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      );
-      if (!focusable?.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener("keydown", onKeyDown);
-
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = previousOverflow;
-      requestAnimationFrame(() => {
-        const triggers = document.querySelectorAll<HTMLElement>(
-          `[data-lesson-id="${CSS.escape(lesson.id)}"]`,
-        );
-        const trigger = [...triggers].find(
-          (element) => element.getClientRects().length > 0,
-        );
-        (trigger ?? previouslyFocused)?.focus();
-      });
-    };
-  }, [close, lesson.id]);
+  // Данные остаются до конца анимации закрытия.
+  const [shown, setShown] = useState(lesson);
+  if (lesson && lesson !== shown) setShown(lesson);
+  const { open, dismiss } = useDismissable(lesson?.id ?? null, () => {
+    close();
+    if (lesson) focusVisible(`[data-lesson-id="${CSS.escape(lesson.id)}"]`);
+  });
+  if (!shown) return null;
 
   return (
-    <div className={styles.drawerLayer}>
-      <button
-        aria-label="Закрыть сведения о занятии"
-        className={styles.drawerBackdrop}
-        onClick={close}
-        tabIndex={-1}
-        type="button"
-      />
-      <section
-        aria-labelledby="schedule-lesson-title"
-        aria-modal="true"
-        className={styles.lessonDrawer}
-        id="schedule-lesson-dialog"
-        role="dialog"
-      >
-        <div className={styles.drawerHeader}>
-          <span className={styles.drawerEyebrow}>Занятие</span>
-          <button
-            aria-label="Закрыть сведения о занятии"
-            className={styles.drawerClose}
-            onClick={close}
-            ref={closeRef}
-            type="button"
-          >
-            ×
-          </button>
-        </div>
-        <h2 id="schedule-lesson-title">{lesson.subject}</h2>
-        <span
-          className={`${styles.statusBadge} ${
-            statusPresentation[lesson.status].className
-          }`}
-        >
-          {statusPresentation[lesson.status].label}
-        </span>
-        <dl className={styles.drawerDetails}>
-          <div>
-            <dt>Дата и время</dt>
-            <dd>
-              {makeDayDateLabel(lesson.dateKey)} · {lesson.timeLabel}
-            </dd>
-          </div>
-          <div>
-            <dt>Формат занятия</dt>
-            <dd>{lesson.kindLabel}</dd>
-          </div>
-          <div>
-            <dt>Аудитория</dt>
-            <dd>{lesson.room}</dd>
-          </div>
-          <div>
-            <dt>Преподаватель</dt>
-            <dd>{lesson.teacher}</dd>
-          </div>
-          <div>
-            <dt>Группа</dt>
-            <dd>{groupName}</dd>
-          </div>
-          {lesson.originalTimeLabel && (
-            <div>
-              <dt>
-                {lesson.originalDateLabel
-                  ? `Прежние дата и время · ${lesson.originalDateLabel}`
-                  : "Прежнее время"}
-              </dt>
-              <dd>
-                <s>{lesson.originalTimeLabel}</s>
-              </dd>
-            </div>
-          )}
-          {lesson.originalRoom && lesson.originalRoom !== lesson.room && (
-            <div>
-              <dt>Прежняя аудитория</dt>
-              <dd>
-                <s>{lesson.originalRoom}</s>
-              </dd>
-            </div>
-          )}
-          {lesson.changeNote && (
-            <div>
-              <dt>Примечание</dt>
-              <dd>{lesson.changeNote}</dd>
-            </div>
-          )}
-        </dl>
-        <div className={styles.drawerActions}>
-          <Link className={styles.drawerPrimaryLink} href="/grades">
-            Открыть успеваемость
-          </Link>
+    <Drawer
+      eyebrow="Занятие"
+      footer={
+        <>
           <Link
-            className={styles.drawerSecondaryLink}
-            href={`${buildScheduleHref("today", lesson.dateKey)}#schedule-day-${lesson.dateKey}`}
+            className={controls.secondary}
+            href={`${buildScheduleHref("today", shown.dateKey)}#schedule-day-${shown.dateKey}`}
           >
             Показать в календаре
           </Link>
+          <Link className={controls.primary} href="/grades">
+            Открыть успеваемость
+          </Link>
+        </>
+      }
+      onClose={dismiss}
+      open={open}
+      title={shown.subject}
+    >
+      <span
+        className={`${styles.statusBadge} ${
+          statusPresentation[shown.status].className
+        }`}
+      >
+        {statusPresentation[shown.status].label}
+      </span>
+      <dl className={styles.drawerDetails}>
+        <div>
+          <dt>Дата и время</dt>
+          <dd>
+            <DateTimeStack end={shown.endsAtIso} value={shown.startsAtIso} />
+          </dd>
         </div>
-      </section>
-    </div>
+        <div>
+          <dt>Формат занятия</dt>
+          <dd>{shown.kindLabel}</dd>
+        </div>
+        <div>
+          <dt>Аудитория</dt>
+          <dd>{shown.room}</dd>
+        </div>
+        <div>
+          <dt>Преподаватель</dt>
+          <dd>{shown.teacher}</dd>
+        </div>
+        <div>
+          <dt>Группа</dt>
+          <dd>{groupName}</dd>
+        </div>
+        {shown.originalStartsAtIso && (
+          <div>
+            <dt>Прежние дата и время</dt>
+            <dd>
+              <s>
+                <DateTimeStack
+                  end={shown.originalEndsAtIso}
+                  value={shown.originalStartsAtIso}
+                />
+              </s>
+            </dd>
+          </div>
+        )}
+        {shown.originalRoom && shown.originalRoom !== shown.room && (
+          <div>
+            <dt>Прежняя аудитория</dt>
+            <dd>
+              <s>{shown.originalRoom}</s>
+            </dd>
+          </div>
+        )}
+        {shown.changeNote && (
+          <div>
+            <dt>Примечание</dt>
+            <dd>{shown.changeNote}</dd>
+          </div>
+        )}
+      </dl>
+    </Drawer>
   );
 }
 
@@ -664,7 +613,7 @@ function DayDrawer({
   openLesson,
   active,
 }: {
-  day: ScheduleDayView;
+  day: ScheduleDayView | null;
   hiddenCount: number;
   close: () => void;
   switchDay: (dateKey: string) => void;
@@ -675,204 +624,101 @@ function DayDrawer({
   ) => void;
   active: boolean;
 }) {
-  const drawerRef = useRef<HTMLElement>(null);
-  const closeRef = useRef<HTMLButtonElement>(null);
-  const closeActionRef = useRef(close);
+  const [shown, setShown] = useState(day);
+  if (day && day !== shown) setShown(day);
+  const { open, dismiss } = useDismissable(day?.key ?? null, () => {
+    close();
+    if (day) focusVisible(`[data-schedule-day="${CSS.escape(day.key)}"]`);
+  });
   const switchDayRef = useRef(switchDay);
-  const currentDayRef = useRef(day.key);
-  const hasFocusedInitiallyRef = useRef(false);
-  const touchStartYRef = useRef<number | null>(null);
-
-  const summary = getDaySummary(day.lessons);
-  const title = makeDayPanelTitle(day.key);
-  const hasChanges = day.lessons.some(isChanged);
+  const openDayKey = open && active ? (day?.key ?? null) : null;
 
   useEffect(() => {
-    closeActionRef.current = close;
     switchDayRef.current = switchDay;
-    currentDayRef.current = day.key;
-  }, [close, day.key, switchDay]);
+  }, [switchDay]);
 
   useEffect(() => {
-    if (!active) return;
-    const previousBodyOverflow = document.body.style.overflow;
-    const scrollContainer = findScrollableAncestor(drawerRef.current);
-    const previousContainerOverflow = scrollContainer?.style.overflowY ?? "";
-    document.body.style.overflow = "hidden";
-    if (scrollContainer) scrollContainer.style.overflowY = "hidden";
-
+    if (!openDayKey) return;
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        closeActionRef.current();
-        return;
-      }
-      const directionByKey: Record<string, number> = {
-        ArrowLeft: -1,
-        ArrowRight: 1,
-        ArrowUp: -7,
-        ArrowDown: 7,
-      };
-      const direction = directionByKey[event.key];
-      if (direction !== undefined) {
-        event.preventDefault();
-        switchDayRef.current(
-          shiftScheduleDate(currentDayRef.current, direction, "day"),
-        );
-        return;
-      }
-      if (event.key !== "Tab") return;
-      const focusable = drawerRef.current?.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      );
-      if (!focusable?.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
+      const direction = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[
+        event.key
+      ];
+      if (direction === undefined) return;
+      event.preventDefault();
+      switchDayRef.current(shiftScheduleDate(openDayKey, direction, "day"));
     };
     document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [openDayKey]);
 
-    let focusFrame: number | undefined;
-    if (!hasFocusedInitiallyRef.current) {
-      focusFrame = window.requestAnimationFrame(() => closeRef.current?.focus());
-      hasFocusedInitiallyRef.current = true;
-    }
-
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = previousBodyOverflow;
-      if (scrollContainer) {
-        scrollContainer.style.overflowY = previousContainerOverflow;
-      }
-      if (focusFrame !== undefined) window.cancelAnimationFrame(focusFrame);
-      window.requestAnimationFrame(() => {
-        const triggers = document.querySelectorAll<HTMLElement>(
-          `[data-schedule-day="${CSS.escape(currentDayRef.current)}"]`,
-        );
-        const trigger = [...triggers].find(
-          (element) => element.getClientRects().length > 0,
-        );
-        trigger?.focus();
-      });
-    };
-  }, [active]);
+  if (!shown) return null;
+  const summary = getDaySummary(shown.lessons);
+  const title = makeDayPanelTitle(shown.key);
 
   return (
-    <div className={styles.dayDrawerLayer}>
-      <button
-        aria-label="Закрыть сведения о дне"
-        className={styles.dayDrawerBackdrop}
-        onClick={close}
-        tabIndex={-1}
-        type="button"
-      />
-      <section
-        aria-hidden={!active}
-        aria-labelledby="schedule-day-dialog-title"
-        aria-modal={active ? "true" : undefined}
-        className={styles.dayDrawer}
-        id="schedule-day-dialog"
-        ref={drawerRef}
-        role="dialog"
-      >
-        <span
-          aria-hidden="true"
-          className={styles.dayDrawerHandle}
-          onTouchStart={(event) => {
-            touchStartYRef.current = event.touches[0]?.clientY ?? null;
-          }}
-          onTouchEnd={(event) => {
-            const startY = touchStartYRef.current;
-            const endY = event.changedTouches[0]?.clientY;
-            touchStartYRef.current = null;
-            if (startY !== null && endY !== undefined && endY - startY > 80) {
-              closeActionRef.current();
-            }
-          }}
-        />
-        <header className={styles.dayDrawerHeader}>
-          <div>
-            <span className={styles.drawerEyebrow}>Расписание дня</span>
-            <h2 id="schedule-day-dialog-title">{title}</h2>
-          </div>
+    <Drawer
+      eyebrow="Расписание дня"
+      footer={
+        <>
           <button
-            aria-label="Закрыть панель дня"
-            className={styles.drawerClose}
-            onClick={close}
-            ref={closeRef}
-            type="button"
-          >
-            ×
-          </button>
-        </header>
-        <div className={styles.dayDrawerSummary}>
-          <p>
-            {formatPairCount(summary.count)}
-            {summary.first && summary.last
-              ? ` · ${formatClock(summary.first.startsAtMinutes)}–${formatClock(summary.last.endsAtMinutes)}`
-              : ""}
-          </p>
-          {hasChanges && (
-            <span className={styles.dayChangeBadge}>Есть изменения</span>
-          )}
-        </div>
-        {hiddenCount > 0 && (
-          <p className={styles.dayDrawerHidden}>
-            Скрыто фильтрами: {hiddenCount}
-          </p>
-        )}
-        <div className={styles.dayDrawerBody}>
-          <LessonAgenda
-            day={day}
-            emptyMessage={
-              hiddenCount > 0
-                ? "Нет совпадений с фильтрами"
-                : "Занятий нет"
-            }
-            openLesson={openLesson}
-          />
-          {day.lessons.length === 0 && (
-            <button
-              className={styles.emptyLink}
-              onClick={() =>
-                switchDay(
-                  nearestDayKey ??
-                    shiftScheduleDate(day.key, 7, "day"),
-                )
-              }
-              type="button"
-            >
-              Ближайший учебный день
-            </button>
-          )}
-        </div>
-        <nav aria-label="Навигация по дням" className={styles.dayDrawerNavigation}>
-          <button
-            className={styles.drawerSecondaryLink}
-            onClick={() => switchDay(shiftScheduleDate(day.key, -1, "day"))}
+            className={controls.secondary}
+            onClick={() => switchDay(shiftScheduleDate(shown.key, -1, "day"))}
             type="button"
           >
             ‹ Предыдущий день
           </button>
           <button
-            className={styles.drawerSecondaryLink}
-            onClick={() => switchDay(shiftScheduleDate(day.key, 1, "day"))}
+            className={controls.secondary}
+            onClick={() => switchDay(shiftScheduleDate(shown.key, 1, "day"))}
             type="button"
           >
             Следующий день ›
           </button>
-        </nav>
-        <span aria-live="polite" className={styles.visuallyHidden}>
-          Открыт день {title}, {formatPairCount(summary.count)}
-        </span>
-      </section>
-    </div>
+        </>
+      }
+      id="schedule-day-dialog"
+      onClose={dismiss}
+      open={open}
+      title={title}
+    >
+      <div className={styles.dayDrawerSummary}>
+        <p>
+          {formatPairCount(summary.count)}
+          {summary.first && summary.last
+            ? ` · ${formatClock(summary.first.startsAtMinutes)}–${formatClock(summary.last.endsAtMinutes)}`
+            : ""}
+        </p>
+        {shown.lessons.some(isChanged) && (
+          <span className={styles.dayChangeBadge}>Есть изменения</span>
+        )}
+      </div>
+      {hiddenCount > 0 && (
+        <p className={styles.dayDrawerHidden}>
+          Скрыто фильтрами: {hiddenCount}
+        </p>
+      )}
+      <LessonAgenda
+        day={shown}
+        emptyMessage={
+          hiddenCount > 0 ? "Нет совпадений с фильтрами" : "Занятий нет"
+        }
+        openLesson={openLesson}
+      />
+      {shown.lessons.length === 0 && (
+        <button
+          className={controls.secondary}
+          onClick={() =>
+            switchDay(nearestDayKey ?? shiftScheduleDate(shown.key, 7, "day"))
+          }
+          type="button"
+        >
+          Ближайший учебный день
+        </button>
+      )}
+      <span aria-live="polite" className={controls.visuallyHidden}>
+        Открыт день {title}, {formatPairCount(summary.count)}
+      </span>
+    </Drawer>
   );
 }
 
@@ -886,7 +732,6 @@ export function ScheduleView({
   nextLesson,
   groupName,
   filters,
-  isDemoTime,
   openDayKey,
 }: {
   days: ScheduleDayView[];
@@ -898,7 +743,6 @@ export function ScheduleView({
   nextLesson: ScheduleLessonView | null;
   groupName: string;
   filters: ScheduleFilterState;
-  isDemoTime: boolean;
   openDayKey: string | null;
 }) {
   const router = useRouter();
@@ -908,7 +752,7 @@ export function ScheduleView({
   const filterPanelRef = useRef<HTMLDetailsElement>(null);
   const periodPickerRef = useRef<HTMLDetailsElement>(null);
   const actionsMenuRef = useRef<HTMLDetailsElement>(null);
-  const now = useScheduleClock(nowIso, isDemoTime);
+  const now = useScheduleClock(nowIso);
   const nowMinutes = getMoscowTimeMinutes(now);
   const activeFilters = useMemo(
     () => ({ ...filters, q: liveSearch.trim() }),
@@ -1419,10 +1263,11 @@ export function ScheduleView({
                   scroll={false}
                 >
                   <strong>{lesson.subject}</strong>
-                  <span>
-                    {makeDayDateLabel(lesson.dateKey)} · {lesson.timeLabel} ·{" "}
-                    {statusPresentation[lesson.status].label}
-                  </span>
+                  <span>{statusPresentation[lesson.status].label}</span>
+                  <DateTimeStack
+                    end={lesson.endsAtIso}
+                    value={lesson.startsAtIso}
+                  />
                 </Link>
               </li>
             ))}
@@ -1521,6 +1366,13 @@ export function ScheduleView({
                         Ближайший учебный день
                       </Link>
                     ) : nextLesson ? (
+                      <>
+                      <div className={styles.emptyDate}>
+                        <DateTimeStack
+                          end={nextLesson.endsAtIso}
+                          value={nextLesson.startsAtIso}
+                        />
+                      </div>
                       <Link
                         className={styles.emptyLink}
                         href={buildScheduleHref(
@@ -1533,6 +1385,7 @@ export function ScheduleView({
                       >
                         Открыть ближайшее занятие
                       </Link>
+                      </>
                     ) : null}
                     <Link
                       className={`${styles.emptyLink} ${styles.emptyLinkSecondary}`}
@@ -1550,7 +1403,7 @@ export function ScheduleView({
                 activeFilterCount > 0
                   ? "Измените или сбросьте фильтры, чтобы увидеть расписание."
                   : nextLesson
-                    ? `Ближайшее занятие: ${makeDayDateLabel(nextLesson.dateKey)}, ${nextLesson.timeLabel}, ${nextLesson.subject}, ауд. ${nextLesson.room}`
+                    ? `Ближайшее занятие: ${nextLesson.subject}, ауд. ${nextLesson.room}`
                     : "В ближайшей неделе занятий нет."
               }
               illustration={activeFilterCount > 0 ? "search" : "schedule"}
@@ -1823,24 +1676,20 @@ export function ScheduleView({
         </>
       )}
 
-      {openDay && (
-        <DayDrawer
-          active={!selectedLesson}
-          close={closeDayPanel}
-          day={openDay}
-          hiddenCount={openDayResults?.hiddenCount ?? 0}
-          nearestDayKey={nearestDayWithLessons?.key ?? null}
-          openLesson={openLesson}
-          switchDay={openDayPanel}
-        />
-      )}
-      {selectedLesson && (
-        <FocusDrawer
-          groupName={groupName}
-          lesson={selectedLesson}
-          close={closeDrawer}
-        />
-      )}
+      <DayDrawer
+        active={!selectedLesson}
+        close={closeDayPanel}
+        day={openDay}
+        hiddenCount={openDayResults?.hiddenCount ?? 0}
+        nearestDayKey={nearestDayWithLessons?.key ?? null}
+        openLesson={openLesson}
+        switchDay={openDayPanel}
+      />
+      <LessonDrawer
+        close={closeDrawer}
+        groupName={groupName}
+        lesson={selectedLesson}
+      />
       <span className={styles.visuallyHidden} aria-live="polite">
         {unfilteredSelectedDay
           ? `Выбран день ${unfilteredSelectedDay.label}`

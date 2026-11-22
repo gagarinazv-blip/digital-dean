@@ -1,3 +1,4 @@
+import { DateTimeStack } from "@/components/date-time-stack";
 import type { DeadlineFormat } from "@/generated/prisma/enums";
 import {
   getDeadlineAction,
@@ -8,14 +9,14 @@ import styles from "./deadline-hand-in.module.css";
 
 export function DeadlineHandIn({
   deadlineId,
-  dueLabel,
+  dueAt,
   format,
   location,
   showCalendar = false,
   taskUrl,
 }: {
   deadlineId: string;
-  dueLabel: string;
+  dueAt: Date | string;
   format: DeadlineFormat;
   location: string | null;
   showCalendar?: boolean;
@@ -50,7 +51,9 @@ export function DeadlineHandIn({
         </div>
         <div>
           <dt>Время</dt>
-          <dd>{dueLabel}</dd>
+          <dd>
+            <DateTimeStack kind="deadline" value={dueAt} />
+          </dd>
         </div>
       </dl>
       {showCalendar && (

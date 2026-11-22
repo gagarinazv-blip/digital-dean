@@ -12,9 +12,14 @@ import {
   shiftAcademicRecordDate,
 } from "./academic-records-seed-data";
 import { buildTargetScheduleSeed } from "./schedule-seed-data";
+import { syncCertificateSeed } from "./certificate-seed-data";
 import { syncDeadlineSeed } from "./deadline-seed";
 import { getDemoNotificationState } from "./notification-seed-data";
 import { getDemoNow } from "../src/lib/demo-date";
+import {
+  createRequestCatalogSnapshot,
+  getRequestCatalogEntry,
+} from "../src/lib/request-catalog";
 import {
   getMoscowCalendarWeek,
   getMoscowDateKey,
@@ -976,8 +981,15 @@ async function main() {
         { publicId: string; status: RequestStatus }
       >();
       for (const request of testRequests) {
+        // Снимок формы защищает демо-заявки от правок вида справки.
+        const service = getRequestCatalogEntry(request.catalogCode);
         const created = await tx.request.create({
-          data: request,
+          data: {
+            ...request,
+            ...(service
+              ? { formSchemaSnapshot: createRequestCatalogSnapshot(service) }
+              : {}),
+          },
           select: { studentId: true, publicId: true, status: true },
         });
         const login =
@@ -1270,6 +1282,7 @@ async function main() {
       }
 
       await syncDeadlineSeed(tx, studentIds, seedNow);
+      await syncCertificateSeed(tx);
 
       for (const [index, login] of (
         ["student.alpha", "student.beta"] as const

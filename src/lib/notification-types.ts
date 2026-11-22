@@ -26,6 +26,10 @@ export type NotificationDetails = {
     timeLabel: string;
     previousTimeLabel: string | null;
     previousDateLabel: string | null;
+    startsAt: string | null;
+    endsAt: string | null;
+    previousStartsAt: string | null;
+    previousEndsAt: string | null;
     previousRoom: string | null;
     room: string;
     changeNote: string | null;

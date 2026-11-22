@@ -136,7 +136,11 @@ beforeEach(() => {
     title: "Справка об обучении",
     description: "Подтверждение факта обучения в учебном заведении.",
     executionDays: 5,
-    active: true,
+    status: "ACTIVE",
+    deliveryMethods: ["ELECTRONIC"],
+    requiresApproval: false,
+    template: "",
+    version: 2,
     fields: [
       {
         id: "purpose",
@@ -237,6 +241,88 @@ describe("request actions", () => {
     );
     expect(revalidatePathMock).toHaveBeenCalledWith("/requests");
     expect(revalidatePathMock).toHaveBeenCalledWith("/staff/requests");
+  });
+
+  it("stores a dynamic form with its version and a file from a form field", async () => {
+    findCertificateFormMock.mockResolvedValue({
+      code: "CUSTOM_FORM",
+      title: "Новая справка",
+      description: "Описание",
+      executionDays: 2,
+      status: "ACTIVE",
+      deliveryMethods: ["DEAN_OFFICE"],
+      requiresApproval: true,
+      template: "{{ФИО}}",
+      version: 7,
+      fields: [
+        { id: "count", label: "Экземпляров", kind: "number", required: true, min: 1 },
+        { id: "agree", label: "Согласие", kind: "checkbox", required: true },
+        { id: "scan", label: "Скан", kind: "file", required: true },
+      ],
+    });
+    const values = {
+      requestPublicId: "b08f54cf-99ce-4a56-a780-8e22ce5ba0a1",
+      catalogCode: "CUSTOM_FORM",
+      "field.count": "2",
+      "field.agree": "true",
+      description: "",
+    };
+
+    await expect(createRequestAction({}, makeFormData(values))).resolves.toEqual({
+      fieldErrors: { scan: "Приложите файл." },
+    });
+
+    const formData = makeFormData(values);
+    formData.set(
+      "file.scan",
+      new File(["%PDF-1.4\n"], "scan.pdf", { type: "application/pdf" }),
+    );
+    await expect(createRequestAction({}, formData)).rejects.toThrow("Redirect");
+    expect(upsertRequestMock).toHaveBeenCalledTimes(1);
+    expect(upsertRequestMock.mock.calls[0][0].create).toMatchObject({
+      formFields: { count: "2", agree: "true", scan: "scan.pdf" },
+      formSchemaSnapshot: {
+        code: "CUSTOM_FORM",
+        version: 7,
+        requiresApproval: true,
+        template: "{{ФИО}}",
+      },
+      comments: {
+        create: {
+          attachments: {
+            create: [expect.objectContaining({ fieldKey: "scan", fileName: "scan.pdf" })],
+          },
+        },
+      },
+    });
+  });
+
+  it("rejects a fake file in a form field", async () => {
+    findCertificateFormMock.mockResolvedValue({
+      code: "CUSTOM_FORM",
+      title: "Новая справка",
+      description: "Описание",
+      executionDays: 2,
+      status: "ACTIVE",
+      deliveryMethods: ["DEAN_OFFICE"],
+      requiresApproval: false,
+      template: "",
+      version: 1,
+      fields: [{ id: "scan", label: "Скан", kind: "file", required: false }],
+    });
+    const formData = makeFormData({
+      requestPublicId: "b08f54cf-99ce-4a56-a780-8e22ce5ba0a1",
+      catalogCode: "CUSTOM_FORM",
+      description: "",
+    });
+    formData.set(
+      "file.scan",
+      new File(["<html>"], "scan.pdf", { type: "application/pdf" }),
+    );
+    await expect(createRequestAction({}, formData)).resolves.toMatchObject({
+      fieldErrors: { scan: expect.stringContaining("настоящие файлы") },
+    });
+    expect(upsertRequestMock).not.toHaveBeenCalled();
   });
 
   it("rejects invalid request fields before creating a record", async () => {
