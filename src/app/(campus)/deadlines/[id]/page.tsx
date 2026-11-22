@@ -11,6 +11,7 @@ import {
 import { getMoscowDateKey } from "@/lib/campus-time";
 import { getDeadlineCalendarHref } from "@/lib/deadline-action";
 import { getStudentDeadline } from "@/lib/deadline-data";
+import { getDeadlineWeight } from "@/lib/deadline-weight";
 import { getChecklistProgress } from "@/lib/deadline-progress";
 import {
   canRemindOneDayBefore,
@@ -50,6 +51,7 @@ async function DeadlineContent({ params }: DeadlinePageProps) {
     : getDeadlineRemaining(deadline.dueAt, now, deadline.format);
   const canRemind = canRemindOneDayBefore(deadline.dueAt, now);
   const checklistProgress = getChecklistProgress(deadline.progress.checklist);
+  const weight = getDeadlineWeight(deadline);
   const disciplineHref = deadline.disciplineId
     ? `/grades/${encodeURIComponent(deadline.disciplineId)}`
     : null;
@@ -60,7 +62,7 @@ async function DeadlineContent({ params }: DeadlinePageProps) {
         <nav aria-label="Хлебные крошки">
           <ol className={styles.breadcrumbs}>
             <li>
-              <Link href="/deadlines">Дедлайны</Link>
+              <Link href="/deadlines">Задания</Link>
             </li>
             <li>
               {disciplineHref ? (
@@ -151,6 +153,24 @@ async function DeadlineContent({ params }: DeadlinePageProps) {
               kind="deadline"
               value={deadline.dueAt}
             />
+          </div>
+          <div className={styles.summary}>
+            <h3>Вес в итоговой оценке</h3>
+            {weight ? (
+              <>
+                <p className={styles.weight}>{weight.percent}%</p>
+                <p className={styles.hint}>
+                  {weight.isShared
+                    ? `Столько весит компонент «${weight.component}» целиком: эта работа — его часть.`
+                    : `Компонент формулы: «${weight.component}».`}
+                  {weight.isDemonstration ? " Формула демонстрационная." : ""}
+                </p>
+              </>
+            ) : (
+              <p className={styles.hint}>
+                Вес для этого задания пока не опубликован.
+              </p>
+            )}
           </div>
           <div className={styles.sidebarActions}>
             <a

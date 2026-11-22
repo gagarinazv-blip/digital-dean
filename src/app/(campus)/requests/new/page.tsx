@@ -28,6 +28,8 @@ export default async function NewRequestPage({
       <CampusSection
         eyebrow="Документы и заявки"
         title="Новая заявка"
+      illustration="documents"
+      tone="blue"
         description="Сейчас нет доступных услуг для подачи заявления."
       >
         <p role="status">
@@ -84,6 +86,8 @@ export default async function NewRequestPage({
     <CampusSection
       eyebrow="Документы и заявки"
       title="Новая заявка"
+      illustration="documents"
+      tone="blue"
       description="Заполните заявление — профильные сведения подставятся автоматически."
     >
       <div className={styles.content}>

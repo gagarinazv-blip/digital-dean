@@ -1,5 +1,13 @@
+import { SectionHeader } from "@/components/section-header";
 import { DateTimeStack } from "@/components/date-time-stack";
 import Link from "next/link";
+import {
+  CheckCircle,
+  Clock,
+  HelpCircle,
+  Mail,
+  XmarkCircle,
+} from "iconoir-react";
 import { requestStatusLabels, requestTypeLabels } from "@/lib/campus-labels";
 import { getRequestCatalogTitle } from "@/lib/request-catalog";
 import { formatRequestNumber } from "@/lib/request-number";
@@ -14,12 +22,13 @@ const statusSummary: {
   status: RequestStatus;
   title: string;
   tone: string;
+  icon: typeof Mail;
 }[] = [
-  { status: "NEW", title: "Новые", tone: "new" },
-  { status: "IN_PROGRESS", title: "В работе", tone: "progress" },
-  { status: "NEEDS_INFO", title: "Нужны данные", tone: "attention" },
-  { status: "READY", title: "Выполнены", tone: "ready" },
-  { status: "REJECTED", title: "Отклонены", tone: "rejected" },
+  { status: "NEW", title: "Новые", tone: "new", icon: Mail },
+  { status: "IN_PROGRESS", title: "В работе", tone: "progress", icon: Clock },
+  { status: "NEEDS_INFO", title: "Нужны данные", tone: "attention", icon: HelpCircle },
+  { status: "READY", title: "Выполнены", tone: "ready", icon: CheckCircle },
+  { status: "REJECTED", title: "Отклонены", tone: "rejected", icon: XmarkCircle },
 ];
 
 const requestStatusClasses: Record<RequestStatus, string> = {
@@ -54,13 +63,15 @@ export default async function StaffHomePage({
         <span aria-hidden="true">/</span>
         <span>Заявки</span>
       </div>
-      <header className={styles.pageHeading}>
-        <h1>Очередь заявок</h1>
-        <p>Обработка и контроль заявок, поданных студентами вашего факультета.</p>
-      </header>
+      <SectionHeader
+        description="Обработка и контроль заявок, поданных студентами вашего факультета."
+        eyebrow="Деканат"
+        illustration="requests"
+        title="Очередь заявок"
+      />
 
       <section aria-label="Сводка заявок" className={styles.summary}>
-        {statusSummary.map(({ status, title, tone }) => (
+        {statusSummary.map(({ status, title, tone, icon: Icon }) => (
           <Link
             aria-current={selectedStatus === status ? "page" : undefined}
             className={`${styles.summaryCard} ${styles[tone]}`}
@@ -68,15 +79,7 @@ export default async function StaffHomePage({
             key={status}
           >
             <span aria-hidden="true" className={styles.summaryIcon}>
-              {status === "NEW"
-                ? "▤"
-                : status === "IN_PROGRESS"
-                  ? "◈"
-                  : status === "NEEDS_INFO"
-                    ? "◉"
-                    : status === "READY"
-                      ? "✓"
-                      : "×"}
+              <Icon strokeWidth={1.8} />
             </span>
             <div className={styles.summaryContent}>
               <span>{title}</span>

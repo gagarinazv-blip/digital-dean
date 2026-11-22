@@ -496,6 +496,8 @@ async function CatalogContent({
     <CampusSection
       eyebrow="Возможности"
       title="Каталог"
+      illustration="opportunities"
+      tone="sand"
       description="Программы, события и наборы для студентов."
     >
       <OpportunityCategories
@@ -709,7 +711,7 @@ async function CatalogContent({
               <Link href="/opportunities/catalog">Сбросить фильтры</Link>
             </div>
           ) : (
-            <div className={styles.grid}>
+            <div className={styles.grid} data-stagger>
               {visible.map((opportunity) => {
                 const config = opportunityTypeConfig[opportunity.type];
                 const details = validateOpportunityDetails(

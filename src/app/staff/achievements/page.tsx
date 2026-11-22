@@ -1,3 +1,4 @@
+import { SectionHeader } from "@/components/section-header";
 import Link from "next/link";
 import { PortfolioItemControls } from "@/app/(campus)/documents/portfolio-controls";
 import { PortfolioItemDrawer } from "@/app/(campus)/documents/portfolio-item-drawer";
@@ -131,16 +132,18 @@ export default async function StaffAchievementsPage({
 
   return (
     <main className={styles.page}>
-      <header className={styles.heading}>
-        <div>
-          <p>Рабочее место · Портфолио студентов</p>
-          <h1>Достижения</h1>
-          <span>Записи, документы и подтверждения достижений студентов.</span>
-        </div>
-        <a className={styles.primaryButton} href="#add-achievement">
-          Добавить достижение
-        </a>
-      </header>
+      <SectionHeader
+        action={
+          <a className={styles.primaryButton} href="#add-achievement">
+            Добавить достижение
+          </a>
+        }
+        description="Записи, документы и подтверждения достижений студентов."
+        eyebrow="Рабочее место · Портфолио студентов"
+        illustration="achievements"
+        title="Достижения"
+        tone="sand"
+      />
 
       <section className={styles.addPanel} id="add-achievement" aria-labelledby="add-title">
         <h2 id="add-title">Добавить достижение</h2>

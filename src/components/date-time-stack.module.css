@@ -61,3 +61,8 @@
 :global(s) > .stack .detail {
   text-decoration: line-through;
 }
+
+.inline {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

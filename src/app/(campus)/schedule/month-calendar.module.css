@@ -1,0 +1,276 @@
+.calendar {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.grid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-rows: auto repeat(6, minmax(128px, auto));
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.weekday {
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-canvas);
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+}
+
+.day {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  padding: 4px;
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  cursor: pointer;
+  transition: background-color var(--motion-fast) var(--motion-ease);
+}
+
+.day:nth-child(7n) {
+  border-right: 0;
+}
+
+.day:nth-last-child(-n + 7) {
+  border-bottom: 0;
+}
+
+.day:hover {
+  background: var(--color-canvas);
+}
+
+.day[data-outside] {
+  background: var(--color-subtle);
+}
+
+.day[data-open] {
+  background: var(--color-wine-100);
+}
+
+.date {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  justify-self: center;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-ink);
+  font: inherit;
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.date:hover {
+  background: var(--color-subtle);
+}
+
+.day[data-outside] .date {
+  color: var(--color-muted);
+  font-weight: 400;
+}
+
+.day[data-today] .date {
+  background: var(--color-wine-900);
+  color: var(--color-surface);
+}
+
+.date:focus-visible,
+.event:focus-visible,
+.more:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.events {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.events > li {
+  min-width: 0;
+}
+
+.event {
+  --event-bg: var(--color-blue-100);
+  --event-fg: var(--color-blue-700);
+  width: 100%;
+  min-width: 0;
+  height: 21px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+  padding: 0 5px;
+  border: 0;
+  border-left: 3px solid var(--event-fg);
+  border-radius: 5px;
+  background: var(--event-bg);
+  color: var(--event-fg);
+  font: inherit;
+  font-size: 11px;
+  line-height: 21px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.event[data-kind="SEMINAR"],
+.legend [data-kind="SEMINAR"] {
+  --event-bg: var(--color-wine-100);
+  --event-fg: var(--color-wine-900);
+}
+
+.event[data-kind="PRACTICE"],
+.legend [data-kind="PRACTICE"] {
+  --event-bg: var(--color-success-bg);
+  --event-fg: var(--color-success-text);
+}
+
+.event[data-status="RESCHEDULED"],
+.legend [data-status="RESCHEDULED"] {
+  --event-bg: var(--color-warning-bg);
+  --event-fg: var(--color-warning-text);
+}
+
+.event[data-status="CANCELLED"],
+.legend [data-status="CANCELLED"] {
+  --event-bg: var(--color-new-bg);
+  --event-fg: var(--color-muted);
+}
+
+.event[data-past] {
+  --event-bg: var(--color-subtle);
+}
+
+.day[data-outside] .event[data-past] {
+  --event-bg: var(--color-canvas);
+}
+
+.event:hover {
+  background: var(--event-fg);
+  color: var(--color-surface);
+}
+
+.event time {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.event span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.event[data-status="CANCELLED"] span {
+  text-decoration: line-through;
+}
+
+.more {
+  width: 100%;
+  height: 20px;
+  padding: 0 5px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 20px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.more:hover {
+  background: var(--color-border);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  padding: 0;
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+  line-height: 18px;
+  list-style: none;
+}
+
+.legend li {
+  --event-bg: var(--color-blue-100);
+  --event-fg: var(--color-blue-700);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.legend li::before {
+  width: 14px;
+  height: 14px;
+  border-left: 3px solid var(--event-fg);
+  border-radius: 4px;
+  background: var(--event-bg);
+  content: "";
+}
+
+@media (max-width: 680px) {
+  .grid {
+    grid-template-rows: auto repeat(6, minmax(96px, auto));
+  }
+
+  .day {
+    padding: 2px;
+  }
+
+  .event {
+    height: 17px;
+    padding: 0 2px;
+    border-left-width: 2px;
+    border-radius: 3px;
+    font-size: 10px;
+    line-height: 17px;
+  }
+
+  .event time {
+    display: none;
+  }
+
+  .event span {
+    text-overflow: clip;
+  }
+
+  .more {
+    padding: 0 2px;
+    font-size: 10px;
+  }
+}
+
+@media print {
+  .day,
+  .event {
+    break-inside: avoid;
+  }
+}

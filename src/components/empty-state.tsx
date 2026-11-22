@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { SectionArt, type SectionIllustration } from "@/components/section-art";
 import styles from "./empty-state.module.css";
 
 export type EmptyStateIllustration =
@@ -70,6 +71,7 @@ const illustrations: Record<EmptyStateIllustration, ReactNode> = {
 
 export function EmptyState({
   illustration,
+  art,
   title,
   description,
   action,
@@ -79,6 +81,8 @@ export function EmptyState({
   headingLevel,
 }: {
   illustration: EmptyStateIllustration;
+  /** Крупный рисунок вместо значка — для пустых экранов, а не карточек. */
+  art?: SectionIllustration;
   title: string;
   description?: string;
   action?: ReactNode;
@@ -95,6 +99,9 @@ export function EmptyState({
       className={`${styles.emptyState} ${className ?? ""}`}
       role={role}
     >
+      {art ? (
+        <SectionArt className={styles.art} name={art} />
+      ) : (
       <svg
         aria-hidden="true"
         className={styles.illustration}
@@ -108,6 +115,7 @@ export function EmptyState({
       >
         {illustrations[illustration]}
       </svg>
+      )}
       {Heading ? (
         <Heading className={styles.title}>{title}</Heading>
       ) : (

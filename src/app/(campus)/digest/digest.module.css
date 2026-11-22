@@ -87,6 +87,10 @@
 
 .day {
   min-width: 0;
+  display: grid;
+  grid-template-columns: 168px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-4);
   padding: var(--space-4);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
@@ -95,7 +99,7 @@
 
 .day[data-has-events="true"] {
   border-color: var(--color-border-strong);
-  background: linear-gradient(110deg, var(--color-surface) 0%, var(--color-surface) 72%, var(--color-canvas) 100%);
+  background: linear-gradient(105deg, var(--color-wine-100) 0%, var(--color-surface) 34%);
 }
 
 .day[data-today="true"] {
@@ -114,7 +118,7 @@
   color: var(--color-ink);
   font-size: var(--font-size-h3);
   font-weight: 650;
-  text-transform: capitalize;
+  
 }
 
 .todayBadge,
@@ -133,7 +137,7 @@
 
 .eventList {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
   gap: var(--space-3);
   list-style: none;
 }
@@ -148,6 +152,30 @@
   border-radius: var(--radius-card);
   background: var(--color-surface);
   overflow-wrap: break-word;
+}
+
+.eventCard {
+  border-left: 4px solid var(--color-blue-700);
+  transition:
+    box-shadow var(--motion-fast) var(--motion-ease),
+    transform var(--motion-fast) var(--motion-ease);
+}
+
+.eventCard:hover {
+  box-shadow: var(--shadow-soft);
+  transform: translateY(-2px);
+}
+
+.eventCard[data-type="SPEAKER_MEETING"] {
+  border-left-color: var(--color-wine-900);
+}
+
+.eventCard[data-type="MASTER_CLASS"] {
+  border-left-color: var(--color-success-text);
+}
+
+.eventCard[data-type="OTHER"] {
+  border-left-color: var(--color-warning-text);
 }
 
 .eventCard[data-past="true"] {
@@ -224,6 +252,12 @@
 }
 
 .emptyState,
+.entryNote {
+  color: var(--color-muted);
+  font-size: var(--font-size-label);
+  line-height: 20px;
+}
+
 .noDayEvents {
   color: var(--color-muted);
   font-size: var(--font-size-body-compact);
@@ -318,4 +352,33 @@
   .loading span {
     animation: none;
   }
+}
+
+.day .dayHeader {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.day[data-has-events="false"] {
+  align-items: center;
+  padding-block: var(--space-3);
+  background: transparent;
+}
+
+@media (max-width: 760px) {
+  .day {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+  }
+
+  .day .dayHeader {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.dayHeader h2::first-letter {
+  text-transform: uppercase;
 }

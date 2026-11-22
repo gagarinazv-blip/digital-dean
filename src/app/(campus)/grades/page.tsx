@@ -4,6 +4,7 @@ import { CampusSection } from "@/components/campus-section";
 import { EmptyState } from "@/components/empty-state";
 import { controlTypeLabels } from "@/lib/campus-labels";
 import { getAcademicRecords } from "@/lib/academic-records";
+import { getAverageGrade } from "@/lib/grade-average";
 import { analyzeGrade } from "@/lib/grade-analysis";
 import { getGradebookEntry } from "@/lib/gradebook-data";
 import { GradeCalculator } from "./grade-calculator";
@@ -23,12 +24,6 @@ type GradesPageProps = {
 type AcademicSemesterData = NonNullable<
   Awaited<ReturnType<typeof getAcademicRecords>>["dataset"]
 >["semesters"][number];
-
-function getNumericGrade(value: string | undefined) {
-  if (!value || !/^[2-5](?:[.,]\d+)?$/.test(value.trim())) return null;
-  const grade = Number(value.replace(",", "."));
-  return Number.isFinite(grade) && grade >= 2 && grade <= 5 ? grade : null;
-}
 
 function createSemesterSummary(
   semester: AcademicSemesterData,
@@ -56,9 +51,6 @@ function createSemesterSummary(
       currentContribution,
     };
   });
-  const numericGrades = semester.planItems
-    .map((item) => getNumericGrade(item.result?.value))
-    .filter((grade): grade is number => grade !== null);
   const completedCredits = semester.planItems.reduce(
     (total, item) =>
       item.result?.status === "PASSED" ? total + item.credits : total,
@@ -70,11 +62,9 @@ function createSemesterSummary(
     name: semester.name,
     number: semester.number,
     isCurrent: semester.isCurrent,
-    average:
-      numericGrades.length > 0
-        ? numericGrades.reduce((total, grade) => total + grade, 0) /
-          numericGrades.length
-        : null,
+    average: getAverageGrade(
+      semester.planItems.map((item) => item.result?.value),
+    ),
     completedCredits,
     totalCredits: semester.planItems.reduce(
       (total, item) => total + item.credits,
@@ -118,6 +108,8 @@ async function GradesContent({ searchParams }: Required<GradesPageProps>) {
     <CampusSection
       eyebrow="Учебные результаты"
       title="Успеваемость"
+      illustration="grades"
+      tone="sage"
       description="Результаты обучения, оценки и академический прогресс"
     >
       {dataset?.semesters.length ? (
@@ -156,6 +148,8 @@ function GradesFallback() {
     <CampusSection
       eyebrow="Учебные результаты"
       title="Успеваемость"
+      illustration="grades"
+      tone="sage"
       description="Загружаем данные текущего студента."
     >
       <div aria-busy="true" className={styles.gradesSkeleton}>

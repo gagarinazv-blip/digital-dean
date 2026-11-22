@@ -171,6 +171,8 @@ async function ScheduleContent({
       <CampusSection
         eyebrow="Учебный план"
         title="Расписание"
+      illustration="schedule"
+      tone="blue"
         description={`Сессия · ${dataset?.academicYear ?? "результаты и предстоящие экзамены"}`}
       >
         <SessionView
@@ -289,6 +291,8 @@ async function ScheduleContent({
     <CampusSection
       eyebrow="Учебный план"
       title="Расписание"
+      illustration="schedule"
+      tone="blue"
       description={description}
     >
       <ScheduleView
@@ -313,6 +317,8 @@ function ScheduleFallback() {
     <CampusSection
       eyebrow="Учебный план"
       title="Расписание"
+      illustration="schedule"
+      tone="blue"
       description="Загружаем расписание вашей группы."
     >
       <div aria-busy="true" className={styles.scheduleSkeleton}>

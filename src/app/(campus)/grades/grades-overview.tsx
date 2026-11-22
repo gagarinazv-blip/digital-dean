@@ -83,7 +83,7 @@ function SubjectTable({
             </th>
           </tr>
         </thead>
-        <tbody>
+        <tbody data-stagger>
           {subjects.map((subject) => {
             const status = getStatus(subject);
             return (
@@ -265,7 +265,7 @@ export function GradesOverview({
           </span>
         </section>
 
-        <div className={styles.overviewSummary}>
+        <div className={styles.overviewSummary} data-stagger>
           <section className={styles.summaryCard}>
             <h2>Академический прогресс</h2>
             <div className={styles.progressLabel}>
@@ -278,6 +278,7 @@ export function GradesOverview({
             <div
               aria-label={`Академический прогресс: ${completionPercent}%`}
               className={styles.progressTrack}
+              data-grow
               role="progressbar"
               aria-valuemin={0}
               aria-valuemax={100}
@@ -432,6 +433,7 @@ export function GradesOverview({
                     aria-valuemin={0}
                     aria-valuenow={semester.average ?? 0}
                     className={styles.dynamicsTrack}
+                    data-grow
                     role="progressbar"
                   >
                     <span

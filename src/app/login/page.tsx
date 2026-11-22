@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
+import { BRAND_NAME, BrandMark } from "@/components/brand-logo";
 import { getCurrentUser } from "@/lib/auth";
 import { LoginForm, StudentPasswordResetForm } from "./login-form";
 import styles from "./login.module.css";
@@ -33,19 +34,9 @@ async function LoginContent({
         <div className={styles.topbarInner}>
           <div className={styles.topbarBrand}>
             <span className={styles.topbarMark} aria-hidden="true">
-              <svg
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="1.6"
-                viewBox="0 0 24 24"
-              >
-                <path d="m2 9 10-5 10 5-10 5z" />
-                <path d="M6 11v5c3 2 9 2 12 0v-5M22 9v6" />
-              </svg>
+              <BrandMark />
             </span>
-            <strong>Campus OS</strong>
+            <strong>{BRAND_NAME}</strong>
           </div>
           <span className={styles.topbarDescriptor}>
             Личный кабинет студента и сотрудника

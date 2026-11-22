@@ -94,44 +94,6 @@ function dateToUtc(dateKey: string): number {
   return date.getTime();
 }
 
-export function getSessionCountdown(
-  dateKey: string,
-  startTime: string,
-  todayKey: string,
-  currentTime = "00:00",
-): string {
-  const dayDifference = Math.round(
-    (dateToUtc(dateKey) - dateToUtc(todayKey)) / DAY_MS,
-  );
-  if (dayDifference > 0) {
-    const [hour, minute] = startTime.split(":").map(Number);
-    const [currentHour, currentMinute] = currentTime.split(":").map(Number);
-    const remaining =
-      dayDifference * 24 * 60 +
-      hour * 60 +
-      minute -
-      (currentHour * 60 + currentMinute);
-    const days = Math.floor(remaining / (24 * 60));
-    const hours = Math.floor((remaining % (24 * 60)) / 60);
-    const minutes = remaining % 60;
-    if (dayDifference === 1) {
-      if (hours > 0) return `завтра, через ${hours} ч${minutes ? ` ${minutes} мин` : ""}`;
-      return minutes > 0 ? `завтра, через ${minutes} мин` : "завтра";
-    }
-    return `через ${days} ${pluralDays(days)}${hours ? ` ${hours} ч` : ""}${minutes ? ` ${minutes} мин` : ""}`;
-  }
-  if (dayDifference === 0) return "Сегодня";
-  return `дата прошла ${Math.abs(dayDifference)} ${pluralDays(Math.abs(dayDifference))} назад`;
-}
-
-function pluralDays(days: number): string {
-  const lastTwo = days % 100;
-  const last = days % 10;
-  if (lastTwo >= 11 && lastTwo <= 14) return "дней";
-  if (last === 1) return "день";
-  return last >= 2 && last <= 4 ? "дня" : "дней";
-}
-
 export function summarizeSession(
   events: readonly SessionEventForUtils[],
   plannedItems = events.length,
@@ -493,7 +455,7 @@ export function generateSessionIcs(
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Campus OS//Session Schedule//RU",
+    "PRODID:-//AKSIUM//Session Schedule//RU",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     "BEGIN:VTIMEZONE",

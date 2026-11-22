@@ -1,3 +1,4 @@
+import { SectionHeader } from "@/components/section-header";
 import { forbidden } from "next/navigation";
 import { requireStaffContext } from "@/lib/staff";
 import { getManagedCertificateForms } from "@/lib/certificate-forms";
@@ -15,14 +16,13 @@ export default async function CertificateFormsPage() {
 
   return (
     <main className={styles.page}>
-      <header className={styles.heading}>
-        <p className={styles.eyebrow}>Рабочее место · Настройки</p>
-        <h1>Виды справок</h1>
-        <p>
-          Настраивайте справки и поля заявки. Архив скрывает справку от
-          студентов, но не меняет уже поданные заявки.
-        </p>
-      </header>
+      <SectionHeader
+        description="Настраивайте справки и поля заявки. Архив скрывает справку от студентов, но не меняет уже поданные заявки."
+        eyebrow="Рабочее место · Настройки"
+        illustration="certificates"
+        title="Виды справок"
+        tone="wine"
+      />
       <CertificateFormList forms={forms} />
     </main>
   );

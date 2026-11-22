@@ -67,6 +67,8 @@ async function DigestContent({
     <CampusSection
       eyebrow="Внеучебная жизнь"
       title="Дайджест событий"
+      illustration="digest"
+      tone="wine"
       description={`Неделя · ${formatDigestWeekRange(week)}`}
     >
       <div className={styles.workspace}>
@@ -111,7 +113,7 @@ async function DigestContent({
             На этой неделе мероприятий пока нет
           </div>
         ) : (
-          <div className={styles.weekGrid}>
+          <div className={styles.weekGrid} data-stagger>
             {days.map((day) => {
               const isToday = day.dateKey === todayKey;
               return (
@@ -142,6 +144,7 @@ async function DigestContent({
                           <li
                             className={styles.eventCard}
                             data-past={isPast}
+                            data-type={event.type}
                             key={event.id}
                           >
                             <div className={styles.eventTopline}>
@@ -178,7 +181,9 @@ async function DigestContent({
                                 <p>{event.description}</p>
                               </details>
                             ) : null}
-                            {canRegister ? (
+                            {isPast ? (
+                              <p className={styles.entryNote}>Событие прошло</p>
+                            ) : canRegister ? (
                               <a
                                 className={styles.registerButton}
                                 href={event.registrationUrl ?? undefined}
@@ -189,13 +194,9 @@ async function DigestContent({
                                 <span aria-hidden="true">↗</span>
                               </a>
                             ) : (
-                              <button
-                                className={styles.registerButton}
-                                disabled
-                                type="button"
-                              >
-                                Регистрация пока недоступна
-                              </button>
+                              <p className={styles.entryNote}>
+                                Вход свободный, запись не нужна
+                              </p>
                             )}
                           </li>
                         );
@@ -217,6 +218,8 @@ function DigestFallback() {
     <CampusSection
       eyebrow="Внеучебная жизнь"
       title="Дайджест событий"
+      illustration="digest"
+      tone="wine"
       description="Загружаем мероприятия недели."
     >
       <div aria-busy="true" className={styles.loading}>

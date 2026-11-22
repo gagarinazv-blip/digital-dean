@@ -44,6 +44,8 @@ import { DateTimeStack } from "@/components/date-time-stack";
 import { useDemoNow } from "@/components/demo-now";
 import { Drawer } from "@/components/ui/drawer";
 import controls from "@/components/ui/controls.module.css";
+import { formatRoom, formatRoomTitle, joinDetails } from "@/lib/room-format";
+import { MonthCalendar } from "./month-calendar";
 import styles from "./schedule.module.css";
 
 export type ScheduleLessonView = {
@@ -223,7 +225,7 @@ function TimelineLesson({
 
   return (
     <button
-      aria-label={`${lesson.subject}, ${lesson.timeLabel}, ${lesson.kindLabel}, ауд. ${lesson.room}, ${lesson.teacher}, ${status.label}`}
+      aria-label={`${lesson.subject}, ${lesson.timeLabel}, ${[lesson.kindLabel, formatRoom(lesson.room), lesson.teacher, status.label].filter(Boolean).join(", ")}`}
       className={`${styles.timelineLesson} ${kindClass} ${
         lesson.status === "RESCHEDULED" ? styles.timelineChanged : ""
       } ${lesson.status === "CANCELLED" ? styles.timelineCancelled : ""} ${
@@ -236,8 +238,8 @@ function TimelineLesson({
     >
       <time dateTime={lesson.startsAtIso}>{lesson.timeLabel}</time>
       <strong title={lesson.subject}>{lesson.subject}</strong>
-      <span title={`${lesson.kindLabel} · ауд. ${lesson.room}`}>
-        {lesson.kindLabel} · ауд. {lesson.room}
+      <span title={joinDetails(lesson.kindLabel, formatRoom(lesson.room))}>
+        {joinDetails(lesson.kindLabel, formatRoom(lesson.room))}
       </span>
       <span className={styles.timelineStatus}>
         {isCurrent ? "Сейчас" : isNext ? "Далее" : status.label}
@@ -388,7 +390,7 @@ export function LessonAgenda({
   }
 
   return (
-    <ul className={styles.lessonList}>
+    <ul className={styles.lessonList} data-stagger>
       {day.lessons.map((lesson) => {
         const status = statusPresentation[lesson.status];
         const changedTime = Boolean(
@@ -396,6 +398,7 @@ export function LessonAgenda({
             lesson.originalTimeLabel !== lesson.timeLabel,
         );
         const changedDate = Boolean(lesson.originalDateLabel);
+        const roomTitle = formatRoomTitle(lesson.room);
         const changedRoom = Boolean(
           lesson.originalRoom && lesson.originalRoom !== lesson.room,
         );
@@ -403,7 +406,7 @@ export function LessonAgenda({
         return (
           <li key={lesson.id}>
             <button
-              aria-label={`${lesson.subject}, ${lesson.timeLabel}, ${lesson.kindLabel}, ауд. ${lesson.room}, ${lesson.teacher}, ${status.label}`}
+              aria-label={`${lesson.subject}, ${lesson.timeLabel}, ${[lesson.kindLabel, formatRoom(lesson.room), lesson.teacher, status.label].filter(Boolean).join(", ")}`}
               className={`${styles.agendaLesson} ${
                 lesson.status === "RESCHEDULED" ? styles.rescheduledCard : ""
               } ${lesson.status === "CANCELLED" ? styles.cancelledCard : ""}`}
@@ -443,13 +446,11 @@ export function LessonAgenda({
               >
                 {lesson.kindLabel} · {lesson.teacher}
               </span>
-              <span
-                className={styles.roomBadge}
-                lang="ru"
-                title={`Ауд. ${lesson.room}`}
-              >
-                Ауд. {lesson.room}
-              </span>
+              {roomTitle ? (
+                <span className={styles.roomBadge} lang="ru" title={roomTitle}>
+                  {roomTitle}
+                </span>
+              ) : null}
               {lesson.status === "RESCHEDULED" &&
                 (changedDate || changedTime || changedRoom) && (
                   <span className={styles.agendaChange}>
@@ -457,12 +458,12 @@ export function LessonAgenda({
                     {changedDate || changedTime
                       ? `${lesson.originalDateLabel ? `${lesson.originalDateLabel}, ` : ""}${lesson.originalTimeLabel ?? ""}`
                       : ""}
-                    {changedRoom ? ` · ауд. ${lesson.originalRoom}` : ""}
+                    {changedRoom ? ` · ${formatRoom(lesson.originalRoom) ?? ""}` : ""}
                     {" → "}
                     {changedDate || changedTime
                       ? `${changedDate ? `${makeDayDateLabel(lesson.dateKey)}, ` : ""}${lesson.timeLabel}`
                       : ""}
-                    {changedRoom ? ` · ауд. ${lesson.room}` : ""}
+                    {changedRoom ? ` · ${formatRoom(lesson.room) ?? ""}` : ""}
                   </span>
                 )}
               {lesson.changeNote && (
@@ -562,7 +563,7 @@ function LessonDrawer({
         </div>
         <div>
           <dt>Аудитория</dt>
-          <dd>{shown.room}</dd>
+          <dd>{formatRoomTitle(shown.room) ?? "Не указана"}</dd>
         </div>
         <div>
           <dt>Преподаватель</dt>
@@ -802,10 +803,6 @@ export function ScheduleView({
   const monthDays = useMemo(
     () => (view === "month" ? getMonthCalendarDays(selectedDate) : []),
     [selectedDate, view],
-  );
-  const dayCounts = useMemo(
-    () => new Map(filteredDays.map((day) => [day.key, day.lessons.length])),
-    [filteredDays],
   );
   const allChanges = days
     .flatMap((day) => day.lessons)
@@ -1294,7 +1291,7 @@ export function ScheduleView({
                     ? ` в ${formatClock(upcomingLesson.startsAtMinutes)}`
                     : ""}
                 {(currentLesson ?? upcomingLesson)?.room
-                  ? ` · ауд. ${(currentLesson ?? upcomingLesson)?.room}`
+                  ? ` · ${formatRoom((currentLesson ?? upcomingLesson)?.room) ?? ""}`
                   : ""}
               </p>
               {highlightedLesson && (
@@ -1403,9 +1400,10 @@ export function ScheduleView({
                 activeFilterCount > 0
                   ? "Измените или сбросьте фильтры, чтобы увидеть расписание."
                   : nextLesson
-                    ? `Ближайшее занятие: ${nextLesson.subject}, ауд. ${nextLesson.room}`
+                    ? `Ближайшее занятие: ${[nextLesson.subject, formatRoom(nextLesson.room)].filter(Boolean).join(", ")}`
                     : "В ближайшей неделе занятий нет."
               }
+              art={activeFilterCount > 0 ? undefined : "calm"}
               illustration={activeFilterCount > 0 ? "search" : "schedule"}
               title={
                 activeFilterCount > 0
@@ -1420,7 +1418,7 @@ export function ScheduleView({
       )}
 
       {view === "list" && (
-        <div aria-label="Список занятий по дням" className={styles.agendaFeed}>
+        <div aria-label="Список занятий по дням" className={styles.agendaFeed} data-stagger>
           {daysWithLessons.length > 0 ? (
             daysWithLessons.map((day) => (
               <section className={styles.agendaFeedDay} key={day.key}>
@@ -1461,6 +1459,7 @@ export function ScheduleView({
               className={`${styles.weekGrid} ${
                 showSunday ? styles.weekGridSeven : styles.weekGridSix
               }`}
+              data-stagger
             >
               <div className={styles.weekGridCorner} />
               {visibleWeekDays.map((day) => (
@@ -1558,7 +1557,7 @@ export function ScheduleView({
                 </button>
               ))}
             </nav>
-            <div className={styles.dayList}>
+            <div className={styles.dayList} data-stagger>
               {filteredDays.map((day) => (
                 <section
                   aria-current={day.key === todayKey ? "date" : undefined}
@@ -1601,52 +1600,18 @@ export function ScheduleView({
 
       {view === "month" && (
         <>
-          <div
-            aria-label="Календарь занятий на месяц"
-            className={styles.monthGrid}
-            onKeyDown={(event) => {
-              const target = event.target;
-              if (!(target instanceof HTMLButtonElement)) return;
-              focusAdjacentDate(event, target.dataset.date ?? selectedDate);
-            }}
-            role="group"
-          >
-            {weekdayLabels.map((weekday) => (
-              <span className={styles.monthWeekday} key={weekday}>
-                {weekday}
-              </span>
-            ))}
-            {monthDays.map((dateKey) => {
-              const count = dayCounts.get(dateKey) ?? 0;
-              const isCurrentMonth = dateKey.slice(0, 7) === selectedDate.slice(0, 7);
-              return (
-                <button
-                  aria-current={dateKey === todayKey ? "date" : undefined}
-                  aria-label={`${makeDayDateLabel(dateKey)}, занятий: ${count}`}
-                  aria-pressed={dateKey === openDayKey}
-                  className={`${styles.monthDay} ${
-                    isCurrentMonth ? "" : styles.outsideMonth
-                  } ${dateKey === todayKey ? styles.monthToday : ""} ${
-                    dateKey === openDayKey ? styles.monthSelected : ""
-                  }`}
-                  data-date={dateKey}
-                  data-schedule-day={dateKey}
-                  id={`schedule-date-${dateKey}`}
-                  key={dateKey}
-                  onClick={() => openDayPanel(dateKey)}
-                  type="button"
-                >
-                  <strong>{Number(dateKey.slice(8, 10))}</strong>
-                  {count > 0 && (
-                    <span className={styles.monthLessonCount}>
-                      {count} {count === 1 ? "пара" : "пар"}
-                    </span>
-                  )}
-                  {count === 0 && <span className={styles.monthNoLessons}>—</span>}
-                </button>
-              );
-            })}
-          </div>
+          <MonthCalendar
+            dateKeys={monthDays}
+            days={filteredDays}
+            formatDay={makeDayDateLabel}
+            now={now}
+            onKeyDown={focusAdjacentDate}
+            onOpenDay={openDayPanel}
+            onOpenLesson={openLesson}
+            openDayKey={openDayKey}
+            selectedMonth={selectedDate.slice(0, 7)}
+            todayKey={todayKey}
+          />
           <div className={styles.monthUpcoming}>
             <h2>Занятия в выбранном месяце</h2>
             {daysWithLessons.length > 0 ? (
@@ -1664,6 +1629,7 @@ export function ScheduleView({
                     ? "Измените условия поиска или сбросьте фильтры."
                     : "Выберите другой месяц или вернитесь к текущему расписанию."
                 }
+                art={activeFilterCount > 0 ? undefined : "calm"}
                 illustration={activeFilterCount > 0 ? "search" : "schedule"}
                 title={
                   activeFilterCount > 0

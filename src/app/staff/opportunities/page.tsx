@@ -1,3 +1,4 @@
+import { SectionHeader } from "@/components/section-header";
 import { DateTimeStack } from "@/components/date-time-stack";
 import { Suspense } from "react";
 import Link from "next/link";
@@ -88,13 +89,13 @@ async function StaffOpportunitiesContent({
   ]);
   return (
     <main className={styles.page}>
-      <header className={styles.pageHeader}>
-        <div>
-          <p className={styles.eyebrow}>Сотрудникам</p>
-          <h1>Возможности</h1>
-          <p>Каталог программ, наборов и мероприятий для студентов.</p>
-        </div>
-      </header>
+      <SectionHeader
+        description="Каталог программ, наборов и мероприятий для студентов."
+        eyebrow="Рабочее место"
+        illustration="programs"
+        title="Возможности"
+        tone="sand"
+      />
 
       <details className={styles.createPanel}>
         <summary>Добавить возможность</summary>
@@ -181,8 +182,8 @@ async function StaffOpportunitiesContent({
                   />
                 </div>
                 <div className={styles.rowLinks}>
-                  <Link href={`/staff/opportunities/${item.id}/edit`}>Редактировать</Link>
-                  <Link href={`/staff/opportunities/${item.id}/applications`}>Заявки</Link>
+                  <Link className={styles.secondaryButton} href={`/staff/opportunities/${item.id}/edit`}>Редактировать</Link>
+                  <Link className={styles.secondaryButton} href={`/staff/opportunities/${item.id}/applications`}>Заявки</Link>
                   <OpportunityListActions
                     opportunityId={item.id}
                     hasApplications={item._count.applications > 0}

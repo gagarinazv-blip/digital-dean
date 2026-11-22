@@ -75,6 +75,8 @@ async function ApplicationsContent({
     <CampusSection
       eyebrow="Возможности"
       title="Мои заявки на участие"
+      illustration="opportunities"
+      tone="sand"
       description="Отслеживайте решения сотрудников и управляйте своими заявками."
     >
       {success && (
@@ -116,7 +118,7 @@ async function ApplicationsContent({
           <Link href="/opportunities/catalog">Перейти в каталог</Link>
         </div>
       ) : (
-        <div className={styles.list}>
+        <div className={styles.list} data-stagger>
           {applications.map((application) => (
             <article
               className={styles.card}

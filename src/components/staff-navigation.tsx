@@ -2,14 +2,28 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Calendar, GraphUp, PageEdit, Suitcase, TaskList, User } from "iconoir-react";
+import {
+  Group,
+  Journal,
+  PageEdit,
+  SidebarCollapse,
+  SidebarExpand,
+  Suitcase,
+  TaskList,
+  Trophy,
+} from "iconoir-react";
+import { useState } from "react";
+import {
+  STAFF_SIDEBAR_COLLAPSED,
+  STAFF_SIDEBAR_COOKIE,
+} from "@/lib/staff-sidebar";
 import styles from "./staff-layout.module.css";
 
 const navigationItems = [
   { href: "/staff", label: "Заявки", icon: TaskList },
-  { href: "/staff/students", label: "Студенты", icon: User },
-  { href: "/staff/achievements", label: "Достижения", icon: GraphUp },
-  { href: "/staff/events", label: "Дайджест событий", icon: Calendar },
+  { href: "/staff/students", label: "Студенты", icon: Group },
+  { href: "/staff/achievements", label: "Достижения", icon: Trophy },
+  { href: "/staff/events", label: "Дайджест событий", icon: Journal },
   { href: "/staff/opportunities", label: "Возможности", icon: Suitcase },
   {
     href: "/staff/certificate-forms",
@@ -19,16 +33,37 @@ const navigationItems = [
   },
 ] as const;
 
+const YEAR_IN_SECONDS = 365 * 24 * 60 * 60;
+
 export function StaffNavigation({
+  initiallyCollapsed,
   isManagerAccount,
 }: {
+  initiallyCollapsed: boolean;
   isManagerAccount: boolean;
 }) {
   const pathname = usePathname();
+  const [isCollapsed, setIsCollapsed] = useState(initiallyCollapsed);
+  const toggleLabel = isCollapsed ? "Развернуть меню" : "Свернуть меню";
+  const ToggleIcon = isCollapsed ? SidebarExpand : SidebarCollapse;
+
+  function toggle() {
+    const next = !isCollapsed;
+    setIsCollapsed(next);
+    document.cookie = `${STAFF_SIDEBAR_COOKIE}=${
+      next ? STAFF_SIDEBAR_COLLAPSED : "expanded"
+    }; path=/staff; max-age=${YEAR_IN_SECONDS}; samesite=lax`;
+  }
 
   return (
-    <nav className={styles.navigation} aria-label="Разделы сотрудника">
+    <nav
+      aria-label="Разделы сотрудника"
+      className={styles.navigation}
+      data-collapsed={isCollapsed}
+      id="staff-navigation"
+    >
       <p className={styles.navigationTitle}>Рабочее место</p>
+      <div className={styles.navigationLinks}>
       {navigationItems
         .filter((item) => !("managerOnly" in item) || isManagerAccount)
         .map((item) => {
@@ -60,10 +95,23 @@ export function StaffNavigation({
               aria-hidden="true"
               strokeWidth={1.8}
             />
-            {item.label}
+            <span className={styles.navigationLabel}>{item.label}</span>
           </Link>
         );
         })}
+      </div>
+      <button
+        aria-controls="staff-navigation"
+        aria-expanded={!isCollapsed}
+        aria-label={toggleLabel}
+        className={styles.navigationToggle}
+        onClick={toggle}
+        title={toggleLabel}
+        type="button"
+      >
+        <ToggleIcon aria-hidden="true" strokeWidth={1.8} />
+        <span className={styles.navigationLabel}>{toggleLabel}</span>
+      </button>
     </nav>
   );
 }
