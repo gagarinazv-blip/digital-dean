@@ -188,6 +188,7 @@ enum EventStatus {
 }
 
 enum EventApprovalStatus {
+  NOT_APPROVED
   PENDING
   APPROVED
   NOT_REQUIRED

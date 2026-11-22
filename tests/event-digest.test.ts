@@ -82,8 +82,8 @@ describe("event form validation", () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.startsAt.toISOString()).toBe("2026-11-16T20:30:00.000Z");
-    expect(result.value.endsAt.toISOString()).toBe("2026-11-16T21:30:00.000Z");
+    expect(result.value.startsAt?.toISOString()).toBe("2026-11-16T20:30:00.000Z");
+    expect(result.value.endsAt?.toISOString()).toBe("2026-11-16T21:30:00.000Z");
   });
 
   it("rejects equal start and end times and unsafe registration protocols", () => {

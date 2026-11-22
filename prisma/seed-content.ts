@@ -4,6 +4,7 @@ import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient, type Prisma } from "../src/generated/prisma/client";
+import { getMoscowDateKey } from "../src/lib/campus-time";
 import { getDefaultDeadlineChecklist } from "../src/lib/deadline-progress";
 import { addDemoDays, getDemoNow } from "../src/lib/demo-date";
 import { getContentDate, getContentWeekDate } from "./content/dates";
@@ -89,23 +90,41 @@ async function seed(tx: Prisma.TransactionClient) {
   // Дайджест
   for (const event of digestContent) {
     if (await tx.event.findFirst({ where: { title: event.title }, select: { id: true } })) continue;
-    const startsAt = getContentWeekDate(now, event.week, event.day, event.from);
-    const endsAt = getContentWeekDate(
-      now,
-      event.week,
-      event.to < event.from ? event.day + 1 : event.day,
-      event.to,
+    const startsAt = event.from
+      ? getContentWeekDate(now, event.week, event.day, event.from)
+      : null;
+    const endsAt =
+      event.from && event.to
+        ? getContentWeekDate(
+            now,
+            event.week,
+            event.to < event.from ? event.day + 1 : event.day,
+            event.to,
+          )
+        : null;
+    const dateKey = getMoscowDateKey(
+      getContentWeekDate(now, event.week, event.day, "12:00"),
     );
+    const [speaker, room, time] = event.approvals ?? [
+      "APPROVED",
+      "APPROVED",
+      "APPROVED",
+    ];
     await tx.event.create({
       data: {
         title: event.title,
         type: event.type,
         description: event.description,
+        eventDate: new Date(`${dateKey}T00:00:00.000Z`),
         startsAt,
         endsAt,
         location: event.location,
         host: event.host,
         status: event.status ?? "PUBLISHED",
+        speakerApproval: speaker,
+        roomApproval: room,
+        timeApproval: time,
+        speakerApprovalNote: event.note ?? null,
         createdById: author.id,
       },
     });
