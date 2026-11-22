@@ -770,7 +770,8 @@ async function main() {
               data: {
                 studentId,
                 type: "SCHEDULE_CHANGE",
-                ...notice,
+                title: notice.title,
+                text: notice.text,
                 date: seedNow,
                 createdAt: seedNow,
                 targetType: "ACADEMIC_SESSION",
