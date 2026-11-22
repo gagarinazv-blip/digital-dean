@@ -274,7 +274,7 @@
 .shellBody {
   min-height: 0;
   display: grid;
-  grid-template-columns: var(--size-sidebar) minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
   overflow: hidden;
 }
 
@@ -292,10 +292,6 @@
   .headerDescriptor,
   .headerSearch {
     display: none;
-  }
-
-  .shellBody {
-    grid-template-columns: var(--size-rail) minmax(0, 1fr);
   }
 
   .content {

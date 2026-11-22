@@ -14,10 +14,12 @@ type CampusStudentMenu = {
 
 export function CampusLayout({
   children,
+  isSidebarCollapsed,
   student,
   unreadNotificationCount,
 }: {
   children: ReactNode;
+  isSidebarCollapsed: boolean;
   student: CampusStudentMenu;
   unreadNotificationCount: number;
 }) {
@@ -104,6 +106,7 @@ export function CampusLayout({
       </header>
       <div className={styles.shellBody}>
         <CampusNavigation
+          initiallyCollapsed={isSidebarCollapsed}
           studentId={student.id}
           unreadNotificationCount={unreadNotificationCount}
         />

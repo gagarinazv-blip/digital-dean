@@ -1,7 +1,12 @@
 import { Suspense, type ReactNode } from "react";
+import { cookies } from "next/headers";
 import { CampusLayout } from "@/components/campus-layout";
 import { CampusLoading } from "@/components/campus-section";
 import { DemoNowProvider } from "@/components/demo-now";
+import {
+  CAMPUS_SIDEBAR_COLLAPSED,
+  CAMPUS_SIDEBAR_COOKIE,
+} from "@/lib/campus-sidebar";
 import { DEMO_NOW, getDemoNow } from "@/lib/demo-date";
 import { countUnreadStudentNotifications } from "@/lib/notification-data";
 import { requireStudentContext } from "@/lib/student";
@@ -29,12 +34,14 @@ async function ProtectedCampus({ children }: { children: ReactNode }) {
   const unreadNotificationCount = await countUnreadStudentNotifications(
     student.id,
   );
+  const sidebar = (await cookies()).get(CAMPUS_SIDEBAR_COOKIE)?.value;
   return (
     <DemoNowProvider
       isFrozen={DEMO_NOW !== null}
       nowIso={getDemoNow().toISOString()}
     >
       <CampusLayout
+        isSidebarCollapsed={sidebar === CAMPUS_SIDEBAR_COLLAPSED}
         student={student}
         unreadNotificationCount={unreadNotificationCount}
       >
