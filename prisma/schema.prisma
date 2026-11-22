@@ -187,6 +187,25 @@ enum EventStatus {
   PUBLISHED
 }
 
+enum EventApprovalStatus {
+  PENDING
+  APPROVED
+  NOT_REQUIRED
+}
+
+enum EventApprovalItem {
+  SPEAKER
+  ROOM
+  TIME
+}
+
+enum EventHistoryAction {
+  APPROVAL_STATUS_CHANGED
+  NOTE_CHANGED
+  PUBLICATION_CHANGED
+  MIGRATED
+}
+
 enum OpportunityType {
   COMPETITION
   INTERNSHIP
@@ -297,6 +316,10 @@ model User {
   uploadedPortfolioItems   PortfolioItem[]            @relation("PortfolioItemUploader")
   staffNotifications       StaffNotification[]        @relation("StaffNotificationRecipient")
   createdEvents            Event[]                    @relation("EventCreator")
+  speakerEventApprovals    Event[]                    @relation("EventSpeakerApprovalActor")
+  roomEventApprovals       Event[]                    @relation("EventRoomApprovalActor")
+  timeEventApprovals       Event[]                    @relation("EventTimeApprovalActor")
+  eventApprovalHistory     EventApprovalHistory[]     @relation("EventApprovalHistoryActor")
   createdOpportunities     Opportunity[]              @relation("OpportunityCreator")
   decidedApplications      OpportunityApplication[]   @relation("ApplicationDecider")
   createdAt                DateTime                   @default(now())
@@ -388,23 +411,61 @@ model StaffProfile {
 }
 
 model Event {
-  id              Int         @id @default(autoincrement())
-  title           String      @db.VarChar(120)
-  type            EventType
-  description     String?     @db.VarChar(1000)
-  startsAt        DateTime    @db.Timestamptz(3)
-  endsAt          DateTime    @db.Timestamptz(3)
-  location        String      @db.VarChar(160)
-  host            String      @db.VarChar(160)
-  registrationUrl String?     @db.VarChar(2048)
-  status          EventStatus @default(DRAFT)
-  createdById     Int
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  createdBy       User        @relation("EventCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  id                    Int                  @id @default(autoincrement())
+  title                 String               @db.VarChar(120)
+  type                  EventType
+  description           String?              @db.VarChar(1000)
+  eventDate             DateTime             @db.Date
+  startsAt              DateTime?            @db.Timestamptz(3)
+  endsAt                DateTime?            @db.Timestamptz(3)
+  location              String?              @db.VarChar(160)
+  host                  String?              @db.VarChar(160)
+  registrationUrl       String?              @db.VarChar(2048)
+  status                EventStatus          @default(DRAFT)
+  speakerApproval       EventApprovalStatus  @default(PENDING)
+  roomApproval          EventApprovalStatus  @default(PENDING)
+  timeApproval          EventApprovalStatus  @default(PENDING)
+  speakerApprovalNote   String?              @db.VarChar(200)
+  roomApprovalNote      String?              @db.VarChar(200)
+  timeApprovalNote      String?              @db.VarChar(200)
+  speakerApprovedAt     DateTime?
+  roomApprovedAt        DateTime?
+  timeApprovedAt        DateTime?
+  speakerApprovedById   Int?
+  roomApprovedById      Int?
+  timeApprovedById      Int?
+  createdById           Int
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  createdBy             User                 @relation("EventCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  speakerApprovedBy     User?                @relation("EventSpeakerApprovalActor", fields: [speakerApprovedById], references: [id], onDelete: SetNull)
+  roomApprovedBy        User?                @relation("EventRoomApprovalActor", fields: [roomApprovedById], references: [id], onDelete: SetNull)
+  timeApprovedBy        User?                @relation("EventTimeApprovalActor", fields: [timeApprovedById], references: [id], onDelete: SetNull)
+  approvalHistory       EventApprovalHistory[]
 
-  @@index([startsAt, status])
+  @@index([eventDate, status])
   @@index([createdById])
+  @@index([speakerApprovedById])
+  @@index([roomApprovedById])
+  @@index([timeApprovedById])
+}
+
+model EventApprovalHistory {
+  id                  Int                  @id @default(autoincrement())
+  eventId             Int
+  action              EventHistoryAction
+  item                EventApprovalItem?
+  fromApprovalStatus  EventApprovalStatus?
+  toApprovalStatus    EventApprovalStatus?
+  fromEventStatus     EventStatus?
+  toEventStatus       EventStatus?
+  changedById         Int?
+  changedAt           DateTime             @default(now())
+  event               Event                @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  changedBy           User?                @relation("EventApprovalHistoryActor", fields: [changedById], references: [id], onDelete: SetNull)
+
+  @@index([eventId, changedAt])
+  @@index([changedById, changedAt])
 }
 
 model StudentGroup {
