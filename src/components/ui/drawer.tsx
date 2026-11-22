@@ -28,7 +28,8 @@ export function Drawer({
   eyebrow?: ReactNode;
   description?: ReactNode;
   children: ReactNode;
-  footer?: ReactNode;
+  /** Функция получает закрытие с проверкой несохранённых изменений. */
+  footer?: ReactNode | ((requestClose: () => void) => ReactNode);
   /** side — панель справа, full — окно на весь экран. */
   mode?: "side" | "full";
   /** Есть несохранённые изменения: перед закрытием спросим подтверждение. */
@@ -71,6 +72,19 @@ export function Drawer({
     },
   });
 
+  // Отключённые на время сохранения поля теряют фокус; оставляем его в окне.
+  useEffect(() => {
+    if (!isBusy) return;
+    // Браузер снимает фокус с отключённого элемента уже после отрисовки.
+    const timer = window.setTimeout(() => {
+      const dialog = ref.current;
+      if (dialog?.open && !dialog.contains(document.activeElement)) {
+        dialog.focus();
+      }
+    }, 50);
+    return () => window.clearTimeout(timer);
+  }, [isBusy, ref]);
+
   return (
     <dialog
       {...dialogProps}
@@ -82,6 +96,7 @@ export function Drawer({
       id={id}
       ref={ref}
       role="dialog"
+      tabIndex={-1}
     >
       {isPresent ? (
         <div className={styles.panel}>
@@ -106,11 +121,15 @@ export function Drawer({
             </button>
           </header>
           <div className={styles.body}>{children}</div>
-          {footer ? <footer className={styles.footer}>{footer}</footer> : null}
+          {footer ? (
+            <footer className={styles.footer}>
+              {typeof footer === "function" ? footer(requestClose) : footer}
+            </footer>
+          ) : null}
         </div>
       ) : null}
       <ConfirmDialog
-        cancelLabel="Продолжить редактирование"
+        cancelLabel="Вернуться к форме"
         confirmLabel="Закрыть без сохранения"
         onCancel={() => setIsConfirming(false)}
         onConfirm={() => {

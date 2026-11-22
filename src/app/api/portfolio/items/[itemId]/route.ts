@@ -4,8 +4,9 @@ import {
   PortfolioError,
   updatePortfolioItem,
 } from "@/lib/portfolio";
+import type { PortfolioFieldErrors } from "@/lib/portfolio-form";
 import {
-  parsePortfolioMetadata,
+  validatePortfolioMetadata,
   validatePortfolioUpload,
 } from "@/lib/portfolio-validation";
 
@@ -16,6 +17,13 @@ const privateHeaders = {
 
 function responseError(message: string, status: number): Response {
   return Response.json({ error: message }, { status, headers: privateHeaders });
+}
+
+function fieldErrorResponse(fieldErrors: PortfolioFieldErrors): Response {
+  return Response.json(
+    { error: "Проверьте выделенные поля.", fieldErrors },
+    { status: 400, headers: privateHeaders },
+  );
 }
 
 function parseId(value: string): number | null {
@@ -45,7 +53,7 @@ export async function PUT(
   } catch {
     return responseError("Не удалось прочитать форму.", 400);
   }
-  const metadataResult = parsePortfolioMetadata(
+  const metadataResult = validatePortfolioMetadata(
     {
       title: formData.get("title"),
       category: formData.get("category"),
@@ -56,16 +64,16 @@ export async function PUT(
     },
     true,
   );
-  if (!metadataResult.ok) return responseError(metadataResult.error, 400);
+  if (!metadataResult.ok) return fieldErrorResponse(metadataResult.errors);
 
   const upload = formData.get("file");
   let replacement;
   if (upload && typeof upload !== "string" && upload.size > 0) {
     const fileResult = await validatePortfolioUpload(upload);
-    if (!fileResult.ok) return responseError(fileResult.error, 400);
+    if (!fileResult.ok) return fieldErrorResponse({ file: fileResult.error });
     replacement = fileResult.file;
   } else if (upload && typeof upload === "string" && upload.length > 0) {
-    return responseError("Выберите корректный файл.", 400);
+    return fieldErrorResponse({ file: "Выберите корректный файл." });
   }
 
   try {
@@ -83,7 +91,11 @@ export async function PUT(
     if (error instanceof PortfolioError) {
       return responseError(error.message, error.status);
     }
-    console.error("Portfolio item update failed.");
-    return responseError("Не удалось сохранить изменения.", 500);
+    console.error("[portfolio:update] Не удалось сохранить изменения.", {
+      itemId,
+      userId: actor.userId,
+      error,
+    });
+    return responseError("Не удалось сохранить изменения. Попробуйте ещё раз.", 500);
   }
 }

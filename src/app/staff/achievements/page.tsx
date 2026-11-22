@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PortfolioItemControls } from "@/app/(campus)/documents/portfolio-controls";
-import { PortfolioUploadForm } from "@/app/(campus)/documents/portfolio-upload-form";
+import { PortfolioItemDrawer } from "@/app/(campus)/documents/portfolio-item-drawer";
+import { DateTimeStack } from "@/components/date-time-stack";
 import { requireStaffContext } from "@/lib/staff";
 import { getPrisma } from "@/lib/prisma";
 import { getStaffPortfolioItems } from "@/lib/portfolio";
@@ -8,7 +9,7 @@ import {
   portfolioCategoryLabels,
   portfolioCategories,
 } from "@/lib/portfolio-constants";
-import { isPortfolioCategory } from "@/lib/portfolio-validation";
+import { isPortfolioCategory } from "@/lib/portfolio-form";
 import styles from "./achievements.module.css";
 
 const pageSize = 25;
@@ -36,6 +37,8 @@ function getPageHref(
   else next.delete("page");
   return `/staff/achievements?${next.toString()}`;
 }
+
+export const instant = false;
 
 export default async function StaffAchievementsPage({
   searchParams,
@@ -187,7 +190,12 @@ export default async function StaffAchievementsPage({
               {" · "}
               <Link href="/staff/achievements">Изменить выбор</Link>
             </p>
-            <PortfolioUploadForm isStaff studentId={selectedStudent.id} />
+            <PortfolioItemDrawer
+              isStaff
+              studentId={selectedStudent.id}
+              studentName={selectedStudent.fullName}
+              triggerLabel="Добавить достижение"
+            />
           </>
         )}
       </section>
@@ -288,7 +296,7 @@ export default async function StaffAchievementsPage({
                       <td>
                         {item.eventName ?? "—"}
                         {item.eventDate ? (
-                          <small>{new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium" }).format(item.eventDate)}</small>
+                          <DateTimeStack allDay value={item.eventDate} />
                         ) : null}
                       </td>
                       <td>{item.source === "STAFF" ? "Деканат" : "Студент"}</td>

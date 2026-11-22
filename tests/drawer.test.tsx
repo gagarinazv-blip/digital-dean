@@ -153,7 +153,7 @@ describe("Drawer", () => {
     expect(confirmation().open).toBe(true);
     expect(confirmation().textContent).toContain("Закрыть без сохранения?");
 
-    click(buttonByText("Продолжить редактирование"));
+    click(buttonByText("Вернуться к форме"));
     expect(confirmation().open).toBe(false);
     expect(drawer().open).toBe(true);
 

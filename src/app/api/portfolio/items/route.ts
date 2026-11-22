@@ -4,8 +4,9 @@ import {
   createPortfolioItem,
   PortfolioError,
 } from "@/lib/portfolio";
+import type { PortfolioFieldErrors } from "@/lib/portfolio-form";
 import {
-  parsePortfolioMetadata,
+  validatePortfolioMetadata,
   validatePortfolioUpload,
 } from "@/lib/portfolio-validation";
 
@@ -16,6 +17,13 @@ const privateHeaders = {
 
 function responseError(message: string, status: number): Response {
   return Response.json({ error: message }, { status, headers: privateHeaders });
+}
+
+function fieldErrorResponse(fieldErrors: PortfolioFieldErrors): Response {
+  return Response.json(
+    { error: "Проверьте выделенные поля.", fieldErrors },
+    { status: 400, headers: privateHeaders },
+  );
 }
 
 function parseId(value: FormDataEntryValue | null): number | null {
@@ -41,7 +49,7 @@ export async function POST(request: Request): Promise<Response> {
     return responseError("Не удалось прочитать форму загрузки.", 400);
   }
 
-  const metadataResult = parsePortfolioMetadata(
+  const metadataResult = validatePortfolioMetadata(
     {
       title: formData.get("title"),
       category: formData.get("category"),
@@ -52,14 +60,14 @@ export async function POST(request: Request): Promise<Response> {
     },
     actor.role === "STAFF",
   );
-  if (!metadataResult.ok) return responseError(metadataResult.error, 400);
+  if (!metadataResult.ok) return fieldErrorResponse(metadataResult.errors);
 
   const upload = formData.get("file");
   if (!upload || typeof upload === "string" || upload.size < 1) {
-    return responseError("Выберите файл PDF, JPG или PNG.", 400);
+    return fieldErrorResponse({ file: "Выберите файл PDF, JPG или PNG." });
   }
   const fileResult = await validatePortfolioUpload(upload);
-  if (!fileResult.ok) return responseError(fileResult.error, 400);
+  if (!fileResult.ok) return fieldErrorResponse({ file: fileResult.error });
 
   const studentId =
     actor.role === "STUDENT" ? actor.studentId : parseId(formData.get("studentId"));
@@ -76,7 +84,7 @@ export async function POST(request: Request): Promise<Response> {
     formData.get("folderId") &&
     folderId === null
   ) {
-    return responseError("Выбранная папка недействительна.", 400);
+    return fieldErrorResponse({ folderId: "Выбранная папка недействительна." });
   }
 
   try {
@@ -95,7 +103,10 @@ export async function POST(request: Request): Promise<Response> {
     if (error instanceof PortfolioError) {
       return responseError(error.message, error.status);
     }
-    console.error("Portfolio item creation failed.");
-    return responseError("Не удалось сохранить достижение.", 500);
+    console.error("[portfolio:create] Не удалось сохранить достижение.", {
+      userId: actor.userId,
+      error,
+    });
+    return responseError("Не удалось сохранить достижение. Попробуйте ещё раз.", 500);
   }
 }

@@ -26,6 +26,10 @@
   transform: none;
 }
 
+.drawer:focus-visible {
+  outline: none;
+}
+
 .drawer[data-mode="full"] {
   inset: var(--space-6);
   width: min(var(--size-drawer-full), calc(100vw - var(--space-12)));

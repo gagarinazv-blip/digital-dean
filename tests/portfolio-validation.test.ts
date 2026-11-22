@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { LocalFileStorage } from "../src/lib/file-storage";
 import {
   MAX_PORTFOLIO_FILE_BYTES,
-  parsePortfolioMetadata,
+  validatePortfolioMetadata,
   validatePortfolioUpload,
 } from "../src/lib/portfolio-validation";
 
@@ -62,13 +62,13 @@ describe("portfolio file validation and storage", () => {
 
   it("rejects invalid metadata lengths and dates", () => {
     expect(
-      parsePortfolioMetadata(
+      validatePortfolioMetadata(
         { title: "x".repeat(121), category: "SCIENCE" },
         true,
       ).ok,
     ).toBe(false);
     expect(
-      parsePortfolioMetadata(
+      validatePortfolioMetadata(
         { title: "Достижение", category: "SCIENCE", eventDate: "2025-02-30" },
         true,
       ).ok,
