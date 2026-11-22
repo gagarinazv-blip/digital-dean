@@ -1,3 +1,11 @@
+.calculateButton {
+  composes: primary from "../../../../components/ui/controls.module.css";
+}
+
+.retryButton {
+  composes: primary from "../../../../components/ui/controls.module.css";
+}
+
 .page {
   min-width: 0;
   display: grid;
@@ -15,9 +23,9 @@
   overflow: hidden;
   border: 1px solid var(--color-blue-300);
   border-radius: var(--radius-card);
-  background-color: #dce5f0;
+  background-color: var(--color-hero);
   background-image:
-    linear-gradient(90deg, #dce5f0 0%, rgb(220 229 240 / 88%) 54%, rgb(220 229 240 / 8%) 100%),
+    linear-gradient(90deg, var(--color-hero) 0%, rgb(220 229 240 / 88%) 54%, rgb(220 229 240 / 8%) 100%),
     url("/images/University%20architecture%20%C2%B7%20hero%20%C2%B7%20%D1%84%D1%80%D0%B0%D0%B3%D0%BC%D0%B5%D0%BD%D1%82%20%D1%80%D0%B5%D1%84%D0%B5%D1%80%D0%B5%D0%BD%D1%81%D0%B0.png");
   background-position: center, right 43%;
   background-size: cover;
@@ -520,30 +528,8 @@
   line-height: 1.5;
 }
 
-.calculateButton {
-  min-height: var(--size-touch);
-  width: fit-content;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: auto;
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-md);
-  background: var(--color-wine-900);
-  color: var(--color-surface);
-  font-size: var(--font-size-caption);
-  font-weight: 600;
-  text-align: center;
-}
-
-.calculateButton:hover {
-  background: var(--color-wine-700);
-}
-
 .allSubjectsLink:focus-visible,
-.calculateButton:focus-visible,
-.backLink:focus-visible,
-.retryButton:focus-visible {
+.backLink:focus-visible {
   outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }
@@ -566,18 +552,6 @@
   gap: var(--space-3);
 }
 
-.retryButton {
-  min-height: var(--size-touch);
-  padding: var(--space-2) var(--space-4);
-  border: 0;
-  border-radius: var(--radius-md);
-  background: var(--color-wine-900);
-  color: var(--color-surface);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-
 @media (max-width: 800px) {
   .detailGrid {
     grid-template-columns: minmax(0, 1fr);
@@ -598,7 +572,7 @@
     min-height: 174px;
     padding: var(--space-4);
     background-image:
-      linear-gradient(90deg, #dce5f0 0%, rgb(220 229 240 / 92%) 54%, rgb(220 229 240 / 20%) 100%),
+      linear-gradient(90deg, var(--color-hero) 0%, rgb(220 229 240 / 92%) 54%, rgb(220 229 240 / 20%) 100%),
       url("/images/University%20architecture%20%C2%B7%20hero%20%C2%B7%20%D1%84%D1%80%D0%B0%D0%B3%D0%BC%D0%B5%D0%BD%D1%82%20%D1%80%D0%B5%D1%84%D0%B5%D1%80%D0%B5%D0%BD%D1%81%D0%B0.png");
     background-position: center, 72% center;
   }

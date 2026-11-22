@@ -8,6 +8,7 @@
 }
 
 .header {
+  --color-focus: var(--color-focus-on-dark);
   position: sticky;
   top: 0;
   z-index: 20;

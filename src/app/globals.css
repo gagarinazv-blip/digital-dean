@@ -12,6 +12,8 @@
   --color-blue-700: #365773;
   --color-blue-100: #eaf0f5;
   --color-blue-300: #c4d0e0;
+  --color-hero: #dce5f0;
+  --color-hero-end: #e8edf4;
   --color-success-bg: #e7f2e8;
   --color-success-text: #2a603b;
   --color-warning-bg: #f7eddb;
@@ -188,8 +190,7 @@ main > *:nth-child(3) {
 }
 
 main article[class],
-main [class*="Card"],
-main [class*="card"] {
+main a[class*="Card"] {
   transition:
     transform var(--motion-fast) var(--motion-ease),
     box-shadow var(--motion-fast) var(--motion-ease),
@@ -249,8 +250,7 @@ details[open] > :not(summary) {
 
 @media (hover: hover) and (pointer: fine) {
   main article[class]:hover,
-  main [class*="Card"]:hover,
-  main [class*="card"]:hover {
+  main a[class*="Card"]:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-soft);
   }

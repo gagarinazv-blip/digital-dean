@@ -58,6 +58,8 @@ function parseId(value: string): number | null {
   return Number.isSafeInteger(id) ? id : null;
 }
 
+export const instant = false;
+
 export default async function StaffStudentDetailPage({
   params,
 }: {

@@ -2,10 +2,8 @@ import { DateTimeStack } from "@/components/date-time-stack";
 import Link from "next/link";
 import { CampusSection } from "@/components/campus-section";
 import { EmptyState } from "@/components/empty-state";
-import {
-  getDeadlineCountdown,
-  getDeadlineCountdownTone,
-} from "@/lib/deadline-utils";
+import controls from "@/components/ui/controls.module.css";
+import { getDeadlineRemaining } from "@/lib/deadline-utils";
 import { getStudentDeadlines } from "@/lib/deadline-data";
 import { getDeadlineHref } from "@/lib/deadline-action";
 import { getDemoNow } from "@/lib/demo-date";
@@ -35,33 +33,33 @@ export default async function DeadlinesPage() {
       ) : (
         <ul className={styles.list}>
           {deadlines.map((deadline) => {
-            const countdown =
+            const urgency =
               deadline.status === "OPEN"
-                ? getDeadlineCountdown(deadline.dueAt, now)
+                ? getDeadlineRemaining(deadline.dueAt, now).urgency
                 : null;
-            const tone =
+            const badge =
               deadline.status === "SUBMITTED"
-                ? styles.submitted
-                : countdown
-                  ? styles[getDeadlineCountdownTone(countdown)]
-                  : "";
+                ? { label: "Сдано", tone: "success" }
+                : urgency === "overdue"
+                  ? { label: "Просрочено", tone: "danger" }
+                  : urgency === "urgent"
+                    ? { label: "Срочно", tone: "warning" }
+                    : null;
             return (
               <li
                 className={`${styles.item} ${
-                  countdown?.kind === "OVERDUE" ? styles.overdue : ""
+                  urgency === "overdue" ? styles.overdue : ""
                 }`}
                 id={`deadline-${deadline.id}`}
                 key={deadline.id}
               >
                 <div className={styles.heading}>
                   <p>{deadline.subject}</p>
-                  <span
-                    className={`${styles.status} ${tone}`}
-                  >
-                    {deadline.status === "SUBMITTED"
-                      ? "Сдано"
-                      : countdown?.label}
-                  </span>
+                  {badge ? (
+                    <span className={controls.badge} data-tone={badge.tone}>
+                      {badge.label}
+                    </span>
+                  ) : null}
                 </div>
                 <h2>
                   <Link

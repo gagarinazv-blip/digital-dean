@@ -127,7 +127,7 @@
   padding: var(--space-4);
   border: 1px solid var(--color-blue-300);
   border-radius: var(--radius-card);
-  background: linear-gradient(110deg, #dce5f0 0%, #dce5f0 52%, #e8edf4 100%);
+  background: linear-gradient(110deg, var(--color-hero) 0%, var(--color-hero) 52%, var(--color-hero-end) 100%);
 }
 
 .heroArt {

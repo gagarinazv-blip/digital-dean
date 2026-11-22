@@ -201,7 +201,7 @@ function NotificationDetails({
                     />
                   ) : null}
                   {schedule.previousRoom ? (
-                    <span>Ауд. {schedule.previousRoom}</span>
+                    <span>{schedule.previousRoom}</span>
                   ) : null}
                 </dd>
               </div>
@@ -217,7 +217,7 @@ function NotificationDetails({
                 ) : (
                   <span>{schedule.dateLabel}</span>
                 )}
-                <span>Ауд. {schedule.room}</span>
+                <span>{schedule.room}</span>
               </dd>
             </div>
           </dl>

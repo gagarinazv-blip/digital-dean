@@ -82,6 +82,17 @@
   background: var(--color-danger-hover);
 }
 
+.warning {
+  composes: button;
+  border-color: var(--color-warning-border);
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.warning:hover:not(:disabled) {
+  border-color: var(--color-warning-text);
+}
+
 .ghost {
   composes: button;
   background: transparent;

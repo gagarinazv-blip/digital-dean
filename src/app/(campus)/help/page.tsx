@@ -33,7 +33,6 @@ import {
 import { PortfolioView } from "@/app/(campus)/documents/portfolio-view";
 import { RequestWindow } from "@/app/(campus)/requests/request-window";
 import { RequestSearchForm } from "./request-search-form";
-import controls from "@/components/ui/controls.module.css";
 import styles from "./help.module.css";
 
 const requestStatuses = Object.keys(requestStatusLabels) as RequestStatus[];
@@ -618,7 +617,7 @@ export async function HelpWorkspace({
                           profile={requestProfile}
                           serviceCode={service.code}
                           services={catalogEntries}
-                          triggerClassName={controls.secondary}
+                          triggerClassName={styles.serviceAction}
                           triggerLabel="Заказать"
                         />
                       ) : null}

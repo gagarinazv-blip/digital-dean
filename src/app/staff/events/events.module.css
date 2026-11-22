@@ -1,3 +1,19 @@
+.addButton {
+  composes: primary from "../../../components/ui/controls.module.css";
+}
+
+.primaryButton {
+  composes: primary from "../../../components/ui/controls.module.css";
+}
+
+.dangerButton {
+  composes: danger from "../../../components/ui/controls.module.css";
+}
+
+.secondaryButton {
+  composes: secondary from "../../../components/ui/controls.module.css";
+}
+
 .page {
   display: grid;
   gap: 16px;
@@ -52,20 +68,16 @@
   gap: 8px;
 }
 
-.weekNavigation a,
-.secondaryButton,
-.addButton,
-.primaryButton,
-.dangerButton {
+.weekNavigation a {
   min-height: var(--size-touch);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 7px;
   padding: 8px 13px;
-  border: 1px solid #eadbd6;
-  border-radius: 9px;
-  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
   color: var(--color-wine-900);
   font: inherit;
   font-size: var(--font-size-caption);
@@ -74,34 +86,11 @@
   cursor: pointer;
 }
 
-.addButton,
-.primaryButton {
-  border-color: var(--color-wine-900);
-  background: var(--color-wine-900);
-  color: #fff;
-}
-
-.dangerButton {
-  border-color: #b6414d;
-  color: #a42e3b;
-}
-
-.weekNavigation a:hover,
-.secondaryButton:hover,
-.dangerButton:hover {
-  background: #fbf4f0;
-}
-
-.addButton:hover,
-.primaryButton:hover {
-  background: var(--color-wine-700);
+.weekNavigation a:hover {
+  background: var(--color-canvas);
 }
 
 .weekNavigation a:focus-visible,
-.secondaryButton:focus-visible,
-.addButton:focus-visible,
-.primaryButton:focus-visible,
-.dangerButton:focus-visible,
 .form input:focus-visible,
 .form select:focus-visible,
 .form textarea:focus-visible {
@@ -112,9 +101,9 @@
 .createPanel,
 .day {
   min-width: 0;
-  border: 1px solid #eee8e4;
-  border-radius: 13px;
-  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
   box-shadow: var(--shadow-soft);
 }
 
@@ -122,7 +111,7 @@
   display: grid;
   gap: 13px;
   padding: 15px;
-  border-top: 1px solid #f0ece9;
+  border-top: 1px solid var(--color-border);
 }
 
 .formGrid {
@@ -146,11 +135,11 @@
 .field textarea {
   width: 100%;
   min-width: 0;
-  min-height: var(--size-touch);
+  min-height: var(--size-field);
   padding: 8px 11px;
-  border: 1px solid var(--color-border);
-  border-radius: 9px;
-  background: #fff;
+  border: 1px solid var(--color-control-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
   color: var(--color-ink);
   font: inherit;
   font-size: var(--font-size-body-compact);
@@ -170,7 +159,7 @@
 
 .fieldError,
 .formError {
-  color: #a42e3b;
+  color: var(--color-danger-text);
   font-size: var(--font-size-caption);
   font-weight: 600;
 }
@@ -211,7 +200,7 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: #f5efec;
+  background: var(--color-subtle);
   color: var(--color-wine-900);
   font-size: var(--font-size-caption);
   font-weight: 700;
@@ -240,8 +229,8 @@
   align-content: start;
   gap: 8px;
   padding: 12px;
-  border: 1px solid #f0e8e4;
-  border-radius: 11px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   overflow-wrap: break-word;
 }
 
@@ -264,8 +253,8 @@
   display: inline-flex;
   align-items: center;
   padding: 3px 9px;
-  border-radius: 20px;
-  background: #f5efec;
+  border-radius: var(--radius-panel);
+  background: var(--color-subtle);
   color: var(--color-muted);
   font-size: 10px;
   font-weight: 700;
@@ -321,14 +310,14 @@
 .editPanel > .form {
   margin-top: 9px;
   padding: 12px;
-  border: 1px solid #f0e8e4;
-  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
 }
 
 .emptyState {
   padding: 18px;
   border: 1px dashed var(--color-border);
-  border-radius: 11px;
+  border-radius: var(--radius-md);
   text-align: center;
 }
 

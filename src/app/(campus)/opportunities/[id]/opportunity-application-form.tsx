@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import controls from "@/components/ui/controls.module.css";
 import type { OpportunityApplicationAnswerField } from "@/lib/opportunity-catalog";
 import styles from "./opportunity.module.css";
 
@@ -97,6 +100,8 @@ export function OpportunityApplicationForm({
   const formRef = useRef<HTMLFormElement>(null);
   const [dirty, setDirty] = useState(false);
   const [confirmationOpen, setConfirmationOpen] = useState(false);
+  const [leaveHref, setLeaveHref] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     if (!dirty) return;
@@ -120,11 +125,8 @@ export function OpportunityApplicationForm({
         if (!dirty || !(event.target instanceof Element)) return;
         const anchor = event.target.closest("a");
         if (!anchor || !anchor.href.startsWith(window.location.origin)) return;
-        if (!window.confirm("В форме есть заполненные данные. Покинуть страницу без отправки?")) {
-          event.preventDefault();
-        } else {
-          setDirty(false);
-        }
+        event.preventDefault();
+        setLeaveHref(anchor.href.slice(window.location.origin.length));
       }}
     >
       <form
@@ -146,21 +148,36 @@ export function OpportunityApplicationForm({
         <p>После отправки заявку можно будет только отозвать.</p>
         <div className={styles.confirmActions}>
           <button
-            className={styles.submitButton}
-            onClick={confirmSubmission}
-            type="button"
-          >
-            Подтвердить отправку
-          </button>
-          <button
-            className={styles.cancelButton}
+            className={controls.secondary}
             onClick={() => setConfirmationOpen(false)}
             type="button"
           >
             Вернуться к проверке
           </button>
+          <button
+            className={controls.primary}
+            onClick={confirmSubmission}
+            type="button"
+          >
+            Подтвердить отправку
+          </button>
         </div>
       </ConfirmationDialog>
+      <ConfirmDialog
+        cancelLabel="Вернуться к форме"
+        confirmLabel="Покинуть страницу"
+        onCancel={() => setLeaveHref(null)}
+        onConfirm={() => {
+          const href = leaveHref;
+          setLeaveHref(null);
+          setDirty(false);
+          if (href) router.push(href);
+        }}
+        open={leaveHref !== null}
+        title="Закрыть без отправки?"
+      >
+        <p>Заполненные данные будут потеряны.</p>
+      </ConfirmDialog>
     </div>
   );
 }

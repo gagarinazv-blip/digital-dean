@@ -1366,6 +1366,13 @@ export function ScheduleView({
                         Ближайший учебный день
                       </Link>
                     ) : nextLesson ? (
+                      <>
+                      <div className={styles.emptyDate}>
+                        <DateTimeStack
+                          end={nextLesson.endsAtIso}
+                          value={nextLesson.startsAtIso}
+                        />
+                      </div>
                       <Link
                         className={styles.emptyLink}
                         href={buildScheduleHref(
@@ -1378,6 +1385,7 @@ export function ScheduleView({
                       >
                         Открыть ближайшее занятие
                       </Link>
+                      </>
                     ) : null}
                     <Link
                       className={`${styles.emptyLink} ${styles.emptyLinkSecondary}`}
@@ -1395,7 +1403,7 @@ export function ScheduleView({
                 activeFilterCount > 0
                   ? "Измените или сбросьте фильтры, чтобы увидеть расписание."
                   : nextLesson
-                    ? `Ближайшее занятие: ${makeDayDateLabel(nextLesson.dateKey)}, ${nextLesson.timeLabel}, ${nextLesson.subject}, ауд. ${nextLesson.room}`
+                    ? `Ближайшее занятие: ${nextLesson.subject}, ауд. ${nextLesson.room}`
                     : "В ближайшей неделе занятий нет."
               }
               illustration={activeFilterCount > 0 ? "search" : "schedule"}

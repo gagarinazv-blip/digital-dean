@@ -296,7 +296,7 @@ export default async function StaffAchievementsPage({
                       <td>
                         {item.eventName ?? "—"}
                         {item.eventDate ? (
-                          <DateTimeStack allDay value={item.eventDate} />
+                          <div><DateTimeStack allDay value={item.eventDate} /></div>
                         ) : null}
                       </td>
                       <td>{item.source === "STAFF" ? "Деканат" : "Студент"}</td>

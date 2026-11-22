@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import styles from "./bottom-sheet.module.css";
+import { useId, useState, type ReactNode } from "react";
+import { Drawer } from "@/components/ui/drawer";
+import controls from "@/components/ui/controls.module.css";
 
+// Кнопка, открывающая панель с фильтрами или списком ссылок.
 export function BottomSheet({
   children,
   title,
@@ -17,27 +19,15 @@ export function BottomSheet({
   triggerLabel: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  const titleId = useId();
   const dialogId = useId();
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    else if (!open && dialog.open) dialog.close();
-  }, [open]);
-
-  function close() {
-    setOpen(false);
-  }
+  const close = () => setOpen(false);
 
   return (
     <>
       <button
-        aria-haspopup="dialog"
-        aria-expanded={open}
         aria-controls={dialogId}
+        aria-expanded={open}
+        aria-haspopup="dialog"
         aria-label={triggerAriaLabel}
         className={triggerClassName}
         onClick={() => setOpen(true)}
@@ -45,45 +35,28 @@ export function BottomSheet({
       >
         {triggerLabel}
       </button>
-      <dialog
-        aria-labelledby={titleId}
-        className={styles.dialog}
+      <Drawer
+        footer={
+          <button className={controls.primary} onClick={close} type="button">
+            Готово
+          </button>
+        }
         id={dialogId}
-        onClick={(event) => {
-          if (event.target === event.currentTarget) close();
-        }}
-        onClose={() => setOpen(false)}
-        onClickCapture={(event) => {
-          if (
-            event.target instanceof Element &&
-            event.target.closest("a")
-          ) {
-            close();
-          }
-        }}
-        onSubmitCapture={close}
-        ref={dialogRef}
+        onClose={close}
+        open={open}
+        title={title}
       >
-        <div className={styles.sheet}>
-          <header className={styles.header}>
-            <h2 id={titleId}>{title}</h2>
-            <button
-              aria-label="Закрыть"
-              className={styles.closeButton}
-              onClick={close}
-              type="button"
-            >
-              <span aria-hidden="true">×</span>
-            </button>
-          </header>
-          <div className={styles.body}>{children}</div>
-          <footer className={styles.footer}>
-            <button className={styles.doneButton} onClick={close} type="button">
-              Готово
-            </button>
-          </footer>
+        <div
+          onClickCapture={(event) => {
+            if (event.target instanceof Element && event.target.closest("a")) {
+              close();
+            }
+          }}
+          onSubmitCapture={close}
+        >
+          {children}
         </div>
-      </dialog>
+      </Drawer>
     </>
   );
 }
