@@ -19,7 +19,7 @@ describe("notification target links", () => {
     ).toBe("/schedule?section=session&event=19");
     expect(
       buildNotificationTargetHref("DEADLINE", "DEADLINE", "deadline-cuid"),
-    ).toBe("/deadlines#deadline-deadline-cuid");
+    ).toBe("/deadlines/deadline-cuid");
     expect(
       buildNotificationTargetHref(
         "REQUEST_STATUS",

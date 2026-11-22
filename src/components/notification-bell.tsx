@@ -10,10 +10,15 @@ import {
   useRef,
   useState,
 } from "react";
+import { DeadlinePreview } from "@/components/deadline-preview";
 import { NotificationSymbol } from "@/components/notification-symbol";
 import { cleanStudentFacingText } from "@/lib/campus-labels";
 import { getUniversityDateTimeFormatter } from "@/lib/campus-time";
 import { useStudentNotificationStore } from "@/lib/notification-store";
+import type {
+  NotificationDeadlineDetails,
+  StudentNotificationItem,
+} from "@/lib/notification-types";
 import { notificationTypeLabels } from "@/lib/notification-workflow";
 import styles from "./notification-bell.module.css";
 
@@ -41,6 +46,9 @@ export function NotificationBell({
   const router = useRouter();
   const state = useStudentNotificationStore(studentId, initialUnreadCount);
   const [open, setOpen] = useState(false);
+  const [preview, setPreview] = useState<NotificationDeadlineDetails | null>(
+    null,
+  );
   const [activeFilter, setActiveFilter] = useState<"all" | "unread">("all");
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -98,15 +106,39 @@ export function NotificationBell({
     };
   }, [open]);
 
-  async function openNotification(publicId: string, href: string | null) {
+  async function openNotification({
+    details,
+    href,
+    publicId,
+    targetAvailable,
+  }: StudentNotificationItem) {
+    if (details.deadline) {
+      setOpen(false);
+      setPreview(details.deadline);
+      void state.markRead(publicId);
+      return;
+    }
     const success = await state.markRead(publicId);
     if (!success) return;
     setOpen(false);
-    router.push(href ?? `/notifications?open=${encodeURIComponent(publicId)}`);
+    router.push(
+      (targetAvailable === false ? null : href) ??
+        `/notifications?open=${encodeURIComponent(publicId)}`,
+    );
   }
 
   return (
     <div className={styles.root} ref={rootRef}>
+      {preview && (
+        <DeadlinePreview
+          deadline={preview}
+          key={preview.id}
+          onClose={() => {
+            setPreview(null);
+            triggerRef.current?.focus();
+          }}
+        />
+      )}
       <button
         aria-controls="notification-popover"
         aria-expanded={open}
@@ -210,14 +242,10 @@ export function NotificationBell({
                   <button
                     className={styles.itemLink}
                     disabled={state.actionPending}
-                    onClick={() =>
-                      void openNotification(
-                        notification.publicId,
-                        notification.targetAvailable === false
-                          ? null
-                          : notification.href,
-                      )
+                    aria-haspopup={
+                      notification.details.deadline ? "dialog" : undefined
                     }
+                    onClick={() => void openNotification(notification)}
                     type="button"
                   >
                     <NotificationSymbol type={notification.type} />

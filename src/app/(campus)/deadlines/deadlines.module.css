@@ -43,6 +43,14 @@
   overflow-wrap: break-word;
 }
 
+.titleLink {
+  min-height: var(--size-touch);
+  display: inline-flex;
+  align-items: center;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .item > p,
 .item time {
   color: var(--color-muted);
