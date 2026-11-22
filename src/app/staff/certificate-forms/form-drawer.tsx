@@ -124,11 +124,9 @@ function CertificateFormEditor({ form, open, onClose, onSaved }: EditorProps) {
     if (Object.keys(errors).length > 0) {
       const validated = validateCertificateFormInput(toInput(next));
       const remaining = validated.valid ? {} : validated.errors;
-      setErrors((current) =>
-        Object.fromEntries(
-          Object.entries(current).filter(([key]) => key in remaining),
-        ),
-      );
+      const visible = Object.entries(errors).filter(([key]) => key in remaining);
+      setErrors(Object.fromEntries(visible));
+      if (visible.length === 0) setError("");
     }
   }
 

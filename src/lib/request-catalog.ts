@@ -198,7 +198,11 @@ export function formatDeliveryMethods(
   methods: readonly CertificateDelivery[] | undefined,
 ): string {
   return parseDeliveryMethods(methods)
-    .map((method) => certificateDeliveryLabels[method])
+    .map((method, index) =>
+      index === 0
+        ? certificateDeliveryLabels[method]
+        : certificateDeliveryLabels[method].toLocaleLowerCase("ru-RU"),
+    )
     .join(" или ");
 }
 

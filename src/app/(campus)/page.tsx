@@ -9,23 +9,19 @@ import {
   getStudentFacingGroupName,
 } from "@/lib/campus-labels";
 import {
-  formatUniversityClockTime,
-  formatCampusDate,
-  formatCampusTime,
-  formatMoscowDate,
-  formatMoscowTime,
   getUniversityDateTimeFormatter,
   getCampusGreeting,
   getMoscowDateKey,
+  getMoscowDateTime,
 } from "@/lib/campus-time";
 import { requestStatusLabels, requestTypeLabels } from "@/lib/campus-labels";
 import { getRequestCatalogTitle } from "@/lib/request-catalog";
 import { getAcademicRecords } from "@/lib/academic-records";
-import { getSessionCountdown } from "@/lib/session-utils";
-import {
-  getDeadlineCountdownTone,
-  getDeadlineDateTile,
-} from "@/lib/deadline-utils";
+import { getStudentNotificationPage } from "@/lib/notification-data";
+import { presentStudentNotifications } from "@/lib/notification-presentation";
+import { notificationTypeLabels } from "@/lib/notification-workflow";
+import { DateTimeStack } from "@/components/date-time-stack";
+import controls from "@/components/ui/controls.module.css";
 import { getDeadlineHref } from "@/lib/deadline-action";
 import { formatRequestNumber } from "@/lib/request-number";
 import { DeadlineListItem } from "@/components/deadline-list-item";
@@ -38,13 +34,13 @@ import {
 } from "@/lib/today-view-utils";
 import styles from "./page.module.css";
 
-const requestStatusClasses: Record<RequestStatusTone, string> = {
-  new: styles.statusPending,
-  inProgress: styles.statusInProgress,
-  needsInfo: styles.statusNeedsInfo,
-  ready: styles.statusApproved,
-  rejected: styles.statusRejected,
-  cancelled: styles.statusCancelled,
+const requestStatusTones: Record<RequestStatusTone, string> = {
+  new: "neutral",
+  inProgress: "info",
+  needsInfo: "warning",
+  ready: "success",
+  rejected: "danger",
+  cancelled: "neutral",
 };
 
 const scheduleKindLabels: Record<ScheduleKind, string> = {
@@ -58,6 +54,27 @@ const quickActionIcons = {
   grades: GraphUp,
   help: HelpCircle,
 };
+
+const quickActions = [
+  {
+    href: "/requests/new",
+    label: "Заказать справку",
+    description: "Подать новую заявку",
+    name: "help",
+  },
+  {
+    href: "/grades",
+    label: "Рассчитать оценку",
+    description: "Проверить итоговый балл",
+    name: "grades",
+  },
+  {
+    href: "/schedule",
+    label: "Моё расписание",
+    description: "Пары и сессия на неделе",
+    name: "schedule",
+  },
+] as const;
 
 const welcomeDateFormatter = getUniversityDateTimeFormatter({
   weekday: "long",
@@ -85,25 +102,28 @@ function CampusFallback() {
       className={styles.page}
     >
       <span className={styles.skeletonHeading} />
-      <div aria-hidden="true" className={styles.skeletonDashboard}>
-        <div className={styles.skeletonPrimaryStack}>
-          <span className={styles.skeletonHero} />
-          <span className={styles.skeletonCard} />
-        </div>
-        <div className={styles.skeletonSideStack}>
-          <span className={styles.skeletonCard} />
-          <span className={styles.skeletonCard} />
-          <span className={styles.skeletonCard} />
-        </div>
-      </div>
       <div aria-hidden="true" className={styles.skeletonActions}>
         <span />
         <span />
         <span />
       </div>
+      <div aria-hidden="true" className={styles.dashboardColumns}>
+        <div className={styles.primaryStack}>
+          <span className={styles.skeletonHero} />
+          <span className={styles.skeletonCard} />
+        </div>
+        <div className={styles.secondaryStack}>
+          <span className={styles.skeletonCard} />
+          <span className={styles.skeletonHero} />
+        </div>
+        <span className={styles.skeletonCard} />
+      </div>
     </main>
   );
 }
+
+// Больше строк не поместится и на высоком экране: лишние не запрашиваем.
+const DASHBOARD_ROWS = 12;
 
 async function CampusToday() {
   await connection();
@@ -111,6 +131,49 @@ async function CampusToday() {
     getCampusTodayData(),
     getAcademicRecords(),
   ]);
+  const notificationPage = await getStudentNotificationPage(
+    data.student.id,
+    DASHBOARD_ROWS,
+  );
+  const notificationItems = await presentStudentNotifications(
+    notificationPage.notifications,
+    data.student.id,
+    data.student.group.id,
+  );
+  const notificationTotal = Object.values(notificationPage.typeCounts).reduce(
+    (total, count) => total + count,
+    0,
+  );
+  // Изменения расписания и объявления группы дополняют личные уведомления.
+  const notifications = [
+    ...notificationItems.map((item) => ({
+      id: item.publicId,
+      kind: notificationTypeLabels[item.type],
+      title: item.title,
+      text: item.text,
+      date: new Date(item.createdAt),
+      href: `/notifications/${item.publicId}`,
+      isUnread: item.readAt === null,
+    })),
+    ...data.changes.map((change) => ({
+      id: change.id,
+      kind: change.kind,
+      title: change.title,
+      text: change.text,
+      date: change.date,
+      href: change.id.startsWith("schedule-")
+        ? `/schedule?view=week&date=${getMoscowDateKey(change.date)}`
+        : "/notifications",
+      isUnread: false,
+    })),
+  ]
+    .sort(
+      (first, second) =>
+        Number(second.isUnread) - Number(first.isUnread) ||
+        second.date.getTime() - first.date.getTime(),
+    )
+    .slice(0, DASHBOARD_ROWS);
+  const todayKey = getMoscowDateKey(data.now);
   const sessionDeadlines =
     academicRecords.dataset?.semesters
       .filter((semester) => semester.isCurrent)
@@ -121,8 +184,7 @@ async function CampusToday() {
               (session) =>
                 (session.status === "PLANNED" ||
                   session.status === "RESCHEDULED") &&
-                session.date.toISOString().slice(0, 10) >=
-                  getMoscowDateKey(data.now) &&
+                session.date.toISOString().slice(0, 10) >= todayKey &&
                 (!item.result ||
                   (item.result.status === "ACADEMIC_DEBT" &&
                     session.date > item.result.date)),
@@ -130,53 +192,49 @@ async function CampusToday() {
             .map((session) => ({
               id: `session-${session.id}`,
               title: item.name,
-              subject: `${controlTypeLabels[item.controlType]} · ${formatUniversityClockTime(session.startTime)}`,
-              date: session.date.toISOString().slice(0, 10),
-              countdown: getSessionCountdown(
-                session.date.toISOString().slice(0, 10),
-                formatUniversityClockTime(session.startTime),
-                getMoscowDateKey(data.now),
-                formatMoscowTime(data.now),
-              ),
+              subject: controlTypeLabels[item.controlType],
+              startsAt: getMoscowDateTime(session.date, session.startTime),
+              endsAt: getMoscowDateTime(session.date, session.endTime),
               href: `/schedule?section=session&event=${session.id}`,
             })),
         ),
       )
-      .sort((first, second) => first.date.localeCompare(second.date)) ?? [];
+      .sort(
+        (first, second) => first.startsAt.getTime() - second.startsAt.getTime(),
+      ) ?? [];
   const deadlineRows = [
     ...data.deadlines.map((deadline) => ({
       id: deadline.id,
       title: deadline.title,
       subject: deadline.subject,
-      sortDate: getMoscowDateKey(deadline.dueAt),
-      dateLabel: formatMoscowDate(deadline.dueAt),
-      dateTile: getDeadlineDateTile(deadline.dueAt, data.now),
-      countdown: deadline.countdown.label,
-      tone: getDeadlineCountdownTone(deadline.countdown),
+      dueAt: deadline.dueAt,
       href: getDeadlineHref(deadline.id),
     })),
-    ...sessionDeadlines.map((deadline) => ({
-      id: deadline.id,
-      title: deadline.title,
-      subject: deadline.subject,
-      sortDate: deadline.date,
-      dateLabel: formatMoscowDate(new Date(`${deadline.date}T12:00:00.000Z`)),
-      dateTile: getDeadlineDateTile(
-        new Date(`${deadline.date}T12:00:00.000Z`),
-        data.now,
-      ),
-      countdown: deadline.countdown,
-      tone: deadline.countdown === "Сегодня"
-        ? "warning" as const
-        : deadline.countdown.startsWith("завтра")
-          ? "danger" as const
-          : "neutral" as const,
-      href: deadline.href,
+    ...sessionDeadlines.map((session) => ({
+      id: session.id,
+      title: session.title,
+      subject: session.subject,
+      dueAt: session.startsAt,
+      href: session.href,
     })),
   ]
-    .sort((first, second) => first.sortDate.localeCompare(second.sortDate))
-    .slice(0, 3);
+    .sort((first, second) => first.dueAt.getTime() - second.dueAt.getTime())
+    .slice(0, DASHBOARD_ROWS);
+  const nextSession = sessionDeadlines[0];
+  const lessonRows = [
+    ...data.todaySchedule,
+    ...data.nearbyLessons.filter(
+      (lesson) => getMoscowDateKey(lesson.startTime) !== todayKey,
+    ),
+  ];
   const todayDate = new Date(`${data.week.todayKey}T00:00:00.000Z`);
+  const latestRequestTitle = data.latestRequest
+    ? getRequestCatalogTitle(
+        data.latestRequest.catalogCode,
+        requestTypeLabels[data.latestRequest.type],
+        data.latestRequest.formSchemaSnapshot,
+      )
+    : "";
   const firstName = data.student.fullName.split(" ")[0];
   const hero = getTodayHeroState(
     data.todaySchedule,
@@ -191,446 +249,24 @@ async function CampusToday() {
   return (
     <main className={styles.page}>
       <section className={styles.welcome} aria-labelledby="welcome-title">
-        <div className={styles.welcomeContent}>
-          <h1 id="welcome-title">
-            {getCampusGreeting(data.now)}, {firstName}
-          </h1>
-          <div className={styles.welcomeMeta}>
-            <p className={styles.eyebrow}>
-              {welcomeDateFormatter.format(todayDate)} · группа{" "}
-              {getStudentFacingGroupName(data.student.group.name)}
-            </p>
-          </div>
-        </div>
+        <h1 id="welcome-title">
+          {getCampusGreeting(data.now)}, {firstName}
+        </h1>
+        <p className={styles.eyebrow}>
+          {welcomeDateFormatter.format(todayDate)} · группа{" "}
+          {getStudentFacingGroupName(data.student.group.name)}
+        </p>
       </section>
-
-      <div className={styles.dashboardColumns}>
-        <div className={styles.primaryStack}>
-          <section
-            className={`${styles.nextLesson} ${styles.heroCard}`}
-            aria-labelledby="next-lesson-title"
-          >
-            <div className={styles.heroArt} aria-hidden="true">
-              <CampusArchitectureArt
-                priority
-                sizes="(max-width: 767px) 0px, (max-width: 1099px) 42vw, 30vw"
-              />
-            </div>
-            <div className={styles.heroContent}>
-              <div className={styles.heroMain}>
-                <span className={styles.heroBadge}>
-                  {hero.kind === "current"
-                    ? "Идёт сейчас"
-                    : hero.kind === "next"
-                      ? "Следующая пара"
-                      : "Ближайшее занятие"}
-                </span>
-                {hero.lesson ? (
-                  <div className={styles.lesson}>
-                    <h2
-                      id="next-lesson-title"
-                      title={
-                        hero.kind === "upcoming"
-                          ? hero.hasTodayLessons
-                            ? "На сегодня пары закончились"
-                            : "Сегодня занятий нет"
-                          : hero.lesson.subject.name
-                      }
-                    >
-                      {hero.kind === "upcoming"
-                        ? hero.hasTodayLessons
-                          ? "На сегодня пары закончились"
-                          : "Сегодня занятий нет"
-                        : hero.lesson.subject.name}
-                    </h2>
-                    {hero.kind === "upcoming" ? (
-                      <div className={styles.nextLessonPreview}>
-                        <p>
-                          Следующее: {formatCampusDate(hero.lesson.occurrenceDate)}
-                          {" · "}
-                          {formatCampusTime(hero.lesson.startTime)}
-                        </p>
-                        <strong title={hero.lesson.subject.name}>
-                          {hero.lesson.subject.name}
-                        </strong>
-                        <span
-                          title={`${scheduleKindLabels[hero.lesson.kind]} · ауд. ${hero.lesson.room} · ${hero.lesson.teacher}`}
-                        >
-                          {scheduleKindLabels[hero.lesson.kind]} · ауд.{" "}
-                          {hero.lesson.room} · {hero.lesson.teacher}
-                        </span>
-                      </div>
-                    ) : (
-                      <>
-                        <p className={styles.lessonTime}>
-                          {formatCampusTime(hero.lesson.startTime)}–
-                          {formatCampusTime(hero.lesson.endTime)} ·{" "}
-                          {scheduleKindLabels[hero.lesson.kind]}
-                        </p>
-                        <p
-                          title={`Ауд. ${hero.lesson.room} · ${hero.lesson.teacher}`}
-                        >
-                          Ауд. {hero.lesson.room} · {hero.lesson.teacher}
-                        </p>
-                      </>
-                    )}
-                    {hero.countdown && (
-                      <p className={styles.lessonCountdown}>{hero.countdown}</p>
-                    )}
-                  </div>
-                ) : (
-                  <div className={styles.heroEmpty}>
-                    <h2 id="next-lesson-title">
-                      {hero.hasTodayLessons
-                        ? "На сегодня пары закончились"
-                        : "На сегодня занятий нет"}
-                    </h2>
-                    <p>
-                      {hero.hasTodayLessons
-                        ? "Посмотрите расписание на другие дни."
-                        : "В расписании пока нет ближайших занятий."}
-                    </p>
-                  </div>
-                )}
-              </div>
-              {sessionDeadlines[0] && (
-                <div
-                  aria-label="Ближайшее событие сессии"
-                  className={styles.heroSession}
-                >
-                  <span className={styles.heroSessionBadge}>
-                    {sessionDeadlines[0].subject.split(" · ", 1)[0]}
-                  </span>
-                  <div className={styles.heroSessionDetails}>
-                    <strong title={sessionDeadlines[0].title}>
-                      {sessionDeadlines[0].title}
-                    </strong>
-                    <span>
-                      {formatMoscowDate(
-                        new Date(`${sessionDeadlines[0].date}T12:00:00.000Z`),
-                      )}{" "}
-                      · {sessionDeadlines[0].subject} ·{" "}
-                      {sessionDeadlines[0].countdown}
-                    </span>
-                  </div>
-                  <Link
-                    aria-label={`Открыть событие сессии: ${sessionDeadlines[0].title}`}
-                    className={styles.heroSessionLink}
-                    href={sessionDeadlines[0].href}
-                  >
-                    Подробнее
-                  </Link>
-                </div>
-              )}
-              <div className={styles.heroActions}>
-                <Link className={styles.heroButton} href="/schedule">
-                  Открыть расписание
-                </Link>
-                {hero.lesson && (
-                  <Link
-                    className={`${styles.heroButton} ${styles.heroButtonSecondary}`}
-                    href={`/schedule?view=week&date=${hero.lesson.occurrenceDate.toISOString().slice(0, 10)}`}
-                  >
-                    Подробнее
-                  </Link>
-                )}
-              </div>
-            </div>
-          </section>
-
-          <section
-            className={`${styles.card} ${styles.scheduleCard}`}
-            aria-labelledby="today-schedule-title"
-          >
-          <div className={styles.cardHeading}>
-            <p className={styles.eyebrow}>Пары и занятия</p>
-            <h2 id="today-schedule-title">Расписание на сегодня</h2>
-          </div>
-          {data.todaySchedule.length ? (
-            <ol className={styles.timeline}>
-              {data.todaySchedule.map((lesson) => (
-                <li
-                  className={`${styles.timelineItem} ${
-                    lesson.occurrenceId === activeLessonId
-                      ? styles.timelineCurrent
-                      : lesson.occurrenceId === nextLessonId
-                        ? styles.timelineNext
-                        : lesson.endTime.getTime() <= data.now.getTime() &&
-                            lesson.status !== "CANCELLED"
-                          ? styles.timelinePast
-                          : ""
-                  } ${
-                    lesson.status === "CANCELLED"
-                      ? styles.timelineCancelled
-                      : ""
-                  }`}
-                  key={lesson.occurrenceId}
-                >
-                  <time dateTime={lesson.startTime.toISOString()}>
-                    {formatCampusTime(lesson.startTime)}
-                  </time>
-                  <span className={styles.timelineDot} aria-hidden="true" />
-                  <div className={styles.timelineDetails}>
-                    <strong title={lesson.subject.name}>
-                      {lesson.subject.name}
-                    </strong>
-                    <span
-                      title={`${scheduleKindLabels[lesson.kind]} · ауд. ${lesson.room}${lesson.status === "RESCHEDULED" ? " · перенесено" : ""}${lesson.status === "CANCELLED" ? " · отменено" : ""}`}
-                    >
-                      {scheduleKindLabels[lesson.kind]} · ауд. {lesson.room}
-                      {lesson.status === "RESCHEDULED" && " · перенесено"}
-                      {lesson.status === "CANCELLED" && " · отменено"}
-                    </span>
-                    {lesson.occurrenceId === activeLessonId && (
-                      <span className={styles.timelineBadge}>Сейчас</span>
-                    )}
-                    {lesson.status === "CANCELLED" && (
-                      <span className={styles.timelineStatusCancelled}>
-                        Отменено
-                      </span>
-                    )}
-                    {lesson.status === "RESCHEDULED" && (
-                      <span className={styles.timelineStatusChanged}>
-                        Перенесено
-                      </span>
-                    )}
-                    {lesson.occurrenceId === nextLessonId && (
-                      <span className={styles.timelineBadge}>Далее</span>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ol>
-          ) : (
-            <EmptyState
-              action={
-                <Link className={styles.textLink} href="/schedule?view=week">
-                  Показать неделю →
-                </Link>
-              }
-              className={styles.cardEmptyState}
-              illustration="schedule"
-              title="На сегодня занятий нет"
-            />
-          )}
-          {!data.todaySchedule.length && data.nearbyLessons.length > 0 && (
-            <div className={styles.nextDayLessons}>
-              <span className={styles.eyebrow}>Ближайшие занятия</span>
-              <ol className={styles.nextDayLessonList}>
-                {data.nearbyLessons.map((lesson) => (
-                  <li key={lesson.occurrenceId}>
-                    <time>
-                      {formatCampusDate(lesson.occurrenceDate)} ·{" "}
-                      {formatCampusTime(lesson.startTime)}
-                    </time>
-                    <strong title={lesson.subject.name}>
-                      {lesson.subject.name}
-                    </strong>
-                    <span>ауд. {lesson.room}</span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          )}
-          <Link className={styles.cardFooterLink} href="/schedule">
-            Все занятия →
-          </Link>
-          </section>
-        </div>
-
-        <div className={styles.secondaryStack}>
-          <section
-            className={`${styles.card} ${styles.deadlineCard}`}
-            aria-labelledby="deadlines-title"
-          >
-            <div className={styles.cardHeading}>
-              <p className={styles.eyebrow}>Скоро нужно сделать</p>
-              <div className={styles.deadlineHeading}>
-                <h2 id="deadlines-title">Ближайшие дедлайны</h2>
-                <span
-                  aria-label={`Предстоящих сроков: ${deadlineRows.length}`}
-                  className={styles.deadlineCount}
-                >
-                  {deadlineRows.length}
-                </span>
-              </div>
-            </div>
-            {deadlineRows.length ? (
-              <ul className={styles.compactList}>
-                {deadlineRows.map((deadline) => (
-                  <DeadlineListItem
-                    countdown={deadline.countdown}
-                    dateLabel={deadline.dateLabel}
-                    dateTileCaption={deadline.dateTile.caption}
-                    dateTileDay={deadline.dateTile.day}
-                    href={deadline.href}
-                    key={deadline.id}
-                    subject={deadline.subject}
-                    title={deadline.title}
-                    tone={deadline.tone}
-                  />
-                ))}
-              </ul>
-            ) : (
-              <EmptyState
-                className={styles.cardEmptyState}
-                illustration="documents"
-                title="Ближайших сроков нет"
-              />
-            )}
-            {deadlineRows.length === 1 && (
-              <p className={styles.deadlineWeekHint}>
-                Других сроков на этой неделе нет
-              </p>
-            )}
-            <div className={styles.deadlineFooter}>
-              {data.overdueDeadlineCount > 0 ? (
-                <Link
-                  aria-label={`Показать просроченные задания: ${data.overdueDeadlineCount}`}
-                  className={styles.overdueChip}
-                  href={
-                    data.firstOverdueDeadlineId
-                      ? `/deadlines#deadline-${data.firstOverdueDeadlineId}`
-                      : "/deadlines"
-                  }
-                >
-                  Просрочено: {data.overdueDeadlineCount}
-                </Link>
-              ) : (
-                <span />
-              )}
-              <Link className={styles.textLink} href="/deadlines">
-                Все сроки →
-              </Link>
-            </div>
-          </section>
-
-          <section
-            className={`${styles.card} ${styles.requestCard}`}
-            aria-labelledby="request-title"
-          >
-            <div className={styles.cardHeading}>
-              <p className={styles.eyebrow}>Последнее обращение</p>
-              <h2 id="request-title">Моя последняя заявка</h2>
-            </div>
-            {data.latestRequest ? (
-              <div className={styles.request}>
-                <strong
-                  title={getRequestCatalogTitle(
-                    data.latestRequest.catalogCode,
-                    requestTypeLabels[data.latestRequest.type],
-                    data.latestRequest.formSchemaSnapshot,
-                  )}
-                >
-                  {getRequestCatalogTitle(
-                    data.latestRequest.catalogCode,
-                    requestTypeLabels[data.latestRequest.type],
-                    data.latestRequest.formSchemaSnapshot,
-                  )}
-                </strong>
-                <span
-                  className={`${styles.statusBadge} ${
-                    requestStatusClasses[
-                      getRequestStatusTone(data.latestRequest.status)
-                    ]
-                  }`}
-                >
-                  {requestStatusLabels[data.latestRequest.status]}
-                </span>
-                <p className={styles.requestMeta}>
-                  {formatRequestNumber(data.latestRequest.id)} · обновлена{" "}
-                  {formatMoscowDate(data.latestRequest.updatedAt)}
-                </p>
-                <Link
-                  className={styles.textLink}
-                  href={`/requests/${data.latestRequest.publicId}`}
-                >
-                  Отследить заявку ↗
-                </Link>
-              </div>
-            ) : (
-              <EmptyState
-                action={
-                  <Link className={styles.newRequestButton} href="/requests/new">
-                    Новая заявка
-                  </Link>
-                }
-                className={styles.cardEmptyState}
-                illustration="requests"
-                title="Заявок пока нет"
-              />
-            )}
-          </section>
-
-          <section
-            className={`${styles.card} ${styles.announcementsCard}`}
-            aria-labelledby="announcements-title"
-          >
-            <div className={styles.cardHeading}>
-              <p className={styles.eyebrow}>Важное</p>
-              <h2 id="announcements-title">Объявления</h2>
-            </div>
-            {data.changes.length ? (
-              <ul className={styles.changeList}>
-                {data.changes.slice(0, 3).map((change, index) => (
-                  <li
-                    className={`${styles.changeItem} ${
-                      index === 0 ? styles.highlightedChange : ""
-                    }`}
-                    key={change.id}
-                  >
-                    <span className={styles.changeKind}>{change.kind}</span>
-                    <strong title={change.title}>{change.title}</strong>
-                    <p title={change.text}>{change.text}</p>
-                    <time>{formatMoscowDate(change.date)}</time>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <EmptyState
-                className={styles.cardEmptyState}
-                illustration="notifications"
-                title="Объявлений пока нет"
-              />
-            )}
-            <Link className={styles.cardFooterLink} href="/notifications">
-              Все объявления →
-            </Link>
-          </section>
-        </div>
-      </div>
 
       <section
         className={styles.quickActionsSection}
         aria-labelledby="quick-actions-title"
       >
-        <div className={styles.cardHeading}>
-          <p className={styles.eyebrow}>Часто используемое</p>
-          <h2 id="quick-actions-title">Быстрые действия</h2>
-        </div>
+        <h2 className={controls.visuallyHidden} id="quick-actions-title">
+          Быстрые действия
+        </h2>
         <nav className={styles.quickActions} aria-label="Быстрые действия">
-          {(
-            [
-              {
-                href: "/requests/new",
-                label: "Заказать справку",
-                description: "Подать новую заявку",
-                name: "help",
-              },
-              {
-                href: "/grades",
-                label: "Рассчитать оценку",
-                description: "Проверить итоговый балл",
-                name: "grades",
-              },
-              {
-                href: "/schedule",
-                label: "Моё расписание",
-                description: "Пары и сессия на неделе",
-                name: "schedule",
-              },
-            ] as const
-          ).map((action) => (
+          {quickActions.map((action) => (
             <Link
               className={styles.actionTile}
               href={action.href}
@@ -649,6 +285,364 @@ async function CampusToday() {
           ))}
         </nav>
       </section>
+
+      <div
+        className={styles.dashboardColumns}
+        data-notifications={notifications.length > 0 ? "list" : "empty"}
+      >
+        <div className={styles.primaryStack}>
+          <section
+            className={styles.heroCard}
+            aria-labelledby="next-lesson-title"
+          >
+            <div className={styles.heroArt} aria-hidden="true">
+              <CampusArchitectureArt
+                priority
+                sizes="(max-width: 767px) 0px, (max-width: 1099px) 42vw, 20vw"
+              />
+            </div>
+            <div className={styles.heroContent}>
+              <div className={styles.heroTopline}>
+                <div className={styles.heroLabels}>
+                  <span className={styles.heroBadge}>
+                    {hero.kind === "current"
+                      ? "Идёт сейчас"
+                      : hero.kind === "next"
+                        ? "Следующая пара"
+                        : "Ближайшее занятие"}
+                  </span>
+                  {hero.kind === "current" && hero.countdown ? (
+                    <span className={styles.heroNote}>{hero.countdown}</span>
+                  ) : hero.kind === "upcoming" ? (
+                    <span className={styles.heroNote}>
+                      {hero.hasTodayLessons
+                        ? "На сегодня пары закончились"
+                        : "Сегодня занятий нет"}
+                    </span>
+                  ) : null}
+                </div>
+                {hero.lesson ? (
+                  <DateTimeStack
+                    align="end"
+                    end={hero.lesson.endTime}
+                    value={hero.lesson.startTime}
+                  />
+                ) : null}
+              </div>
+              {hero.lesson ? (
+                <div className={styles.lesson}>
+                  <h2 id="next-lesson-title" title={hero.lesson.subject.name}>
+                    {hero.lesson.subject.name}
+                  </h2>
+                  <p
+                    title={`${scheduleKindLabels[hero.lesson.kind]} · ауд. ${hero.lesson.room} · ${hero.lesson.teacher}`}
+                  >
+                    {scheduleKindLabels[hero.lesson.kind]} · ауд.{" "}
+                    {hero.lesson.room} · {hero.lesson.teacher}
+                  </p>
+                </div>
+              ) : (
+                <div className={styles.lesson}>
+                  <h2 id="next-lesson-title">
+                    {hero.hasTodayLessons
+                      ? "На сегодня пары закончились"
+                      : "На сегодня занятий нет"}
+                  </h2>
+                  <p>
+                    {hero.hasTodayLessons
+                      ? "Посмотрите расписание на другие дни."
+                      : "В расписании пока нет ближайших занятий."}
+                  </p>
+                </div>
+              )}
+              {nextSession && (
+                <Link
+                  aria-label={`Ближайшее событие сессии: ${nextSession.title}`}
+                  className={styles.heroSession}
+                  href={nextSession.href}
+                >
+                  <span className={styles.heroSessionDetails}>
+                    <span className={styles.heroSessionBadge}>
+                      {nextSession.subject}
+                    </span>
+                    <strong title={nextSession.title}>{nextSession.title}</strong>
+                  </span>
+                  <DateTimeStack
+                    align="end"
+                    end={nextSession.endsAt}
+                    value={nextSession.startsAt}
+                  />
+                </Link>
+              )}
+              <div className={styles.heroActions}>
+                <Link className={controls.primary} href="/schedule">
+                  Открыть расписание
+                </Link>
+                {hero.lesson && (
+                  <Link
+                    className={controls.secondary}
+                    href={`/schedule?view=week&date=${hero.lesson.occurrenceDate.toISOString().slice(0, 10)}`}
+                  >
+                    Подробнее
+                  </Link>
+                )}
+              </div>
+            </div>
+          </section>
+
+          <section
+            className={`${styles.card} ${styles.scheduleCard}`}
+            aria-labelledby="today-schedule-title"
+          >
+            <div className={styles.cardHeading}>
+              <h2 id="today-schedule-title">
+                {data.todaySchedule.length > 0
+                  ? "Расписание на сегодня"
+                  : "Ближайшие занятия"}
+              </h2>
+            </div>
+            {lessonRows.length > 0 ? (
+              <div className={styles.fit}>
+                <ol className={styles.rows}>
+                  {lessonRows.map((lesson) => {
+                    const details = `${scheduleKindLabels[lesson.kind]} · ауд. ${lesson.room}`;
+                    const note =
+                      lesson.status === "CANCELLED"
+                        ? "Отменено"
+                        : lesson.status === "RESCHEDULED"
+                          ? "Перенесено"
+                          : lesson.occurrenceId === activeLessonId
+                            ? "Сейчас"
+                            : lesson.occurrenceId === nextLessonId
+                              ? "Далее"
+                              : null;
+                    return (
+                      <li
+                        className={styles.row}
+                        data-state={
+                          lesson.occurrenceId === activeLessonId
+                            ? "current"
+                            : lesson.status === "CANCELLED" ||
+                                lesson.endTime.getTime() <= data.now.getTime()
+                              ? "past"
+                              : undefined
+                        }
+                        key={lesson.occurrenceId}
+                      >
+                        <div className={styles.rowText}>
+                          <strong title={lesson.subject.name}>
+                            {lesson.subject.name}
+                          </strong>
+                          <span title={details}>
+                            {note ? (
+                              <em
+                                data-tone={
+                                  lesson.status === "CANCELLED"
+                                    ? "danger"
+                                    : lesson.status === "RESCHEDULED"
+                                      ? "warning"
+                                      : "accent"
+                                }
+                              >
+                                {note}
+                              </em>
+                            ) : null}
+                            {details}
+                          </span>
+                        </div>
+                        <DateTimeStack
+                          align="end"
+                          end={lesson.endTime}
+                          value={lesson.startTime}
+                        />
+                      </li>
+                    );
+                  })}
+                </ol>
+              </div>
+            ) : (
+              <EmptyState
+                action={
+                  <Link className={styles.textLink} href="/schedule?view=week">
+                    Показать неделю →
+                  </Link>
+                }
+                className={styles.cardEmptyState}
+                illustration="schedule"
+                title="Ближайших занятий нет"
+              />
+            )}
+            <Link className={styles.cardFooterLink} href="/schedule">
+              Все занятия →
+            </Link>
+          </section>
+        </div>
+
+        <div className={styles.secondaryStack}>
+          <section
+            className={`${styles.card} ${styles.deadlineCard}`}
+            aria-labelledby="deadlines-title"
+          >
+            <div className={styles.cardHeading}>
+              <h2 id="deadlines-title">Ближайшие дедлайны</h2>
+              {deadlineRows.length > 0 ? (
+                <span
+                  aria-label={`Предстоящих сроков: ${deadlineRows.length}`}
+                  className={controls.badge}
+                  data-tone="accent"
+                >
+                  {deadlineRows.length}
+                </span>
+              ) : null}
+            </div>
+            {deadlineRows.length ? (
+              <div className={styles.fit}>
+                <ul className={styles.rows}>
+                  {deadlineRows.map((deadline) => (
+                    <DeadlineListItem
+                      dueAt={deadline.dueAt}
+                      href={deadline.href}
+                      key={deadline.id}
+                      subject={deadline.subject}
+                      title={deadline.title}
+                    />
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <EmptyState
+                className={styles.cardEmptyState}
+                illustration="documents"
+                title="Ближайших сроков нет"
+              />
+            )}
+            <div className={styles.deadlineFooter}>
+              {data.overdueDeadlineCount > 0 ? (
+                <Link
+                  aria-label={`Показать просроченные задания: ${data.overdueDeadlineCount}`}
+                  className={styles.overdueChip}
+                  href={
+                    data.firstOverdueDeadlineId
+                      ? `/deadlines#deadline-${data.firstOverdueDeadlineId}`
+                      : "/deadlines"
+                  }
+                >
+                  Просрочено: {data.overdueDeadlineCount}
+                </Link>
+              ) : null}
+              <Link className={styles.cardFooterLink} href="/deadlines">
+                Все сроки →
+              </Link>
+            </div>
+          </section>
+
+          <section
+            className={`${styles.card} ${styles.requestCard}`}
+            aria-labelledby="request-title"
+          >
+            <div className={styles.cardHeading}>
+              <h2 id="request-title">Моя последняя заявка</h2>
+              {data.latestRequest ? (
+                <span
+                  className={controls.badge}
+                  data-tone={
+                    requestStatusTones[
+                      getRequestStatusTone(data.latestRequest.status)
+                    ]
+                  }
+                >
+                  {requestStatusLabels[data.latestRequest.status]}
+                </span>
+              ) : null}
+            </div>
+            {data.latestRequest ? (
+              <>
+                <div className={styles.requestRow}>
+                  <div className={styles.rowText}>
+                    <strong title={latestRequestTitle}>
+                      {latestRequestTitle}
+                    </strong>
+                    <span>
+                      {formatRequestNumber(data.latestRequest.id)} · обновлена
+                    </span>
+                  </div>
+                  <DateTimeStack
+                    align="end"
+                    value={data.latestRequest.updatedAt}
+                  />
+                </div>
+                <Link
+                  className={styles.cardFooterLink}
+                  href={`/requests/${data.latestRequest.publicId}`}
+                >
+                  Отследить заявку →
+                </Link>
+              </>
+            ) : (
+              <EmptyState
+                action={
+                  <Link className={controls.secondary} href="/requests/new">
+                    Новая заявка
+                  </Link>
+                }
+                className={styles.cardEmptyState}
+                illustration="requests"
+                title="Заявок пока нет"
+              />
+            )}
+          </section>
+        </div>
+
+        <section
+          className={`${styles.card} ${styles.notificationCard}`}
+          aria-labelledby="dashboard-notifications-title"
+        >
+          <div className={styles.cardHeading}>
+            <h2 id="dashboard-notifications-title">Уведомления</h2>
+            {notificationPage.unreadCount > 0 ? (
+              <span className={controls.badge} data-tone="accent">
+                Новых: {notificationPage.unreadCount}
+              </span>
+            ) : null}
+          </div>
+          {notifications.length > 0 ? (
+            <div className={styles.fit}>
+              <ul className={styles.rows}>
+                {notifications.map((notification) => (
+                  <li className={styles.row} key={notification.id}>
+                    <Link className={styles.rowLink} href={notification.href}>
+                      <span className={styles.rowText}>
+                        <strong title={notification.title}>
+                          {notification.isUnread ? (
+                            <span
+                              aria-label="Не прочитано"
+                              className={styles.unreadDot}
+                              role="img"
+                            />
+                          ) : null}
+                          {notification.title}
+                        </strong>
+                        <span title={notification.text}>
+                          {notification.text || notification.kind}
+                        </span>
+                      </span>
+                      <DateTimeStack align="end" value={notification.date} />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className={styles.compactEmpty}>
+              Новых уведомлений нет. Здесь появятся изменения расписания, сроки и
+              статусы заявок.
+            </p>
+          )}
+          <Link className={styles.cardFooterLink} href="/notifications">
+            Все уведомления ({notificationTotal}) →
+          </Link>
+        </section>
+      </div>
     </main>
   );
 }

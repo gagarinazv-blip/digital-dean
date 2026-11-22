@@ -127,6 +127,10 @@
   padding: var(--space-5) var(--space-6) var(--space-6);
 }
 
+.body > form {
+  margin-top: 0;
+}
+
 .footer {
   display: flex;
   flex-wrap: wrap;

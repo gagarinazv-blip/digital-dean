@@ -86,7 +86,7 @@ export async function getCampusTodayData(now = getDemoNow()) {
         first.dueAt.getTime() - second.dueAt.getTime() ||
         first.id.localeCompare(second.id),
     );
-  const deadlines = getUpcomingDeadlines(deadlineRecords, now, 5).map((deadline) => ({
+  const deadlines = getUpcomingDeadlines(deadlineRecords, now, 12).map((deadline) => ({
     ...deadline,
     subject: cleanStudentFacingText(deadline.subject),
     title: cleanStudentFacingText(deadline.title),
@@ -156,7 +156,7 @@ export async function getCampusTodayData(now = getDemoNow()) {
   let nextWeekLessons: typeof scheduleData.lessons = [];
   if (
     !nextScheduleLesson ||
-    (!todaySchedule.length && upcomingCurrentWeekCount < 3)
+    upcomingCurrentWeekCount < 10
   ) {
     const nextWeekAnchor = new Date(scheduleData.endDate);
     nextWeekAnchor.setUTCHours(12, 0, 0, 0);
@@ -182,7 +182,7 @@ export async function getCampusTodayData(now = getDemoNow()) {
       (lesson, index, lessons) =>
         lessons.findIndex((candidate) => candidate.id === lesson.id) === index,
     )
-    .slice(0, 3)
+    .slice(0, 10)
     .map((lesson) => ({
       occurrenceId: lesson.id,
       occurrenceDate: new Date(
