@@ -7,6 +7,7 @@ import type {
   OpportunityType,
 } from "@/generated/prisma/enums";
 import { CampusLoading, CampusSection } from "@/components/campus-section";
+import { BottomSheet } from "@/components/bottom-sheet";
 import { getPrisma } from "@/lib/prisma";
 import { requireStudent } from "@/lib/student";
 import { getDemoNow } from "@/lib/demo-date";
@@ -22,6 +23,10 @@ import {
 import {
   toggleOpportunityBookmarkAction,
 } from "../actions";
+import {
+  OpportunityCategories,
+  type OpportunityCategoryGroup,
+} from "./opportunity-categories";
 import styles from "./opportunities.module.css";
 
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -45,6 +50,11 @@ const typeIconPaths: Record<string, string> = {
   fitness: "M2 10v4m4-7v10m12-10v10m4-7v4M6 12h12",
   heart: "M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8z",
   sparkles: "m12 3 1.4 5.6L19 10l-5.6 1.4L12 17l-1.4-5.6L5 10l5.6-1.4L12 3zm7 12 .7 2.3L22 18l-2.3.7L19 21l-.7-2.3L16 18l2.3-.7L19 15z",
+};
+const categoryShortLabels: Partial<Record<OpportunityType, string>> = {
+  CONFERENCE: "Конференции",
+  CASE_CHAMPIONSHIP: "Кейс-чемпионаты",
+  EXCHANGE: "Мобильность",
 };
 const applicationStatusLabels: Record<string, string> = {
   SUBMITTED: "Отправлена",
@@ -319,6 +329,181 @@ async function CatalogContent({
       ? { key: "cost", label: selectedCost === "FREE" ? "Бесплатно" : "Платно" }
       : null,
   ].filter((item): item is { key: string; label: string } => item !== null);
+  const categoryGroups: OpportunityCategoryGroup[] = (
+      ["SCIENCE_CAREER", "STUDENT_LIFE"] as const
+  ).map((group) => {
+      const categories = opportunityTypes
+        .filter((item) => item.group === group)
+        .filter((item) => item.value !== "OTHER" || (openCounts.get(item.value) ?? 0) > 0)
+        .map((item) => ({
+          type: item.value,
+          href: updateQuery(query, "type", item.value),
+          fullLabel: item.label,
+          shortLabel: categoryShortLabels[item.value] ?? item.label,
+          iconPath: typeIconPaths[item.icon] ?? typeIconPaths.sparkles,
+          count: openCounts.get(item.value) ?? 0,
+        }));
+
+      return {
+        id: group.toLowerCase(),
+        label: group === "SCIENCE_CAREER" ? "Наука и карьера" : "Студенческая жизнь",
+        count: categories.reduce((total, category) => total + category.count, 0),
+        categories,
+      };
+  });
+  const selectedLabel = selectedType
+      ? opportunityTypeConfig[selectedType].label
+      : "Все возможности";
+  const selectedCount = selectedType
+      ? openCounts.get(selectedType) ?? 0
+      : openOpportunities.length;
+
+  function renderFilters() {
+      return (
+        <form method="get" action="/opportunities/catalog" className={styles.filters}>
+          {selectedType && <input type="hidden" name="type" value={selectedType} />}
+          <h2>Фильтры</h2>
+          <label>
+            Поиск
+            <input
+              type="search"
+              name="q"
+              maxLength={100}
+              placeholder="Название, организатор"
+              defaultValue={search}
+            />
+          </label>
+          <label>
+            Дедлайн
+            <select name="deadline" defaultValue={deadlineFilter ?? ""}>
+              <option value="">Любой срок</option>
+              <option value="open">Только открытые</option>
+              <option value="7d">Ближайшие 7 дней</option>
+              <option value="14d">До 14 дней</option>
+              <option value="30d">До 30 дней</option>
+              <option value="until">Выбрать дату (до)</option>
+            </select>
+          </label>
+          {deadlineFilter === "until" && (
+            <label>
+              Дата до
+              <input type="date" name="until" defaultValue={deadlineUntil} />
+            </label>
+          )}
+          <fieldset>
+            <legend>Направление</legend>
+            {opportunityDirections.map((direction) => (
+              <label key={direction.value} className={styles.checkLabel}>
+                <input
+                  type="checkbox"
+                  name="direction"
+                  value={direction.value}
+                  defaultChecked={selectedDirections.includes(direction.value)}
+                />
+                {direction.label}
+              </label>
+            ))}
+          </fieldset>
+          <label>
+            Курс
+            <select name="course" defaultValue={course ?? ""}>
+              <option value="">Любой</option>
+              {courseValues.map((value) => (
+                <option value={value} key={value}>{value} курс</option>
+              ))}
+            </select>
+          </label>
+          <label className={styles.checkLabel}>
+            <input type="checkbox" name="fit" value="me" defaultChecked={fitOnly} />
+            Подходит мне
+          </label>
+          <label>
+            Формат
+            <select name="format" defaultValue={selectedFormat ?? ""}>
+              <option value="">Любой</option>
+              <option value="OFFLINE">Очно</option>
+              <option value="ONLINE">Онлайн</option>
+              <option value="HYBRID">Гибрид</option>
+            </select>
+          </label>
+          <label>
+            Стоимость
+            <select name="cost" defaultValue={selectedCost ?? ""}>
+              <option value="">Любая</option>
+              <option value="FREE">Бесплатно</option>
+              <option value="PAID">Платно</option>
+            </select>
+          </label>
+          <label>
+            Мои заявки
+            <select name="mine" defaultValue={mine}>
+              <option value="all">Все</option>
+              <option value="notApplied">Не подавал</option>
+              <option value="applied">Подал</option>
+              <option value="favorite">В избранном</option>
+            </select>
+          </label>
+          {selectedType === "SPORT" && (
+            <>
+              <label>
+                День недели
+                <select name="sportDay" defaultValue={first(params.sportDay) ?? ""}>
+                  <option value="">Любой</option>
+                  {["понедельник", "вторник", "среда", "четверг", "пятница", "суббота", "воскресенье"].map((day) => (
+                    <option key={day} value={day}>{day}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Уровень
+                <select name="sportLevel" defaultValue={first(params.sportLevel) ?? ""}>
+                  <option value="">Любой</option>
+                  <option value="Начинающий">Начинающий</option>
+                  <option value="Любой">Любой</option>
+                  <option value="Продвинутый">Продвинутый</option>
+                </select>
+              </label>
+              <label className={styles.checkLabel}>
+                <input type="checkbox" name="additional" value="yes" defaultChecked={first(params.additional) === "yes"} />
+                Дополнительный набор
+              </label>
+            </>
+          )}
+          {selectedType === "CULTURAL" && (
+            <label>
+              Прослушивание
+              <select name="audition" defaultValue={first(params.audition) ?? ""}>
+                <option value="">Любое</option>
+                <option value="yes">Требуется</option>
+                <option value="no">Не требуется</option>
+              </select>
+            </label>
+          )}
+          {selectedType === "INTERNSHIP" && (
+            <label className={styles.checkLabel}>
+              <input type="checkbox" name="paid" value="yes" defaultChecked={first(params.paid) === "yes"} />
+              Оплачиваемая
+            </label>
+          )}
+          {selectedType === "CASE_CHAMPIONSHIP" && (
+            <label>
+              Размер команды
+              <input type="number" name="teamSize" min={1} max={20} defaultValue={first(params.teamSize)} />
+            </label>
+          )}
+          <label>
+            Сортировка
+            <select name="sort" defaultValue={sort}>
+              <option value="deadline">Ближайший дедлайн</option>
+              <option value="new">Новые</option>
+              <option value="title">По названию</option>
+            </select>
+          </label>
+          <button type="submit" className={styles.applyFilters}>Показать результаты</button>
+          <Link href="/opportunities/catalog" className={styles.resetLink}>Сбросить фильтры</Link>
+        </form>
+      );
+  }
 
   return (
     <CampusSection
@@ -326,43 +511,21 @@ async function CatalogContent({
       title="Каталог"
       description="Программы, события и наборы для студентов."
     >
-      <div className={styles.categoryScroller} aria-label="Группы возможностей">
-        <Link
-          href={updateQuery(query, "type", null)}
-          className={`${styles.category} ${!selectedType ? styles.categoryActive : ""}`}
-          aria-current={!selectedType ? "page" : undefined}
-        >
-          Все <span>{openOpportunities.length}</span>
-        </Link>
-        {(["SCIENCE_CAREER", "STUDENT_LIFE"] as const).map((group) => {
-          const groupTypes = opportunityTypes.filter((item) => item.group === group);
-          const groupCount = groupTypes.reduce(
-            (total, item) => total + (openCounts.get(item.value) ?? 0),
-            0,
-          );
-          return (
-            <div className={styles.categoryGroup} key={group}>
-              <span className={styles.groupLabel}>
-                {group === "SCIENCE_CAREER" ? "Наука и карьера" : "Студенческая жизнь"}
-                <span>{groupCount}</span>
-              </span>
-              {groupTypes.map((item) => (
-                <Link
-                  key={item.value}
-                  href={updateQuery(query, "type", item.value)}
-                  className={`${styles.category} ${selectedType === item.value ? styles.categoryActive : ""}`}
-                  aria-current={selectedType === item.value ? "page" : undefined}
-                >
-                  {item.label} <span>{openCounts.get(item.value) ?? 0}</span>
-                </Link>
-              ))}
-            </div>
-          );
-        })}
-      </div>
+      <OpportunityCategories
+        allCount={openOpportunities.length}
+        allHref={updateQuery(query, "type", null)}
+        allIconPath={typeIconPaths.sparkles}
+        groups={categoryGroups}
+        selectedCount={selectedCount}
+        selectedLabel={selectedLabel}
+        selectedType={selectedType}
+      />
 
       <div className={styles.catalogLayout}>
-        <aside className={styles.filterPanel} aria-label="Фильтры каталога">
+        <aside
+          aria-label="Фильтры каталога"
+          className={`${styles.filterPanel} ${styles.desktopFilterPanel}`}
+        >
           <details open>
             <summary>Фильтры</summary>
             <form method="get" action="/opportunities/catalog" className={styles.filters}>
@@ -509,10 +672,37 @@ async function CatalogContent({
             </form>
           </details>
         </aside>
+        <div className={styles.mobileFilterPanel}>
+          <BottomSheet
+            title="Фильтры каталога"
+            triggerAriaLabel="Открыть фильтры каталога"
+            triggerClassName={styles.mobileFilterTrigger}
+            triggerLabel={
+              <>
+                <svg
+                  aria-hidden="true"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeWidth="1.8"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M4 7h16M7 12h10m-7 5h4" />
+                </svg>
+                <span>Фильтры</span>
+              </>
+            }
+          >
+            {renderFilters()}
+          </BottomSheet>
+        </div>
 
         <section className={styles.results} aria-label="Результаты каталога">
           <div className={styles.resultsHeading}>
-            <p aria-live="polite">Найдено {count}</p>
+            <div className={styles.resultsTitle}>
+              <h2>{selectedLabel}</h2>
+              <p aria-live="polite">Найдено {count}</p>
+            </div>
             {activeFilters.length > 0 && (
               <div className={styles.activeFilters} aria-label="Активные фильтры">
                 {activeFilters.map((filter) => (
@@ -571,7 +761,10 @@ async function CatalogContent({
                       </form>
                     </div>
                     <h2>
-                      <Link href={`/opportunities/${opportunity.id}?returnTo=${returnTo}`}>
+                      <Link
+                        href={`/opportunities/${opportunity.id}?returnTo=${returnTo}`}
+                        title={opportunity.title}
+                      >
                         {opportunity.title}
                       </Link>
                     </h2>
