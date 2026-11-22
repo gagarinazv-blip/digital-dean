@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CampusLoading, CampusSection } from "@/components/campus-section";
 import { getPrisma } from "@/lib/prisma";
 import { requireStudent } from "@/lib/student";
+import { getDemoNow } from "@/lib/demo-date";
 import styles from "./opportunities.module.css";
 
 const typeLabels = {
@@ -14,7 +15,7 @@ const typeLabels = {
 
 async function CatalogContent() {
   const student = await requireStudent();
-  const now = new Date();
+  const now = getDemoNow();
   const [opportunities, applications] = await Promise.all([
     getPrisma().opportunity.findMany({
       where: { status: "PUBLISHED" },

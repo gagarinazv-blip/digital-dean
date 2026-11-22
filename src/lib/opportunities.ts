@@ -4,6 +4,7 @@ import { forbidden, redirect } from "next/navigation";
 import { getPrisma } from "@/lib/prisma";
 import { requireStudentContext } from "@/lib/student";
 import { requireStaffContext } from "@/lib/staff";
+import { getDemoNow } from "@/lib/demo-date";
 
 export type OpportunityRequirement = {
   key: string;
@@ -34,7 +35,7 @@ export async function submitOpportunityApplication(
   opportunityId: number,
   motivation: string,
 ): Promise<void> {
-  const { student, userId } = await requireStudentContext();
+  const { student } = await requireStudentContext();
   if (!Number.isSafeInteger(opportunityId) || opportunityId < 1) {
     throw new Error("Некорректное мероприятие.");
   }
@@ -45,7 +46,7 @@ export async function submitOpportunityApplication(
   if (!opportunity || opportunity.status !== "PUBLISHED") {
     throw new Error("Мероприятие недоступно.");
   }
-  if (opportunity.deadline.getTime() <= Date.now()) {
+  if (opportunity.deadline.getTime() <= getDemoNow().getTime()) {
     throw new Error("Приём заявок закрыт.");
   }
   const active = await prisma.opportunityApplication.findFirst({
