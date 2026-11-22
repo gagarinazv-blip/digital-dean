@@ -37,12 +37,13 @@ afterEach(() => {
 });
 
 describe("getPrisma", () => {
-  it("replaces a cached client generated before portfolio models existed", () => {
+  it("replaces a cached client missing the current schema delegates", () => {
     const disconnect = vi.fn().mockResolvedValue(undefined);
     const staleClient = { $disconnect: disconnect } as unknown as PrismaClient;
     const freshClient = {
       portfolioFolder: {},
       portfolioItem: {},
+      studentDocument: {},
       $disconnect: vi.fn(),
     } as unknown as PrismaClient;
     const adapter = { connectionString: process.env.DATABASE_URL };
@@ -60,6 +61,7 @@ describe("getPrisma", () => {
     const client = {
       portfolioFolder: {},
       portfolioItem: {},
+      studentDocument: {},
       $disconnect: vi.fn(),
     } as unknown as PrismaClient;
     globalPrisma.prisma = client;
