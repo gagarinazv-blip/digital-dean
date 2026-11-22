@@ -35,19 +35,17 @@
 }
 
 .brandMark {
-  width: 40px;
-  height: 40px;
+  --brand-halo: var(--color-ink);
+  width: 44px;
+  height: 44px;
   flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: var(--color-ink);
+  color: var(--color-surface);
 }
 
 .brandMark svg {
-  width: 32px;
-  height: 32px;
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .brandText {
@@ -345,8 +343,8 @@
   }
 
   .brandMark {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
   }
 
   .brandText strong {

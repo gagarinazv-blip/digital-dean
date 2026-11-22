@@ -5,7 +5,8 @@ export const BRAND_TAGLINE = "Цифровая платформа универс
 
 /**
  * Знак «а» с кольцом. Буква берёт currentColor, кольцо — акцентные токены,
- * поэтому знак работает и на светлом, и на тёмном фоне.
+ * поэтому знак работает и на светлом, и на тёмном фоне. Просвет --brand-halo
+ * цвета подложки отделяет кольцо от буквы, чтобы они не слипались в мелком размере.
  */
 export function BrandMark({ className }: { className?: string }) {
   const gradientId = useId();
@@ -41,6 +42,9 @@ export function BrandMark({ className }: { className?: string }) {
       <path
         d="M148 361c-24-3-41-15-41-33 0-40 108-87 223-87 58 0 92 11 92 35 0 12-12 24-29 32v-14c5-3 8-10 6-16-3-16-29-26-69-26-95 0-180 48-182 93v16Z"
         fill={`url(#${gradientId})`}
+        paintOrder="stroke"
+        stroke="var(--brand-halo, none)"
+        strokeWidth="14"
       />
     </svg>
   );
