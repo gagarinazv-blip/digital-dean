@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requestStatusLabels, requestTypeLabels } from "@/lib/campus-labels";
 import { getRequestCatalogTitle } from "@/lib/request-catalog";
 import { formatRequestNumber } from "@/lib/request-number";
+import { getUniversityDateTimeFormatter } from "@/lib/campus-time";
 import { getStaffRequestList } from "@/lib/staff-data";
 import styles from "./staff.module.css";
 import workflowStyles from "@/app/request-workflow.module.css";
@@ -9,10 +10,9 @@ import type { RequestStatus } from "@/generated/prisma/enums";
 
 export const instant = false;
 
-const requestDateFormatter = new Intl.DateTimeFormat("ru-RU", {
+const requestDateFormatter = getUniversityDateTimeFormatter({
   dateStyle: "medium",
   timeStyle: "short",
-  timeZone: "Europe/Moscow",
 });
 
 const statusSummary: {

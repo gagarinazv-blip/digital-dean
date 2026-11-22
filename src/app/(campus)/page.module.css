@@ -7,35 +7,10 @@
   padding: var(--space-6) 0 var(--space-8);
 }
 
-.emptyState {
-  display: grid;
-  align-content: center;
-  gap: var(--space-2);
-  min-width: 0;
-  margin-top: 0;
-  color: var(--color-muted);
-  font-size: var(--font-size-caption);
-  line-height: 18px;
-}
-
-.sideStack .emptyState {
-  flex: 1 1 auto;
-  justify-items: center;
-  text-align: center;
-}
-
-.emptyState strong {
-  color: var(--color-ink);
-  font-size: var(--font-size-body-compact);
-}
-
-.emptyState p {
-  margin-top: 0;
-}
-
 .welcome {
   min-width: 0;
   padding: var(--space-2) 0;
+  animation: dashboard-appear 180ms ease-out both;
 }
 
 .timelineCurrent .timelineDetails strong {
@@ -103,73 +78,56 @@
   letter-spacing: 0.03em;
 }
 
-.dashboardGrid {
+.dashboardColumns {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  align-items: stretch;
+  align-items: start;
   gap: var(--space-6);
   min-width: 0;
 }
 
-.heroGrid .nextLesson,
-.activityGrid > .card:first-child {
+.primaryStack {
   grid-column: span 8;
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: var(--space-6);
 }
 
-.heroGrid > .sideStack,
-.activityGrid > .card:last-child {
+.secondaryStack {
   grid-column: span 4;
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: var(--space-6);
 }
 
 .nextLesson {
   position: relative;
   min-width: 0;
-  min-height: 380px;
-  height: 100%;
+  min-height: 220px;
   display: grid;
-  align-items: stretch;
+  align-items: start;
   overflow: hidden;
   padding: var(--space-6);
   border: 1px solid var(--color-blue-300);
   border-radius: var(--radius-card);
-  background:
-    linear-gradient(110deg, #dce5f0 0%, #dce5f0 50%, #e8edf4 100%);
+  background: linear-gradient(110deg, #dce5f0 0%, #dce5f0 52%, #e8edf4 100%);
+  animation: dashboard-appear 180ms ease-out both;
 }
 
 .heroArt {
   position: absolute;
   inset: 0 0 0 auto;
-  width: 46%;
+  width: 48%;
   overflow: hidden;
-  background:
-    linear-gradient(90deg, #dce5f0 0%, rgb(220 229 240 / 25%) 45%, transparent 100%);
   pointer-events: none;
-}
-
-.heroArt::before,
-.heroArt::after {
-  position: absolute;
-  right: -7%;
-  bottom: -34%;
-  width: min(390px, 75vw);
-  aspect-ratio: 1;
-  border: 1px solid rgb(54 87 115 / 18%);
-  border-radius: 48% 48% 0 0;
-  content: "";
-}
-
-.heroArt::after {
-  right: 12%;
-  bottom: -42%;
-  width: min(250px, 48vw);
-  border-width: 2px;
-  border-color: rgb(54 87 115 / 12%);
 }
 
 .heroContent {
   position: relative;
   z-index: 1;
-  width: 100%;
+  width: min(72%, 680px);
   min-width: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -244,15 +202,19 @@
 .nextLessonPreview {
   display: grid;
   gap: var(--space-1);
-  margin-top: var(--space-1);
+  margin-top: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid rgb(54 87 115 / 12%);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-surface) 76%, transparent);
 }
 
 .nextLessonPreview p,
 .nextLessonPreview span {
   margin: 0;
   color: var(--color-muted);
-  font-size: var(--font-size-caption);
-  line-height: 16px;
+  font-size: var(--font-size-body-compact);
+  line-height: 20px;
   overflow-wrap: break-word;
 }
 
@@ -396,120 +358,10 @@
 .heroButton:focus-visible,
 .textLink:focus-visible,
 .actionTile:focus-visible,
-.emptyScheduleText a:focus-visible {
+.cardFooterLink:focus-visible,
+.overdueChip:focus-visible {
   outline: 3px solid var(--color-focus);
   outline-offset: 2px;
-}
-
-.sideStack {
-  display: grid;
-  grid-template-rows: minmax(min-content, 1.2fr) minmax(min-content, 1fr);
-  align-content: stretch;
-  gap: var(--space-3);
-  min-width: 0;
-  height: 100%;
-}
-
-.sideStack > .card {
-  min-height: 0;
-  gap: var(--space-3);
-  padding: var(--space-5);
-}
-
-.sideStack .cardHeading {
-  min-height: 0;
-  gap: var(--space-1);
-  background: transparent;
-  box-shadow: none;
-}
-
-.sideStack .cardHeading h2 {
-  font-size: var(--font-size-h2);
-  line-height: 28px;
-}
-
-.sideStack .compactList {
-  min-width: 0;
-}
-
-.sideStack .request {
-  flex: 1 1 auto;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-rows: auto auto minmax(0, 1fr);
-  gap: var(--space-1) var(--space-2);
-  margin-top: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-}
-
-.sideStack .request > strong {
-  grid-column: 1;
-  align-self: center;
-  line-height: 1.3;
-}
-
-.sideStack .request .statusBadge {
-  grid-column: 2;
-  grid-row: 1;
-}
-
-.sideStack .requestMeta,
-.sideStack .request .textLink {
-  grid-column: 1 / -1;
-}
-
-.sideStack .requestMeta {
-  grid-row: 2;
-  font-size: 14px;
-  line-height: 20px;
-}
-
-.sideStack .request .textLink {
-  grid-row: 3;
-  align-self: end;
-}
-
-@media (max-width: 380px) {
-  .sideStack .request {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto;
-  }
-
-  .sideStack .request .statusBadge {
-    grid-column: 1;
-    grid-row: auto;
-  }
-
-  .sideStack .requestMeta,
-  .sideStack .request .textLink {
-    grid-column: 1;
-  }
-}
-
-.overdueSummary {
-  color: var(--color-muted);
-  font-size: 14px;
-  line-height: 20px;
-}
-
-.overdueSummary a {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  color: var(--color-wine-900);
-  font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.overdueSummary a:focus-visible {
-  outline: 3px solid var(--color-focus);
-  outline-offset: 2px;
-}
-
-.activityGrid .emptyState {
-  flex: 1 1 auto;
 }
 
 .card,
@@ -519,18 +371,18 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   background: var(--color-surface);
+  animation: dashboard-appear 180ms ease-out both;
 }
 
 .card {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 
 .cardHeading {
   min-width: 0;
-  min-height: 68px;
   display: grid;
   align-content: start;
   gap: var(--space-1);
@@ -547,6 +399,42 @@
   overflow-wrap: break-word;
 }
 
+.deadlineCard {
+  gap: var(--space-4);
+}
+
+.requestCard {
+  min-height: 190px;
+}
+
+.deadlineHeading {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.deadlineHeading h2 {
+  min-width: 0;
+  text-wrap: balance;
+}
+
+.deadlineCount {
+  min-width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  padding-inline: var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-wine-100);
+  color: var(--color-wine-900);
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
 .compactList,
 .changeList {
   display: grid;
@@ -555,41 +443,99 @@
   list-style: none;
 }
 
-.request {
-  display: grid;
+.deadlineWeekHint {
+  margin-top: auto;
+  color: var(--color-muted);
+  font-size: var(--font-size-body-compact);
+  line-height: 20px;
+}
+
+.deadlineFooter {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--space-2);
+  margin-top: auto;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.deadlineFooter .textLink {
+  min-height: var(--size-touch);
   margin-top: 0;
+  white-space: nowrap;
+}
+
+.overdueChip {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+  line-height: 18px;
+  text-decoration: none;
+}
+
+.cardEmptyState {
+  flex: 1 1 auto;
+  min-height: 150px;
   padding: var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
-  background: var(--color-subtle);
+}
+
+.request {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  grid-template-rows: auto auto minmax(44px, 1fr);
+  align-content: start;
+  gap: var(--space-2) var(--space-3);
+  margin-top: 0;
+  padding: 0;
 }
 
 .request > strong {
+  min-width: 0;
+  grid-column: 1;
+  grid-row: 1;
   display: -webkit-box;
   overflow: hidden;
   color: var(--color-ink);
-  font-size: var(--font-size-body-compact);
-  line-height: 20px;
+  font-size: var(--font-size-body);
+  line-height: 24px;
   overflow-wrap: break-word;
+  text-wrap: balance;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
 
-.request p {
-  color: var(--color-muted);
-  font-size: var(--font-size-caption);
-  line-height: 1.45;
+.request .statusBadge {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
 }
 
 .requestMeta {
+  grid-column: 1 / -1;
+  grid-row: 2;
   color: var(--color-muted);
-  font-size: var(--font-size-caption);
-  line-height: 16px;
+  font-size: var(--font-size-body-compact);
+  line-height: 20px;
+  overflow-wrap: break-word;
+}
+
+.request .textLink {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  align-self: end;
 }
 
 .statusBadge {
-  min-height: 28px;
+  min-height: 30px;
   display: inline-flex;
   align-items: center;
   justify-self: start;
@@ -598,7 +544,7 @@
   margin-top: 0;
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-pill);
-  font-size: var(--font-size-label);
+  font-size: var(--font-size-body-compact);
   font-weight: 500;
   line-height: 18px;
 }
@@ -684,21 +630,6 @@
 
 .cardFooterLink {
   flex: 0 0 auto;
-}
-
-.emptyStateIcon {
-  width: 40px;
-  height: 40px;
-  display: grid;
-  place-items: center;
-  border-radius: var(--radius-md);
-  background: var(--color-subtle);
-  color: var(--color-muted);
-}
-
-.emptyStateIcon svg {
-  width: 20px;
-  height: 20px;
 }
 
 .timeline {
@@ -833,18 +764,7 @@
   overflow-wrap: break-word;
 }
 
-.emptySchedule {
-  min-height: 104px;
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  margin-top: 0;
-  padding: var(--space-3);
-  border-radius: var(--radius-md);
-  background: var(--color-subtle);
-}
-
-.nextDayLesson {
+.nextDayLessons {
   min-width: 0;
   display: grid;
   gap: var(--space-1);
@@ -854,62 +774,41 @@
   background: var(--color-subtle);
 }
 
-.nextDayLesson strong,
-.nextDayLesson > span:last-child {
+.nextDayLessonList {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nextDayLessonList li {
   min-width: 0;
+  display: grid;
+  gap: var(--space-1);
+  padding-block: var(--space-2);
+  border-top: 1px solid var(--color-border);
   overflow-wrap: break-word;
 }
 
-.nextDayLesson strong {
+.nextDayLessonList strong {
   color: var(--color-ink);
-  font-size: var(--font-size-body-compact);
-  line-height: 1.35;
+  font-size: var(--font-size-body);
+  line-height: 24px;
   display: -webkit-box;
   overflow: hidden;
+  overflow-wrap: break-word;
+  text-wrap: balance;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
 
-.nextDayLesson > span:last-child {
+.nextDayLessonList time,
+.nextDayLessonList li > span {
   color: var(--color-muted);
-  font-size: var(--font-size-caption);
-  line-height: 1.4;
-}
-
-.emptyScheduleIcon {
-  width: 40px;
-  height: 40px;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: var(--color-muted);
-}
-
-.emptyScheduleIcon svg {
-  width: 20px;
-  height: 20px;
-}
-
-.emptyScheduleText {
-  min-width: 0;
-  display: grid;
-  gap: var(--space-1);
-}
-
-.emptyScheduleText strong {
-  color: var(--color-ink);
   font-size: var(--font-size-body-compact);
-}
-
-.emptyScheduleText a {
-  min-height: var(--size-touch);
-  display: inline-flex;
-  align-items: center;
-  color: var(--color-wine-900);
-  font-size: var(--font-size-caption);
-  font-weight: 600;
+  line-height: 20px;
+  overflow-wrap: break-word;
 }
 
 .changeItem {
@@ -965,7 +864,7 @@
 .quickActions {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 
 .actionTile {
@@ -991,6 +890,17 @@
   background: var(--color-wine-100);
   box-shadow: var(--shadow-soft);
   transform: translateY(-2px);
+}
+
+@keyframes dashboard-appear {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .actionIcon {
@@ -1050,39 +960,50 @@
   height: 68px;
 }
 
-.skeletonGrid {
+.skeletonDashboard {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  align-items: stretch;
+  align-items: start;
   gap: var(--space-6);
 }
 
-.skeletonHeroGrid > .skeletonHero,
-.skeletonActivityGrid > .skeletonCard:first-child {
+.skeletonPrimaryStack,
+.skeletonSideStack {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: var(--space-6);
+}
+
+.skeletonPrimaryStack {
   grid-column: span 8;
 }
 
-.skeletonHeroGrid > .skeletonSideStack,
-.skeletonActivityGrid > .skeletonCard:last-child {
+.skeletonSideStack {
   grid-column: span 4;
 }
 
-.skeletonSideStack {
-  display: grid;
-  grid-template-rows: 1.2fr 1fr;
-  gap: var(--space-3);
-}
-
 .skeletonHero {
-  min-height: 380px;
+  min-height: 220px;
 }
 
 .skeletonCard {
-  min-height: 0;
-  height: 100%;
+  min-height: 200px;
 }
 
-.skeletonActivityGrid > .skeletonCard {
+.skeletonPrimaryStack > .skeletonCard {
+  min-height: 340px;
+}
+
+.skeletonSideStack > .skeletonCard:first-child {
+  min-height: 340px;
+}
+
+.skeletonSideStack > .skeletonCard:nth-child(2) {
+  min-height: 190px;
+}
+
+.skeletonSideStack > .skeletonCard:last-child {
   min-height: 280px;
 }
 
@@ -1111,43 +1032,106 @@
   }
 }
 
-@media (max-width: 1099px) {
-  .heroGrid > .nextLesson {
-    grid-column: 1 / -1;
-  }
-
-  .heroGrid > .sideStack {
-    grid-column: 1 / -1;
+@media (min-width: 768px) and (max-width: 1099px) {
+  .dashboardColumns {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: minmax(0, 1fr);
-    gap: var(--space-4);
-    height: auto;
+    grid-template-areas:
+      "hero hero"
+      "deadlines request"
+      "schedule announcements";
+    gap: var(--space-6);
   }
 
-  .sideStack > .card {
-    min-height: 200px;
-    padding: var(--space-5);
+  .primaryStack,
+  .secondaryStack {
+    display: contents;
   }
 
-  .skeletonHeroGrid > .skeletonHero {
-    grid-column: 1 / -1;
+  .heroCard {
+    grid-area: hero;
   }
 
-  .skeletonHeroGrid > .skeletonSideStack {
-    grid-column: 1 / -1;
+  .deadlineCard {
+    grid-area: deadlines;
+  }
+
+  .requestCard {
+    grid-area: request;
+  }
+
+  .scheduleCard {
+    grid-area: schedule;
+  }
+
+  .announcementsCard {
+    grid-area: announcements;
+  }
+
+  .request {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(44px, 1fr);
+  }
+
+  .request .statusBadge,
+  .requestMeta,
+  .request .textLink {
+    grid-column: 1;
+  }
+
+  .request .statusBadge {
+    grid-row: 2;
+  }
+
+  .requestMeta {
+    grid-row: 3;
+  }
+
+  .request .textLink {
+    grid-row: 4;
+  }
+
+  .skeletonDashboard {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: minmax(0, 1fr);
+    grid-template-areas:
+      "hero hero"
+      "deadlines request"
+      "schedule announcements";
+  }
+
+  .skeletonPrimaryStack,
+  .skeletonSideStack {
+    display: contents;
+  }
+
+  .skeletonHero {
+    grid-area: hero;
+  }
+
+  .skeletonPrimaryStack > .skeletonCard {
+    grid-area: schedule;
+  }
+
+  .skeletonSideStack > .skeletonCard:first-child {
+    grid-area: deadlines;
+  }
+
+  .skeletonSideStack > .skeletonCard:nth-child(2) {
+    grid-area: request;
+  }
+
+  .skeletonSideStack > .skeletonCard:last-child {
+    grid-area: announcements;
   }
 }
 
 @media (max-width: 767px) {
   .page {
     gap: var(--space-4);
-    padding: var(--space-4) 0 var(--space-8);
+    padding: var(--space-4) var(--space-4) var(--space-8);
   }
 
   .welcome {
-    padding: 0 var(--space-1);
+    padding: 0;
   }
 
   .welcomeMeta {
@@ -1159,35 +1143,76 @@
     line-height: 32px;
   }
 
-  .dashboardGrid {
+  .dashboardColumns {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "hero"
+      "deadlines"
+      "request"
+      "schedule"
+      "announcements";
     gap: var(--space-4);
   }
 
-  .heroGrid > .nextLesson,
-  .heroGrid > .sideStack,
-  .activityGrid > .card {
-    grid-column: 1;
+  .primaryStack,
+  .secondaryStack {
+    display: contents;
   }
 
-  .skeletonGrid {
+  .heroCard {
+    grid-area: hero;
+  }
+
+  .deadlineCard {
+    grid-area: deadlines;
+  }
+
+  .requestCard {
+    grid-area: request;
+  }
+
+  .scheduleCard {
+    grid-area: schedule;
+  }
+
+  .announcementsCard {
+    grid-area: announcements;
+  }
+
+  .skeletonDashboard {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "hero"
+      "deadlines"
+      "request"
+      "schedule"
+      "announcements";
     gap: var(--space-4);
   }
 
-  .skeletonHeroGrid > .skeletonHero,
-  .skeletonHeroGrid > .skeletonSideStack,
-  .skeletonActivityGrid > .skeletonCard {
-    grid-column: 1;
-  }
-
+  .skeletonPrimaryStack,
   .skeletonSideStack {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto;
+    display: contents;
   }
 
-  .skeletonSideStack .skeletonCard {
-    min-height: 160px;
+  .skeletonHero {
+    grid-area: hero;
+  }
+
+  .skeletonPrimaryStack > .skeletonCard {
+    grid-area: schedule;
+  }
+
+  .skeletonSideStack > .skeletonCard:first-child {
+    grid-area: deadlines;
+  }
+
+  .skeletonSideStack > .skeletonCard:nth-child(2) {
+    grid-area: request;
+  }
+
+  .skeletonSideStack > .skeletonCard:last-child {
+    grid-area: announcements;
   }
 
   .skeletonActions {
@@ -1196,19 +1221,15 @@
   }
 
   .nextLesson {
-    min-height: 280px;
-    height: auto;
+    min-height: 0;
     padding: var(--space-4);
   }
 
-  .skeletonHero {
-    min-height: 280px;
-  }
-
   .heroContent {
+    width: 100%;
     grid-template-columns: minmax(0, 1fr);
     gap: var(--space-2);
-    align-content: center;
+    align-content: start;
   }
 
   .heroSession {
@@ -1230,33 +1251,32 @@
     gap: var(--space-2);
   }
 
-  .sideStack {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto;
-    gap: var(--space-3);
-    height: auto;
-  }
-
   .card,
   .quickActionsSection {
     padding: var(--space-4);
   }
 
   .request {
-    padding: var(--space-4);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(44px, 1fr);
   }
 
-  .sideStack .request {
-    padding: 0;
+  .request .statusBadge,
+  .requestMeta,
+  .request .textLink {
+    grid-column: 1;
   }
 
-  .cardHeading {
-    min-height: 0;
+  .request .statusBadge {
+    grid-row: 2;
   }
 
-  .sideStack > .card {
-    min-height: 0;
-    padding: var(--space-4);
+  .requestMeta {
+    grid-row: 3;
+  }
+
+  .request .textLink {
+    grid-row: 4;
   }
 
   .quickActions {
@@ -1266,6 +1286,10 @@
 
   .actionTile {
     min-height: 72px;
+  }
+
+  .nextLessonPreview {
+    padding: var(--space-3);
   }
 }
 
@@ -1278,9 +1302,22 @@
   .timelineItem:not(:last-child)::after {
     left: 49px;
   }
+
+  .deadlineFooter {
+    flex-wrap: wrap;
+  }
+
+  .heroActions > a {
+    padding-inline: var(--space-3);
+    white-space: normal;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .welcome,
+  .nextLesson,
+  .card,
+  .quickActionsSection,
   .heroButton,
   .actionTile,
   .skeletonHeading,

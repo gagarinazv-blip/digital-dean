@@ -19,29 +19,8 @@
   position: absolute;
   inset: 0 0 0 auto;
   width: 43%;
-  background:
-    linear-gradient(90deg, #dce5f0 0%, rgb(220 229 240 / 22%) 48%, transparent 100%);
+  overflow: hidden;
   pointer-events: none;
-}
-
-.heroArt::before,
-.heroArt::after {
-  position: absolute;
-  right: -5%;
-  bottom: -62%;
-  width: min(390px, 70vw);
-  aspect-ratio: 1;
-  border: 1px solid rgb(54 87 115 / 18%);
-  border-radius: 48% 48% 0 0;
-  content: "";
-}
-
-.heroArt::after {
-  right: 12%;
-  bottom: -76%;
-  width: min(250px, 45vw);
-  border-width: 2px;
-  border-color: rgb(54 87 115 / 12%);
 }
 
 .heroContent {
@@ -1052,10 +1031,10 @@
   display: grid;
   justify-items: center;
   gap: var(--space-2);
-  padding: var(--space-8) var(--space-6);
-  border: 1px dashed var(--color-border);
+  padding: var(--space-6);
+  border: 0;
   border-radius: var(--radius-card);
-  background: var(--color-surface);
+  background: transparent;
   text-align: center;
 }
 
@@ -1063,11 +1042,6 @@
   color: var(--color-muted);
   font-size: var(--font-size-body-compact);
   line-height: 1.55;
-}
-
-.emptyState h3 {
-  color: var(--color-ink);
-  font-size: var(--font-size-h3);
 }
 
 .emptyState p {

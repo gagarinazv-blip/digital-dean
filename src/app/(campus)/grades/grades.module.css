@@ -610,13 +610,17 @@
 }
 
 .empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
   padding: var(--space-6);
-  border: 1px dashed var(--color-border);
+  border: 0;
   border-radius: var(--radius-card);
-  background: var(--color-surface);
+  background: transparent;
   color: var(--color-muted);
   font-size: var(--font-size-body-compact);
   line-height: 1.5;
+  text-align: center;
 }
 
 .gradesSkeleton {

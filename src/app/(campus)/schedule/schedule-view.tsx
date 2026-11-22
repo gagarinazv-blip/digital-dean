@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { EmptyState } from "@/components/empty-state";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   useCallback,
@@ -17,7 +18,11 @@ import type {
   ScheduleKind,
   ScheduleStatus,
 } from "@/generated/prisma/enums";
-import { formatMoscowWeekdayDate, getMoscowTimeMinutes } from "@/lib/campus-time";
+import {
+  formatMoscowWeekdayDate,
+  getMoscowTimeMinutes,
+  getUniversityDateTimeFormatter,
+} from "@/lib/campus-time";
 import {
   buildScheduleHref,
   buildScheduleSessionHref,
@@ -168,11 +173,10 @@ function makeDayDateLabel(dateKey: string): string {
 }
 
 function makeDayPanelTitle(dateKey: string): string {
-  return new Intl.DateTimeFormat("ru-RU", {
+  return getUniversityDateTimeFormatter({
     weekday: "long",
     day: "numeric",
     month: "long",
-    timeZone: "UTC",
   })
     .format(new Date(`${dateKey}T12:00:00.000Z`))
     .toLocaleLowerCase("ru");
@@ -987,20 +991,18 @@ export function ScheduleView({
     activeFilters.q,
     activeFilters.changed,
   ].filter(Boolean).length;
-  const monthLabel = new Intl.DateTimeFormat("ru-RU", {
+  const monthLabel = getUniversityDateTimeFormatter({
     month: "long",
     year: "numeric",
-    timeZone: "UTC",
   }).format(new Date(`${selectedDate}T12:00:00.000Z`));
   const rangeLabel =
     view === "month"
       ? monthLabel
       : view === "week" || view === "list"
-        ? new Intl.DateTimeFormat("ru-RU", {
+        ? getUniversityDateTimeFormatter({
             day: "numeric",
             month: "long",
             year: "numeric",
-            timeZone: "UTC",
           }).formatRange(
             new Date(`${days[0]?.key ?? selectedDate}T12:00:00.000Z`),
             new Date(`${days[6]?.key ?? selectedDate}T12:00:00.000Z`),
@@ -1485,81 +1487,81 @@ export function ScheduleView({
               </div>
             </section>
           ) : (
-            <div aria-live="polite" className={styles.emptyState}>
-              <strong>
-                {activeFilterCount > 0
+            <EmptyState
+              action={
+                activeFilterCount > 0 ? (
+                  <div className={styles.emptyActions}>
+                    <Link
+                      className={`${styles.emptyLink} ${styles.emptyLinkSecondary}`}
+                      href={buildScheduleHref(view, selectedDate)}
+                      scroll={false}
+                    >
+                      Сбросить фильтры
+                    </Link>
+                    <Link
+                      className={`${styles.emptyLink} ${styles.emptyLinkSecondary}`}
+                      href={buildScheduleHref("week", selectedDate, activeFilters)}
+                      scroll={false}
+                    >
+                      Посмотреть неделю
+                    </Link>
+                  </div>
+                ) : (
+                  <div className={styles.emptyActions}>
+                    {nearestDayWithLessons ? (
+                      <Link
+                        className={styles.emptyLink}
+                        href={buildScheduleHref(
+                          "today",
+                          nearestDayWithLessons.key,
+                          activeFilters,
+                        )}
+                        scroll={false}
+                      >
+                        Ближайший учебный день
+                      </Link>
+                    ) : nextLesson ? (
+                      <Link
+                        className={styles.emptyLink}
+                        href={buildScheduleHref(
+                          "today",
+                          nextLesson.dateKey,
+                          activeFilters,
+                          nextLesson.databaseId,
+                        )}
+                        scroll={false}
+                      >
+                        Открыть ближайшее занятие
+                      </Link>
+                    ) : null}
+                    <Link
+                      className={`${styles.emptyLink} ${styles.emptyLinkSecondary}`}
+                      href={buildScheduleHref("week", selectedDate, activeFilters)}
+                      scroll={false}
+                    >
+                      Посмотреть неделю
+                    </Link>
+                  </div>
+                )
+              }
+              ariaLive="polite"
+              className={styles.emptyState}
+              description={
+                activeFilterCount > 0
+                  ? "Измените или сбросьте фильтры, чтобы увидеть расписание."
+                  : nextLesson
+                    ? `Ближайшее занятие: ${makeDayDateLabel(nextLesson.dateKey)}, ${nextLesson.timeLabel}, ${nextLesson.subject}, ауд. ${nextLesson.room}`
+                    : "В ближайшей неделе занятий нет."
+              }
+              illustration={activeFilterCount > 0 ? "search" : "schedule"}
+              title={
+                activeFilterCount > 0
                   ? "По выбранным условиям занятий нет"
                   : selectedIsToday
                     ? "Сегодня занятий нет"
-                    : "На эту дату занятий нет"}
-              </strong>
-              {activeFilterCount > 0 ? (
-                <p>Измените или сбросьте фильтры, чтобы увидеть расписание.</p>
-              ) : nextLesson ? (
-                <p>
-                  Ближайшее занятие: {makeDayDateLabel(nextLesson.dateKey)},{" "}
-                  {nextLesson.timeLabel}, {nextLesson.subject}, ауд.{" "}
-                  {nextLesson.room}
-                </p>
-              ) : (
-                <p>В ближайшей неделе занятий нет.</p>
-              )}
-              {activeFilterCount > 0 && (
-                <div className={styles.emptyActions}>
-                  <Link
-                    className={`${styles.emptyLink} ${styles.emptyLinkSecondary}`}
-                    href={buildScheduleHref(view, selectedDate)}
-                    scroll={false}
-                  >
-                    Сбросить фильтры
-                  </Link>
-                  <Link
-                    className={`${styles.emptyLink} ${styles.emptyLinkSecondary}`}
-                    href={buildScheduleHref("week", selectedDate, activeFilters)}
-                    scroll={false}
-                  >
-                    Посмотреть неделю
-                  </Link>
-                </div>
-              )}
-              {activeFilterCount === 0 && (
-                <div className={styles.emptyActions}>
-                  {nearestDayWithLessons ? (
-                    <Link
-                      className={styles.emptyLink}
-                      href={buildScheduleHref(
-                        "today",
-                        nearestDayWithLessons.key,
-                        activeFilters,
-                      )}
-                      scroll={false}
-                    >
-                      Ближайший учебный день
-                    </Link>
-                  ) : nextLesson ? (
-                    <Link
-                      className={styles.emptyLink}
-                      href={buildScheduleHref(
-                        "today",
-                        nextLesson.dateKey,
-                        activeFilters,
-                        nextLesson.databaseId,
-                      )}
-                      scroll={false}
-                    >
-                      Открыть ближайшее занятие
-                    </Link>
-                  ) : null}
-                  <Link
-                    className={`${styles.emptyLink} ${styles.emptyLinkSecondary}`}
-                    href={buildScheduleHref("week", selectedDate, activeFilters)}
-                    scroll={false}
-                  >
-                    Посмотреть неделю
-                  </Link>
-                </div>
-              )}
-            </div>
+                    : "На эту дату занятий нет"
+              }
+            />
           )}
         </>
       )}
@@ -1584,10 +1586,16 @@ export function ScheduleView({
               </section>
             ))
           ) : (
-            <div className={styles.emptyState}>
-              <strong>{activeFilterCount ? "Нет занятий по выбранным фильтрам" : "Занятий нет"}</strong>
-              <p>{activeFilterCount ? "Измените условия или сбросьте фильтры." : "В этом периоде занятий не запланировано."}</p>
-            </div>
+            <EmptyState
+              className={styles.emptyState}
+              description={
+                activeFilterCount
+                  ? "Измените условия или сбросьте фильтры."
+                  : "В этом периоде занятий не запланировано."
+              }
+              illustration={activeFilterCount ? "search" : "schedule"}
+              title={activeFilterCount ? "Нет занятий по выбранным фильтрам" : "Занятий нет"}
+            />
           )}
         </div>
       )}
@@ -1796,18 +1804,20 @@ export function ScheduleView({
                 </section>
               ))
             ) : (
-              <div className={styles.emptyState}>
-                <strong>
-                  {activeFilterCount > 0
-                    ? "Нет занятий по выбранным фильтрам"
-                    : "В этом месяце занятий нет"}
-                </strong>
-                <p>
-                  {activeFilterCount > 0
+              <EmptyState
+                className={styles.emptyState}
+                description={
+                  activeFilterCount > 0
                     ? "Измените условия поиска или сбросьте фильтры."
-                    : "Выберите другой месяц или вернитесь к текущему расписанию."}
-                </p>
-              </div>
+                    : "Выберите другой месяц или вернитесь к текущему расписанию."
+                }
+                illustration={activeFilterCount > 0 ? "search" : "schedule"}
+                title={
+                  activeFilterCount > 0
+                    ? "Нет занятий по выбранным фильтрам"
+                    : "В этом месяце занятий нет"
+                }
+              />
             )}
           </div>
         </>

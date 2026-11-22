@@ -14,6 +14,7 @@ import {
 } from "@/lib/request-workflow";
 import { getStaffRequestDetails } from "@/lib/staff-data";
 import { formatRequestNumber } from "@/lib/request-number";
+import { getUniversityDateTimeFormatter } from "@/lib/campus-time";
 import {
   RequestAssignmentForm,
   RequestRollbackForm,
@@ -26,10 +27,9 @@ import type { RequestStatus } from "@/generated/prisma/enums";
 
 export const instant = false;
 
-const requestDateFormatter = new Intl.DateTimeFormat("ru-RU", {
+const requestDateFormatter = getUniversityDateTimeFormatter({
   dateStyle: "long",
   timeStyle: "short",
-  timeZone: "Europe/Moscow",
 });
 
 const requestStatusClasses: Record<RequestStatus, string> = {

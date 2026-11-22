@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { EmptyState } from "@/components/empty-state";
 import styles from "./schedule.module.css";
 
 export default function ScheduleError({
@@ -15,12 +16,14 @@ export default function ScheduleError({
   }, [error]);
 
   return (
-    <section className={styles.scheduleError} role="alert">
-      <strong>Не удалось загрузить расписание</strong>
-      <p>Попробуйте обновить данные. Ваши занятия не изменены.</p>
-      <button onClick={reset} type="button">
-        Повторить
-      </button>
-    </section>
+    <EmptyState
+      action={<button onClick={reset} type="button">Повторить</button>}
+      className={styles.scheduleError}
+      description="Попробуйте обновить данные. Ваши занятия не изменены."
+      headingLevel="h2"
+      illustration="error"
+      role="alert"
+      title="Не удалось загрузить расписание"
+    />
   );
 }

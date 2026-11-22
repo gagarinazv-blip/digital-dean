@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { CampusSection } from "@/components/campus-section";
+import { CampusArchitectureArt } from "@/components/campus-architecture-art";
+import { EmptyState } from "@/components/empty-state";
 import type { RequestStatus } from "@/generated/prisma/enums";
 import { requestStatusLabels, requestTypeLabels } from "@/lib/campus-labels";
 import {
@@ -12,20 +14,19 @@ import {
   getStudentRequests,
 } from "@/lib/student-request-data";
 import { formatRequestNumber } from "@/lib/request-number";
+import { getUniversityDateTimeFormatter } from "@/lib/campus-time";
 import { RequestSearchForm } from "./request-search-form";
 import styles from "./help.module.css";
 
 export const instant = false;
 
-const requestDateFormatter = new Intl.DateTimeFormat("ru-RU", {
+const requestDateFormatter = getUniversityDateTimeFormatter({
   dateStyle: "medium",
-  timeZone: "Europe/Moscow",
 });
 
-const requestDateTimeFormatter = new Intl.DateTimeFormat("ru-RU", {
+const requestDateTimeFormatter = getUniversityDateTimeFormatter({
   dateStyle: "medium",
   timeStyle: "short",
-  timeZone: "Europe/Moscow",
 });
 
 const requestStatuses = Object.keys(requestStatusLabels) as RequestStatus[];
@@ -118,13 +119,17 @@ function RecentRequests({
         </Link>
       </div>
       {requests.length === 0 ? (
-        <div className={styles.emptyState}>
-          <h3>Заявок пока нет</h3>
-          <p>Выберите услугу в каталоге, чтобы отправить первое обращение.</p>
-          <Link className={styles.serviceLink} href="#catalog-title">
-            Выбрать услугу <span aria-hidden="true">→</span>
-          </Link>
-        </div>
+        <EmptyState
+          action={
+            <Link className={styles.serviceLink} href="#catalog-title">
+              Выбрать услугу <span aria-hidden="true">→</span>
+            </Link>
+          }
+          className={styles.emptyState}
+          description="Выберите услугу в каталоге, чтобы отправить первое обращение."
+          illustration="requests"
+          title="Заявок пока нет"
+        />
       ) : (
         <ul className={styles.recentRequests}>
           {requests.slice(0, 3).map((request) => (
@@ -407,7 +412,12 @@ export async function HelpWorkspace({
       <div className={styles.pageContent}>
         {activeTab === "catalog" && (
           <section className={styles.hero} aria-label="Документы и заявки">
-            <div className={styles.heroArt} aria-hidden="true" />
+            <div className={styles.heroArt} aria-hidden="true">
+              <CampusArchitectureArt
+                priority
+                sizes="(max-width: 767px) 0px, (max-width: 1099px) 36vw, 32vw"
+              />
+            </div>
             <div className={styles.heroContent}>
               <p className={styles.heroKicker}>Сервисы для студентов</p>
               <h2>Документы и заявки — онлайн</h2>
@@ -484,10 +494,12 @@ export async function HelpWorkspace({
                 </div>
               </div>
               {visibleServices.length === 0 ? (
-                <div className={styles.emptyState}>
-                  По запросу «{search}» услуги не найдены. Измените поисковый
-                  запрос.
-                </div>
+                <EmptyState
+                  className={styles.emptyState}
+                  description="Измените поисковый запрос и попробуйте ещё раз."
+                  illustration="search"
+                  title={`По запросу «${search}» услуги не найдены`}
+                />
               ) : (
                 <div className={styles.serviceGrid}>
                   {visibleServices.map((service) => (
@@ -542,16 +554,17 @@ export async function HelpWorkspace({
               </Link>
             </div>
             {documents.length === 0 ? (
-              <div className={styles.emptyState}>
-                <h3>Готовых документов пока нет</h3>
-                <p>
-                  Когда деканат подготовит документ, он появится здесь для
-                  скачивания.
-                </p>
-                <Link className={styles.serviceLink} href="/documents?tab=catalog">
-                  Перейти в каталог услуг <span aria-hidden="true">→</span>
-                </Link>
-              </div>
+              <EmptyState
+                action={
+                  <Link className={styles.serviceLink} href="/documents?tab=catalog">
+                    Перейти в каталог услуг <span aria-hidden="true">→</span>
+                  </Link>
+                }
+                className={styles.emptyState}
+                description="Когда деканат подготовит документ, он появится здесь для скачивания."
+                illustration="documents"
+                title="Готовых документов пока нет"
+              />
             ) : (
               <div className={styles.documentGrid}>
                 {documents.map((document) => (
@@ -604,11 +617,34 @@ export async function HelpWorkspace({
                 status={selectedStatus}
               />
               {visibleRequests.length === 0 ? (
-                <div className={styles.emptyState}>
-                  {requests.length === 0
-                    ? "Заявок пока нет. Выберите услугу в каталоге, чтобы отправить первое обращение."
-                    : "Заявки по заданным параметрам не найдены. Измените поиск или фильтр."}
-                </div>
+                <EmptyState
+                  action={
+                    <Link
+                      className={styles.serviceLink}
+                      href={
+                        requests.length === 0
+                          ? "/documents?tab=catalog"
+                          : "/requests?tab=requests"
+                      }
+                    >
+                      {requests.length === 0
+                        ? "Выбрать услугу"
+                        : "Сбросить фильтры"}
+                    </Link>
+                  }
+                  className={styles.emptyState}
+                  description={
+                    requests.length === 0
+                      ? "Выберите услугу в каталоге, чтобы отправить первое обращение."
+                      : "Измените запрос или статус и попробуйте ещё раз."
+                  }
+                  illustration={requests.length === 0 ? "requests" : "search"}
+                  title={
+                    requests.length === 0
+                      ? "Заявок пока нет"
+                      : "Заявки не найдены"
+                  }
+                />
               ) : (
                 <ul className={styles.requestList}>
                   {visibleRequests.map((request) => {

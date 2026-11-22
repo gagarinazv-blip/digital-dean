@@ -58,6 +58,31 @@
   letter-spacing: 0.02em;
 }
 
+.avatar[data-tone="wine"] {
+  background: var(--color-wine-900);
+  color: var(--color-surface);
+}
+
+.avatar[data-tone="blue"] {
+  background: var(--color-blue-700);
+  color: var(--color-surface);
+}
+
+.avatar[data-tone="success"] {
+  background: var(--color-success-text);
+  color: var(--color-surface);
+}
+
+.avatar[data-tone="warning"] {
+  background: var(--color-warning-text);
+  color: var(--color-surface);
+}
+
+.avatar[data-tone="subtle"] {
+  background: var(--color-ink);
+  color: var(--color-surface);
+}
+
 .profileIdentity {
   z-index: 1;
   min-width: 0;

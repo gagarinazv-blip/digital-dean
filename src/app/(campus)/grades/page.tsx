@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { CampusSection } from "@/components/campus-section";
+import { EmptyState } from "@/components/empty-state";
 import { controlTypeLabels } from "@/lib/campus-labels";
 import { getAcademicRecords } from "@/lib/academic-records";
 import { analyzeGrade } from "@/lib/grade-analysis";
@@ -139,10 +140,12 @@ async function GradesContent({ searchParams }: Required<GradesPageProps>) {
           />
         </GradesTabs>
       ) : (
-        <div className={styles.empty}>
-          <strong>Данные не найдены</strong>
-          <p>Для этой учётной записи пока нет учебного плана.</p>
-        </div>
+        <EmptyState
+          className={styles.empty}
+          description="Для этой учётной записи пока нет учебного плана."
+          illustration="documents"
+          title="Данные не найдены"
+        />
       )}
     </CampusSection>
   );

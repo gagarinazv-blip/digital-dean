@@ -1,21 +1,44 @@
 import type { Weekday } from "@/generated/prisma/enums";
 
-const moscowDateFormatter = new Intl.DateTimeFormat("en-US", {
-  timeZone: "Europe/Moscow",
+export const UNIVERSITY_TIME_ZONE = "Europe/Moscow";
+
+export function getUniversityDateTimeFormatter(
+  options: Intl.DateTimeFormatOptions,
+  locale = "ru-RU",
+): Intl.DateTimeFormat {
+  return new Intl.DateTimeFormat(locale, {
+    ...options,
+    timeZone: UNIVERSITY_TIME_ZONE,
+  });
+}
+
+export function formatUniversityDateTime(
+  date: Date,
+  options: Intl.DateTimeFormatOptions,
+  locale = "ru-RU",
+): string {
+  return getUniversityDateTimeFormatter(options, locale).format(date);
+}
+
+export function formatUniversityClockTime(time: Date): string {
+  return `${String(time.getUTCHours()).padStart(2, "0")}:${String(
+    time.getUTCMinutes(),
+  ).padStart(2, "0")}`;
+}
+
+const moscowDateFormatter = getUniversityDateTimeFormatter({
   year: "numeric",
   month: "2-digit",
   day: "2-digit",
-});
+}, "en-US");
 
-const moscowTimeFormatter = new Intl.DateTimeFormat("en-US", {
-  timeZone: "Europe/Moscow",
+const moscowTimeFormatter = getUniversityDateTimeFormatter({
   hour: "2-digit",
   minute: "2-digit",
   hourCycle: "h23",
-});
+}, "en-US");
 
-const moscowDateTimeFormatter = new Intl.DateTimeFormat("en-US", {
-  timeZone: "Europe/Moscow",
+const moscowDateTimeFormatter = getUniversityDateTimeFormatter({
   year: "numeric",
   month: "2-digit",
   day: "2-digit",
@@ -23,7 +46,7 @@ const moscowDateTimeFormatter = new Intl.DateTimeFormat("en-US", {
   minute: "2-digit",
   second: "2-digit",
   hourCycle: "h23",
-});
+}, "en-US");
 
 const weekdaysByUtcDay: Weekday[] = [
   "SUNDAY",
@@ -206,7 +229,7 @@ export function getMoscowDateTimeOnDate(date: Date, timeSource = new Date()) {
 
 export function getCampusGreeting(now = new Date()): string {
   const hour = getNumericParts(moscowTimeFormatter, now).hour;
-  if (hour < 5 || hour >= 22) return "Доброй ночи";
+  if (hour < 5 || hour >= 23) return "Доброй ночи";
   if (hour < 12) return "Доброе утро";
   if (hour < 18) return "Добрый день";
   return "Добрый вечер";
@@ -245,46 +268,42 @@ export function formatRemainingMoscowDays(
 }
 
 export function formatCampusDate(date: Date): string {
-  return new Intl.DateTimeFormat("ru-RU", {
-    timeZone: "UTC",
+  return formatUniversityDateTime(date, {
     weekday: "long",
     day: "numeric",
     month: "long",
-  }).format(date);
+  });
 }
 
 export function formatCampusTime(date: Date): string {
-  return new Intl.DateTimeFormat("ru-RU", {
-    timeZone: "UTC",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-}
-
-export function formatMoscowDate(date: Date): string {
-  return new Intl.DateTimeFormat("ru-RU", {
-    timeZone: "Europe/Moscow",
-    day: "numeric",
-    month: "long",
-  }).format(date);
-}
-
-export function formatMoscowWeekdayDate(date: Date): string {
-  return new Intl.DateTimeFormat("ru-RU", {
-    timeZone: "Europe/Moscow",
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  }).format(date);
-}
-
-export function formatMoscowTime(date: Date): string {
-  return new Intl.DateTimeFormat("ru-RU", {
-    timeZone: "Europe/Moscow",
+  return formatUniversityDateTime(date, {
     hour: "2-digit",
     minute: "2-digit",
     hourCycle: "h23",
-  }).format(date);
+  });
+}
+
+export function formatMoscowDate(date: Date): string {
+  return formatUniversityDateTime(date, {
+    day: "numeric",
+    month: "long",
+  });
+}
+
+export function formatMoscowWeekdayDate(date: Date): string {
+  return formatUniversityDateTime(date, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+}
+
+export function formatMoscowTime(date: Date): string {
+  return formatUniversityDateTime(date, {
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  });
 }
 
 export function getTimeMinutes(date: Date): number {
@@ -292,9 +311,9 @@ export function getTimeMinutes(date: Date): number {
 }
 
 export function getCampusTime(now = new Date()): string {
-  return new Intl.DateTimeFormat("ru-RU", {
-    timeZone: "Europe/Moscow",
+  return formatUniversityDateTime(now, {
     hour: "2-digit",
     minute: "2-digit",
-  }).format(now);
+    hourCycle: "h23",
+  });
 }

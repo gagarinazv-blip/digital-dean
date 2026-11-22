@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { EmptyState } from "@/components/empty-state";
 import { useState, type KeyboardEvent } from "react";
 import type { GradeFormulaSource } from "@/lib/grade-formula";
 import styles from "./grades.module.css";
@@ -225,10 +226,12 @@ export function GradesOverview({
 
   if (!currentSemester) {
     return (
-      <div className={styles.empty}>
-        <strong>Данные не найдены</strong>
-        <p>Для этой учётной записи пока нет учебного плана.</p>
-      </div>
+      <EmptyState
+        className={styles.empty}
+        description="Для этой учётной записи пока нет учебного плана."
+        illustration="documents"
+        title="Данные не найдены"
+      />
     );
   }
 

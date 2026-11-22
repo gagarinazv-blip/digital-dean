@@ -1,3 +1,9 @@
+import {
+  formatUniversityDateTime,
+  getMoscowDateKey,
+  UNIVERSITY_TIME_ZONE,
+} from "@/lib/campus-time";
+
 export type CalendarScheduleLesson = {
   id: string;
   subject: string;
@@ -20,12 +26,30 @@ function escapeText(value: string): string {
     .replace(/,/g, "\\,");
 }
 
-function formatUtcDate(value: string): string {
+function parseDate(value: string): Date {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     throw new RangeError("В расписании обнаружена некорректная дата.");
   }
-  return date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  return date;
+}
+
+function formatUtcDate(value: string): string {
+  return parseDate(value)
+    .toISOString()
+    .replace(/[-:]/g, "")
+    .replace(/\.\d{3}/, "");
+}
+
+function formatUniversityLocalDateTime(value: string): string {
+  const date = parseDate(value);
+  const dateKey = getMoscowDateKey(date).replaceAll("-", "");
+  const time = formatUniversityDateTime(date, {
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).replace(":", "");
+  return `${dateKey}T${time}00`;
 }
 
 function foldLine(line: string): string {
@@ -58,8 +82,18 @@ export function generateScheduleIcs(
     "PRODID:-//Campus OS//Schedule//RU",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
-    "X-WR-TIMEZONE:Europe/Moscow",
+    `X-WR-TIMEZONE:${UNIVERSITY_TIME_ZONE}`,
     "X-WR-CALNAME:Campus OS — расписание",
+    "BEGIN:VTIMEZONE",
+    `TZID:${UNIVERSITY_TIME_ZONE}`,
+    `X-LIC-LOCATION:${UNIVERSITY_TIME_ZONE}`,
+    "BEGIN:STANDARD",
+    "TZOFFSETFROM:+0300",
+    "TZOFFSETTO:+0300",
+    "TZNAME:MSK",
+    "DTSTART:19700101T000000",
+    "END:STANDARD",
+    "END:VTIMEZONE",
   ];
 
   for (const lesson of lessons) {
@@ -75,8 +109,8 @@ export function generateScheduleIcs(
       "BEGIN:VEVENT",
       `UID:${escapeText(lesson.id)}@campus-os`,
       `DTSTAMP:${formatUtcDate(generatedAt.toISOString())}`,
-      `DTSTART:${formatUtcDate(lesson.startsAtIso)}`,
-      `DTEND:${formatUtcDate(lesson.endsAtIso)}`,
+      `DTSTART;TZID=${UNIVERSITY_TIME_ZONE}:${formatUniversityLocalDateTime(lesson.startsAtIso)}`,
+      `DTEND;TZID=${UNIVERSITY_TIME_ZONE}:${formatUniversityLocalDateTime(lesson.endsAtIso)}`,
       `SUMMARY:${escapeText(lesson.subject)}`,
       `LOCATION:${escapeText(lesson.room)}`,
       `DESCRIPTION:${escapeText(description)}`,

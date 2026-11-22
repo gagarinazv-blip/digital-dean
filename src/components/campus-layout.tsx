@@ -3,6 +3,7 @@ import Link from "next/link";
 import { logoutAction } from "@/app/profile/actions";
 import { CampusNavigation } from "@/components/campus-navigation";
 import { NotificationBell } from "@/components/notification-bell";
+import { getAvatarInitials, getAvatarTone } from "@/lib/avatar";
 import styles from "./campus-layout.module.css";
 
 type CampusStudentMenu = {
@@ -19,13 +20,6 @@ export function CampusLayout({
   student: CampusStudentMenu;
   unreadNotificationCount: number;
 }) {
-  const initials = student.fullName
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0] ?? "")
-    .join("")
-    .toLocaleUpperCase("ru-RU");
-
   return (
     <div className={styles.layout}>
       <header className={styles.header}>
@@ -89,8 +83,12 @@ export function CampusLayout({
                 aria-label={`Меню аккаунта: ${student.fullName}`}
                 className={styles.accountSummary}
               >
-                <span aria-hidden="true" className={styles.avatar}>
-                  {initials}
+                <span
+                  aria-hidden="true"
+                  className={styles.avatar}
+                  data-tone={getAvatarTone(student.fullName)}
+                >
+                  {getAvatarInitials(student.fullName)}
                 </span>
                 <span className={styles.accountName} title={student.fullName}>
                   {student.fullName}

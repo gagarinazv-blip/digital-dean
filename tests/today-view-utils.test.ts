@@ -108,6 +108,20 @@ describe("today dashboard presentation", () => {
     });
   });
 
+  it("calculates a next-class countdown across Moscow midnight", () => {
+    const now = new Date("2026-11-21T20:45:00.000Z");
+    const nextMorning = lesson(
+      "2026-11-22T05:30:00.000Z",
+      "2026-11-22T07:00:00.000Z",
+      "История",
+    );
+
+    expect(getTodayHeroState([], nextMorning, now)).toMatchObject({
+      kind: "upcoming",
+      countdown: "через 8 ч 45 мин",
+    });
+  });
+
   it("shows an empty state when neither today nor the next week has a class", () => {
     expect(getTodayHeroState([], null, new Date())).toMatchObject({
       kind: "none",

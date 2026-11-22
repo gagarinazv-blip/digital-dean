@@ -1,5 +1,6 @@
 import type { NotificationType } from "@/generated/prisma/enums";
 import type { StudentNotificationItem } from "@/lib/notification-types";
+import { getMoscowDateKey } from "@/lib/campus-time";
 
 export type NotificationFilter = "all" | "unread";
 export type NotificationTypeFilter =
@@ -61,14 +62,7 @@ export function filterNotifications(
 }
 
 function moscowDateKey(date: Date): string {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    timeZone: "Europe/Moscow",
-  }).formatToParts(date);
-  const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
-  return `${values.year}-${values.month}-${values.day}`;
+  return getMoscowDateKey(date);
 }
 
 function addDays(dateKey: string, days: number): string {

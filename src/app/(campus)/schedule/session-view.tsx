@@ -9,6 +9,7 @@ import {
   useState,
   type KeyboardEvent,
 } from "react";
+import { EmptyState } from "@/components/empty-state";
 import {
   buildSessionHref,
   filterSessionEvents,
@@ -24,6 +25,7 @@ import {
   type SessionFilters,
   type SessionStatusFilter,
 } from "@/lib/session-utils";
+import { getUniversityDateTimeFormatter } from "@/lib/campus-time";
 import { getMonthCalendarDays, shiftScheduleDate } from "@/lib/schedule-view-utils";
 import {
   ScheduleFilterMenu,
@@ -91,10 +93,9 @@ const statusLabels: Record<SessionStatusFilter, string> = {
 };
 
 function dateLabel(dateKey: string, options: Intl.DateTimeFormatOptions) {
-  return new Intl.DateTimeFormat("ru-RU", {
-    ...options,
-    timeZone: "UTC",
-  }).format(new Date(`${dateKey}T12:00:00.000Z`));
+  return getUniversityDateTimeFormatter(options).format(
+    new Date(`${dateKey}T12:00:00.000Z`),
+  );
 }
 
 function controlTypeLabel(type: string): string {
@@ -449,13 +450,18 @@ export function SessionView({
 
   if (!selectedSemester) {
     return (
-      <div className={styles.emptyState}>
-        <strong>Данные сессии пока не загружены</strong>
-        <p>Попробуйте обновить страницу немного позже.</p>
-        <button className={styles.secondaryButton} onClick={() => router.refresh()} type="button">
-          Повторить
-        </button>
-      </div>
+      <EmptyState
+        action={
+          <button className={styles.secondaryButton} onClick={() => router.refresh()} type="button">
+            Повторить
+          </button>
+        }
+        className={styles.emptyState}
+        description="Попробуйте обновить страницу немного позже."
+        illustration="error"
+        role="alert"
+        title="Данные сессии пока не загружены"
+      />
     );
   }
 
@@ -690,25 +696,27 @@ export function SessionView({
           </div>
         </section>
       ) : (
-        <section className={styles.emptyState}>
-          <strong>
-            {sessionStatus.code === "NOT_STARTED"
-              ? "Сессия ещё не началась"
-              : sessionStatus.code === "IN_PROGRESS"
-                ? "Ближайших событий нет"
-                : "События сессии завершены"}
-          </strong>
-          <p>
-            {sessionStatus.unreported > 0
+        <EmptyState
+          className={styles.emptyState}
+          description={
+            sessionStatus.unreported > 0
               ? `По прошедшим событиям ещё не внесено результатов: ${sessionStatus.unreported}.`
               : sessionStatus.code === "NOT_STARTED" &&
                   semesters.find((semester) => semester.code !== selectedSemester.code)?.events[0]
               ? `Ближайшая: ${semesters.find((semester) => semester.code !== selectedSemester.code)?.events[0].subject}`
               : sessionStatus.debts > 0
                 ? `Сессия завершена. Задолженностей: ${sessionStatus.debts}.`
-                : "Предстоящих экзаменов и зачётов пока нет."}
-          </p>
-        </section>
+                : "Предстоящих экзаменов и зачётов пока нет."
+          }
+          illustration="session"
+          title={
+            sessionStatus.code === "NOT_STARTED"
+              ? "Сессия ещё не началась"
+              : sessionStatus.code === "IN_PROGRESS"
+                ? "Ближайших событий нет"
+                : "События сессии завершены"
+          }
+        />
       )}
 
       {insights.length > 0 && (
@@ -767,10 +775,18 @@ export function SessionView({
                 </section>
               ))}
               {visibleEvents.length === 0 && (
-                <div className={styles.emptyState}>
-                  <strong>{filterActive ? "По этим фильтрам событий нет" : "Событий пока нет"}</strong>
-                  <p>{filterActive ? "Измените запрос или сбросьте фильтры." : "Расписание сессии появится здесь."}</p>
-                </div>
+                <EmptyState
+                  className={styles.emptyState}
+                  description={
+                    filterActive
+                      ? "Измените запрос или сбросьте фильтры."
+                      : "Расписание сессии появится здесь."
+                  }
+                  illustration={filterActive ? "search" : "session"}
+                  title={
+                    filterActive ? "По этим фильтрам событий нет" : "Событий пока нет"
+                  }
+                />
               )}
             </div>
             {selectedEvent && (
@@ -926,10 +942,12 @@ export function SessionView({
               ))}
           </div>
         ) : (
-          <div className={styles.emptyState}>
-            <strong>Результаты появятся после сдачи экзаменов</strong>
-            <p>Официальные оценки и зачёты отображаются здесь после публикации.</p>
-          </div>
+          <EmptyState
+            className={styles.emptyState}
+            description="Официальные оценки и зачёты отображаются здесь после публикации."
+            illustration="session"
+            title="Результаты появятся после сдачи экзаменов"
+          />
         )}
       </section>
 

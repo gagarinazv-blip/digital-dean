@@ -3,7 +3,10 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { AcademicResultStatus } from "@/generated/prisma/enums";
 import { controlTypeLabels } from "@/lib/campus-labels";
-import { formatCampusDate, formatCampusTime } from "@/lib/campus-time";
+import {
+  formatCampusDate,
+  formatUniversityClockTime,
+} from "@/lib/campus-time";
 import { getAcademicRecords } from "@/lib/academic-records";
 import { analyzeGrade } from "@/lib/grade-analysis";
 import { getGradebookEntry } from "@/lib/gradebook-data";
@@ -102,7 +105,7 @@ export default async function SubjectPage({ params }: SubjectPageProps) {
               <dt>{assessmentName}</dt>
               <dd>
                 {session
-                  ? `${formatCampusDate(session.date)}, ${formatCampusTime(session.startTime)}`
+                  ? `${formatCampusDate(session.date)}, ${formatUniversityClockTime(session.startTime)}`
                   : "Дата не опубликована"}
               </dd>
             </div>
@@ -411,7 +414,7 @@ export default async function SubjectPage({ params }: SubjectPageProps) {
                   <strong>{assessmentName}</strong>
                   <span>
                     {formatCampusDate(session.date)},{" "}
-                    {formatCampusTime(session.startTime)}
+                    {formatUniversityClockTime(session.startTime)}
                   </span>
                 </div>
                 <span

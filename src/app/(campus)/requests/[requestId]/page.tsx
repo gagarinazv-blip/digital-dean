@@ -19,21 +19,20 @@ import {
 } from "@/lib/request-catalog";
 import { getStudentRequest } from "@/lib/student-request-data";
 import { formatRequestNumber } from "@/lib/request-number";
+import { getUniversityDateTimeFormatter } from "@/lib/campus-time";
 import type { RequestStatus, RequestType } from "@/generated/prisma/enums";
 import workflowStyles from "@/app/request-workflow.module.css";
 import styles from "./request-detail.module.css";
 
 export const instant = false;
 
-const requestDateFormatter = new Intl.DateTimeFormat("ru-RU", {
+const requestDateFormatter = getUniversityDateTimeFormatter({
   dateStyle: "long",
-  timeZone: "Europe/Moscow",
 });
 
-const requestDateTimeFormatter = new Intl.DateTimeFormat("ru-RU", {
+const requestDateTimeFormatter = getUniversityDateTimeFormatter({
   dateStyle: "medium",
   timeStyle: "short",
-  timeZone: "Europe/Moscow",
 });
 
 const requestStatusClasses: Record<RequestStatus, string> = {

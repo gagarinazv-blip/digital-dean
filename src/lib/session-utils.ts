@@ -1,3 +1,5 @@
+import { UNIVERSITY_TIME_ZONE } from "./campus-time";
+
 export type SessionStatusFilter = "all" | "upcoming" | "passed" | "debts";
 
 export type SessionEventForUtils = {
@@ -495,8 +497,8 @@ export function generateSessionIcs(
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     "BEGIN:VTIMEZONE",
-    "TZID:Europe/Moscow",
-    "X-LIC-LOCATION:Europe/Moscow",
+    `TZID:${UNIVERSITY_TIME_ZONE}`,
+    `X-LIC-LOCATION:${UNIVERSITY_TIME_ZONE}`,
     "BEGIN:STANDARD",
     "TZOFFSETFROM:+0300",
     "TZOFFSETTO:+0300",
@@ -512,8 +514,8 @@ export function generateSessionIcs(
       "BEGIN:VEVENT",
       `UID:${escapeIcsText(`${event.id}@campus-os.local`)}`,
       `DTSTAMP:${generatedAt.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "")}`,
-      `DTSTART;TZID=Europe/Moscow:${localDateTime(event.date, event.startTime)}`,
-      `DTEND;TZID=Europe/Moscow:${localDateTime(event.date, event.endTime)}`,
+      `DTSTART;TZID=${UNIVERSITY_TIME_ZONE}:${localDateTime(event.date, event.startTime)}`,
+      `DTEND;TZID=${UNIVERSITY_TIME_ZONE}:${localDateTime(event.date, event.endTime)}`,
       `SUMMARY:${escapeIcsText(event.subject)}`,
       `DESCRIPTION:${escapeIcsText(event.controlType)}`,
       `LOCATION:${escapeIcsText(event.room ?? "")}`,

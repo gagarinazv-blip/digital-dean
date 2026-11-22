@@ -29,6 +29,27 @@ const student = {
   group: { id: 41, name: "DEMO-ALPHA" },
 };
 
+function scheduleLesson(id: number, date: string, subject: string) {
+  return {
+    id,
+    date: new Date(`${date}T00:00:00.000Z`),
+    weekday: null,
+    startTime: new Date("1970-01-01T08:30:00.000Z"),
+    endTime: new Date("1970-01-01T10:00:00.000Z"),
+    startsAt: new Date(`${date}T05:30:00.000Z`),
+    endsAt: new Date(`${date}T07:00:00.000Z`),
+    originalStartsAt: null,
+    originalEndsAt: null,
+    originalRoom: null,
+    kind: "LECTURE" as const,
+    room: "101",
+    teacher: "Преподаватель",
+    status: "PLANNED" as const,
+    changeNote: null,
+    subject: { name: subject },
+  };
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   requireStudentMock.mockResolvedValue(student);
@@ -40,6 +61,25 @@ beforeEach(() => {
 });
 
 describe("getCampusTodayData", () => {
+  it("returns up to three upcoming lessons when today's schedule is empty", async () => {
+    prismaMock.scheduleItem.findMany.mockResolvedValue([
+      scheduleLesson(51, "2026-11-15", "Занятие 1"),
+      scheduleLesson(52, "2026-11-16", "Занятие 2"),
+      scheduleLesson(53, "2026-11-17", "Занятие 3"),
+    ]);
+
+    const data = await getCampusTodayData(
+      new Date("2026-11-14T12:00:00.000Z"),
+    );
+
+    expect(data.todaySchedule).toHaveLength(0);
+    expect(data.nearbyLessons.map((lesson) => lesson.subject.name)).toEqual([
+      "Занятие 1",
+      "Занятие 2",
+      "Занятие 3",
+    ]);
+  });
+
   it("scopes every student-specific query to the authenticated student and group", async () => {
     const now = new Date("2026-11-14T12:00:00.000Z");
     await getCampusTodayData(now);

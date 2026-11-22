@@ -9,6 +9,7 @@ import { getAcademicRecords } from "@/lib/academic-records";
 import { getGradebookEntry } from "@/lib/gradebook-data";
 import {
   formatMoscowTime,
+  formatUniversityClockTime,
   formatMoscowWeekdayDate,
   getMoscowDateKey,
   getMoscowTimeMinutes,
@@ -128,8 +129,8 @@ async function ScheduleContent({
             teacher: item.teacher,
             department: item.department,
             date: session.date.toISOString().slice(0, 10),
-            startTime: session.startTime.toISOString().slice(11, 16),
-            endTime: session.endTime.toISOString().slice(11, 16),
+            startTime: formatUniversityClockTime(session.startTime),
+            endTime: formatUniversityClockTime(session.endTime),
             room: session.room,
             status: session.status,
             resultStatus: item.result?.status ?? null,

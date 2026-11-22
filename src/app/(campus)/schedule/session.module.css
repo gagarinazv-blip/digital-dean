@@ -758,13 +758,14 @@
 .debtEmpty,
 .emptyState {
   display: grid;
-  justify-items: start;
+  justify-items: center;
   gap: var(--space-2);
   padding: var(--space-5);
-  border: 1px dashed var(--color-border);
+  border: 0;
   border-radius: var(--radius-card);
-  background: var(--color-surface);
+  background: transparent;
   color: var(--color-muted);
+  text-align: center;
 }
 
 .debtEmpty > span {

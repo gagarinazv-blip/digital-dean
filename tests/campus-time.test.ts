@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   formatCampusDate,
+  formatCampusTime,
   formatMoscowTime,
   formatRemainingMoscowDays,
+  formatUniversityClockTime,
   getCampusGreeting,
+  UNIVERSITY_TIME_ZONE,
   getMoscowCalendarWeek,
   getMoscowDayRange,
   getMoscowDateKey,
@@ -31,6 +34,13 @@ describe("Moscow campus time", () => {
   it("formats schedule dates without shifting them to another timezone", () => {
     expect(formatCampusDate(new Date("2026-11-14T00:00:00.000Z"))).toContain(
       "суббота",
+    );
+    const lessonStart = new Date("2026-11-16T05:30:00.000Z");
+    expect(UNIVERSITY_TIME_ZONE).toBe("Europe/Moscow");
+    expect(formatCampusTime(lessonStart)).toBe("08:30");
+    expect(formatMoscowTime(lessonStart)).toBe("08:30");
+    expect(formatUniversityClockTime(new Date("1970-01-01T08:30:00.000Z"))).toBe(
+      "08:30",
     );
   });
 
@@ -101,19 +111,21 @@ describe("Moscow campus time", () => {
     expect(simulatedNow.toISOString()).toBe("2026-11-15T18:27:00.000Z");
   });
 
-  it("chooses a greeting using the Moscow hour, not the server hour", () => {
-    expect(getCampusGreeting(new Date("2026-11-13T21:00:00.000Z"))).toBe(
-      "Доброй ночи",
-    );
-    expect(getCampusGreeting(new Date("2026-11-14T03:00:00.000Z"))).toBe(
-      "Доброе утро",
-    );
-    expect(getCampusGreeting(new Date("2026-11-14T09:00:00.000Z"))).toBe(
-      "Добрый день",
-    );
-    expect(getCampusGreeting(new Date("2026-11-14T15:00:00.000Z"))).toBe(
-      "Добрый вечер",
-    );
+  it("chooses a greeting at every Moscow-hour boundary", () => {
+    const cases = [
+      ["2026-11-21T01:59:00.000Z", "Доброй ночи"],
+      ["2026-11-21T02:00:00.000Z", "Доброе утро"],
+      ["2026-11-21T08:59:00.000Z", "Доброе утро"],
+      ["2026-11-21T09:00:00.000Z", "Добрый день"],
+      ["2026-11-21T14:59:00.000Z", "Добрый день"],
+      ["2026-11-21T15:00:00.000Z", "Добрый вечер"],
+      ["2026-11-21T19:59:00.000Z", "Добрый вечер"],
+      ["2026-11-21T20:00:00.000Z", "Доброй ночи"],
+    ] as const;
+
+    for (const [instant, greeting] of cases) {
+      expect(getCampusGreeting(new Date(instant))).toBe(greeting);
+    }
   });
 
   it("describes a deadline by its Moscow calendar day", () => {

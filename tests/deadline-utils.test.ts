@@ -2,12 +2,29 @@ import { describe, expect, it } from "vitest";
 import {
   getDeadlineCountdownTone,
   getDeadlineCountdown,
+  getDeadlineDateTile,
   getNearestDeadlines,
   getUpcomingDeadlines,
 } from "../src/lib/deadline-utils";
 import { addDemoDays } from "../src/lib/demo-date";
 
 describe("deadline countdown", () => {
+  it("labels date tiles as today, tomorrow, or a month and day", () => {
+    const now = new Date("2026-11-20T12:00:00.000Z");
+    expect(getDeadlineDateTile(new Date("2026-11-20T12:00:00.000Z"), now)).toEqual({
+      caption: "Сегодня",
+      day: "20",
+    });
+    expect(getDeadlineDateTile(new Date("2026-11-21T12:00:00.000Z"), now)).toEqual({
+      caption: "Завтра",
+      day: "21",
+    });
+    expect(getDeadlineDateTile(new Date("2026-12-02T12:00:00.000Z"), now)).toEqual({
+      caption: "ДЕК",
+      day: "02",
+    });
+  });
+
   it("calculates due dates using Moscow calendar days", () => {
     const now = new Date("2026-01-31T10:00:00.000Z");
     expect(

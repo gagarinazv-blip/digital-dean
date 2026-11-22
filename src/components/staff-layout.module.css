@@ -104,23 +104,48 @@
 .accountText strong {
   overflow: hidden;
   color: var(--color-surface);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 550;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .avatar {
-  width: 25px;
-  height: 25px;
-  flex: 0 0 25px;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
   display: grid;
   place-items: center;
   border-radius: 50%;
   background: var(--color-surface);
   color: var(--color-ink);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 700;
+}
+
+.avatar[data-tone="wine"] {
+  background: var(--color-wine-100);
+  color: var(--color-wine-900);
+}
+
+.avatar[data-tone="blue"] {
+  background: var(--color-blue-100);
+  color: var(--color-blue-700);
+}
+
+.avatar[data-tone="success"] {
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.avatar[data-tone="warning"] {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.avatar[data-tone="subtle"] {
+  background: var(--color-subtle);
+  color: var(--color-ink);
 }
 
 .logout {
@@ -131,7 +156,7 @@
   background: transparent;
   color: var(--color-surface);
   font: inherit;
-  font-size: 10px;
+  font-size: 12px;
   cursor: pointer;
 }
 
@@ -158,20 +183,20 @@
 .navigationTitle {
   padding: 0 11px 10px;
   color: var(--color-muted);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 650;
 }
 
 .navigationLink {
   min-width: 0;
-  min-height: 38px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 7px 10px;
   border-radius: 9px;
   color: #5e5855;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 550;
   text-decoration: none;
 }

@@ -1,8 +1,10 @@
 import { CampusSection } from "@/components/campus-section";
+import { EmptyState } from "@/components/empty-state";
 import {
   getDeadlineCountdown,
   getDeadlineCountdownTone,
 } from "@/lib/deadline-utils";
+import { getUniversityDateTimeFormatter } from "@/lib/campus-time";
 import { getStudentDeadlines } from "@/lib/deadline-data";
 import { getDemoNow } from "@/lib/demo-date";
 import { requireStudent } from "@/lib/student";
@@ -10,9 +12,8 @@ import styles from "./deadlines.module.css";
 
 export const instant = false;
 
-const deadlineDateFormatter = new Intl.DateTimeFormat("ru-RU", {
+const deadlineDateFormatter = getUniversityDateTimeFormatter({
   dateStyle: "long",
-  timeZone: "Europe/Moscow",
 });
 
 export default async function DeadlinesPage() {
@@ -27,10 +28,12 @@ export default async function DeadlinesPage() {
       description="Ваши текущие задания и даты сдачи."
     >
       {deadlines.length === 0 ? (
-        <div className={styles.empty}>
-          <strong>Заданий пока нет</strong>
-          <p>Здесь появятся задания и сроки по вашим дисциплинам.</p>
-        </div>
+        <EmptyState
+          className={styles.empty}
+          description="Здесь появятся задания и сроки по вашим дисциплинам."
+          illustration="documents"
+          title="Заданий пока нет"
+        />
       ) : (
         <ul className={styles.list}>
           {deadlines.map((deadline) => {

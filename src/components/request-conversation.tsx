@@ -1,4 +1,5 @@
 import type { RequestCommentVisibility, UserRole } from "@/generated/prisma/enums";
+import { getUniversityDateTimeFormatter } from "@/lib/campus-time";
 import styles from "@/app/request-workflow.module.css";
 
 type RequestMessage = {
@@ -18,10 +19,9 @@ type RequestMessage = {
   }[];
 };
 
-const messageDateFormatter = new Intl.DateTimeFormat("ru-RU", {
+const messageDateFormatter = getUniversityDateTimeFormatter({
   dateStyle: "medium",
   timeStyle: "short",
-  timeZone: "Europe/Moscow",
 });
 
 function formatFileSize(sizeBytes: number): string {

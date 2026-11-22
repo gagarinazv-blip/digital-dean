@@ -8,20 +8,20 @@
   position: absolute;
   top: 0;
   right: 0;
-  left: 52px;
+  left: 60px;
   border-top: 1px solid var(--color-border);
   content: "";
 }
 
 .link {
   min-width: 0;
-  min-height: 64px;
+  min-height: 72px;
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) auto;
-  grid-template-areas: "icon details pill";
-  align-items: center;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  grid-template-areas: "date details pill";
+  align-items: start;
   gap: 12px;
-  padding: 12px 0;
+  padding: 14px 0;
   border-radius: 12px;
   color: inherit;
   text-decoration: none;
@@ -39,20 +39,32 @@
   outline-offset: 2px;
 }
 
-.icon {
-  grid-area: icon;
-  width: 40px;
-  height: 40px;
+.dateTile {
+  grid-area: date;
+  width: 48px;
+  height: 56px;
   display: grid;
-  place-items: center;
+  align-content: center;
+  justify-items: center;
+  gap: 2px;
   border-radius: 12px;
-  background: var(--color-subtle);
+  background: var(--color-wine-100);
   color: var(--color-wine-900);
 }
 
-.icon svg {
-  width: 20px;
-  height: 20px;
+.dateTile > span {
+  max-width: 100%;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 12px;
+  letter-spacing: -0.04em;
+  white-space: nowrap;
+}
+
+.dateTile > strong {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 24px;
 }
 
 .details {
@@ -88,6 +100,8 @@
 
 .pill {
   grid-area: pill;
+  align-self: start;
+  margin-top: 1px;
   width: fit-content;
   max-width: 100%;
   display: inline-flex;
@@ -116,11 +130,11 @@
   color: var(--color-muted);
 }
 
-@container (max-width: 380px) {
+@container (max-width: 340px) {
   .link {
-    grid-template-columns: 40px minmax(0, 1fr);
+    grid-template-columns: 48px minmax(0, 1fr);
     grid-template-areas:
-      "icon details"
+      "date details"
       ". pill";
     justify-items: start;
   }

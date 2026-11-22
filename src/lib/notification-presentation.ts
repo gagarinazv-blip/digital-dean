@@ -18,6 +18,7 @@ import { getDeadlineCountdown } from "@/lib/deadline-utils";
 import {
   formatMoscowTime,
   formatMoscowWeekdayDate,
+  getUniversityDateTimeFormatter,
   getMoscowDateTime,
   getMoscowDateKey,
 } from "@/lib/campus-time";
@@ -39,10 +40,9 @@ type RawNotification = {
   readAt: Date | null;
 };
 
-const dateTimeFormatter = new Intl.DateTimeFormat("ru-RU", {
+const dateTimeFormatter = getUniversityDateTimeFormatter({
   dateStyle: "long",
   timeStyle: "short",
-  timeZone: "Europe/Moscow",
 });
 
 export async function presentStudentNotifications(

@@ -2,6 +2,7 @@ import type {
   ScheduleKind,
   ScheduleStatus,
 } from "../src/generated/prisma/enums";
+import { UNIVERSITY_TIME_ZONE } from "../src/lib/campus-time";
 
 type TargetLogin = "student.alpha" | "student.beta";
 
@@ -57,7 +58,7 @@ const scheduleKinds: ScheduleKind[] = [
 ];
 
 const moscowDateFormatter = new Intl.DateTimeFormat("en-US", {
-  timeZone: "Europe/Moscow",
+  timeZone: UNIVERSITY_TIME_ZONE,
   year: "numeric",
   month: "2-digit",
   day: "2-digit",

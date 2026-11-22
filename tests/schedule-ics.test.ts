@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { generateScheduleIcs } from "../src/lib/schedule-ics";
 
 describe("generateScheduleIcs", () => {
-  it("uses UTC instants, Moscow calendar metadata, and escapes event text", () => {
+  it("exports local Moscow event times and escapes event text", () => {
     const output = generateScheduleIcs(
       [
         {
@@ -32,8 +32,9 @@ describe("generateScheduleIcs", () => {
     );
 
     expect(output).toContain("X-WR-TIMEZONE:Europe/Moscow");
-    expect(output).toContain("DTSTART:20261116T053000Z");
-    expect(output).toContain("DTEND:20261116T070000Z");
+    expect(output).toContain("TZID:Europe/Moscow");
+    expect(output).toContain("DTSTART;TZID=Europe/Moscow:20261116T083000");
+    expect(output).toContain("DTEND;TZID=Europe/Moscow:20261116T100000");
     expect(output).toContain("SUMMARY:Сети\\, связь\\; важная\\nстрока\\\\");
     expect(output).toContain("LOCATION:МО\\, ауд. 101");
     expect(output).toContain("STATUS:CANCELLED");

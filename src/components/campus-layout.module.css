@@ -170,6 +170,31 @@
   font-weight: 600;
 }
 
+.avatar[data-tone="wine"] {
+  background: var(--color-wine-100);
+  color: var(--color-wine-900);
+}
+
+.avatar[data-tone="blue"] {
+  background: var(--color-blue-100);
+  color: var(--color-blue-700);
+}
+
+.avatar[data-tone="success"] {
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.avatar[data-tone="warning"] {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.avatar[data-tone="subtle"] {
+  background: var(--color-subtle);
+  color: var(--color-ink);
+}
+
 .accountName {
   min-width: 0;
   flex: 1 1 auto;

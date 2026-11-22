@@ -5,6 +5,8 @@ import { requireStudentContext } from "@/lib/student";
 import { CorporateMailCard } from "./corporate-mail-card";
 import { requireStudent } from "@/lib/student";
 import { getStudentFacingGroupName } from "@/lib/campus-labels";
+import { formatUniversityDateTime } from "@/lib/campus-time";
+import { getAvatarInitials, getAvatarTone } from "@/lib/avatar";
 import styles from "./profile.module.css";
 
 const studyFormLabels: Record<StudyForm, string> = {
@@ -39,14 +41,6 @@ async function ProfileContent() {
   const mailIssuedAt = mailIsIssued
     ? mailCredentials?.corporateMailIssuedAt ?? null
     : null;
-  const initials = student.fullName
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toLocaleUpperCase("ru-RU");
-
   return (
     <main className={styles.page}>
       <section className={styles.content} aria-labelledby="profile-title">
@@ -54,8 +48,12 @@ async function ProfileContent() {
         <h1 id="profile-title">Профиль</h1>
 
         <section className={styles.profileHero} aria-label="Профиль студента">
-          <div className={styles.avatar} aria-hidden="true">
-            {initials}
+          <div
+            className={styles.avatar}
+            data-tone={getAvatarTone(student.fullName)}
+            aria-hidden="true"
+          >
+            {getAvatarInitials(student.fullName)}
           </div>
           <div className={styles.profileIdentity}>
             <p className={styles.identityLabel}>Студент</p>
@@ -118,10 +116,9 @@ async function ProfileContent() {
           }
           issuedDate={
             mailIssuedAt
-              ? new Intl.DateTimeFormat("ru-RU", {
+              ? formatUniversityDateTime(mailIssuedAt, {
                   dateStyle: "long",
-                  timeZone: "Europe/Moscow",
-                }).format(mailIssuedAt)
+                })
               : null
           }
         />

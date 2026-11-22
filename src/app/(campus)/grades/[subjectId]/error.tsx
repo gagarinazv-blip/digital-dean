@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { EmptyState } from "@/components/empty-state";
 import { CampusSection } from "@/components/campus-section";
 import styles from "./subject.module.css";
 
@@ -13,17 +14,26 @@ export default function SubjectError({
   return (
     <CampusSection
       eyebrow="Успеваемость"
-      title="Не удалось загрузить дисциплину"
-      description="Попробуйте ещё раз или вернитесь к учебному плану."
+      title="Успеваемость"
+      description="Страница дисциплины временно недоступна."
     >
-      <div className={styles.errorActions}>
-        <button className={styles.retryButton} onClick={reset} type="button">
-          Повторить
-        </button>
-        <Link className={styles.backLink} href="/grades">
-          К учебному плану
-        </Link>
-      </div>
+      <EmptyState
+        action={
+          <div className={styles.errorActions}>
+            <button className={styles.retryButton} onClick={reset} type="button">
+              Повторить
+            </button>
+            <Link className={styles.backLink} href="/grades">
+              К учебному плану
+            </Link>
+          </div>
+        }
+        description="Попробуйте ещё раз или вернитесь к учебному плану."
+        headingLevel="h2"
+        illustration="error"
+        role="alert"
+        title="Не удалось загрузить дисциплину"
+      />
     </CampusSection>
   );
 }

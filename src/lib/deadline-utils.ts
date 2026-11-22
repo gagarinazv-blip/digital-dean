@@ -1,15 +1,46 @@
-const MOSCOW_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
-  timeZone: "Europe/Moscow",
+import {
+  getUniversityDateTimeFormatter,
+  UNIVERSITY_TIME_ZONE,
+} from "@/lib/campus-time";
+
+const UNIVERSITY_DATE_FORMATTER = getUniversityDateTimeFormatter({
   year: "numeric",
   month: "2-digit",
   day: "2-digit",
-});
+}, "en-US");
 const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
+const MONTH_LABELS = [
+  "ЯНВ",
+  "ФЕВ",
+  "МАР",
+  "АПР",
+  "МАЙ",
+  "ИЮН",
+  "ИЮЛ",
+  "АВГ",
+  "СЕН",
+  "ОКТ",
+  "НОЯ",
+  "ДЕК",
+];
+
+function getUniversityDateParts(date: Date): Record<string, number> {
+  return Object.fromEntries(
+    UNIVERSITY_DATE_FORMATTER.formatToParts(date)
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, Number(part.value)]),
+  );
+}
 
 export type DeadlineLike = {
   id: string;
   dueAt: Date;
   status: "OPEN" | "SUBMITTED";
+};
+
+export type DeadlineDateTile = {
+  caption: string;
+  day: string;
 };
 
 export type DeadlineCountdown = {
@@ -19,14 +50,35 @@ export type DeadlineCountdown = {
 };
 
 function moscowDayNumber(date: Date): number {
-  const parts = Object.fromEntries(
-    MOSCOW_DATE_FORMATTER.formatToParts(date)
-      .filter((part) => part.type !== "literal")
-      .map((part) => [part.type, Number(part.value)]),
-  );
+  const parts = getUniversityDateParts(date);
   return (
     Date.UTC(parts.year, parts.month - 1, parts.day) / DAY_IN_MILLISECONDS
   );
+}
+
+export function getDeadlineDateTile(
+  dueAt: Date,
+  now: Date,
+): DeadlineDateTile {
+  const dayDifference = moscowDayNumber(dueAt) - moscowDayNumber(now);
+  const dateParts = getUniversityDateParts(dueAt);
+  const month = dateParts.month;
+  const monthLabel = MONTH_LABELS[month - 1];
+  if (!monthLabel) {
+    throw new RangeError(
+      `Некорректный месяц даты дедлайна в ${UNIVERSITY_TIME_ZONE}.`,
+    );
+  }
+
+  return {
+    caption:
+      dayDifference === 0
+        ? "Сегодня"
+        : dayDifference === 1
+          ? "Завтра"
+          : monthLabel,
+    day: String(dateParts.day).padStart(2, "0"),
+  };
 }
 
 function dayWord(days: number): string {

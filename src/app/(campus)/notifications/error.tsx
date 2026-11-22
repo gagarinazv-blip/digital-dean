@@ -1,5 +1,6 @@
 "use client";
 
+import { EmptyState } from "@/components/empty-state";
 import styles from "./notifications.module.css";
 
 export default function NotificationsError({
@@ -9,12 +10,17 @@ export default function NotificationsError({
   reset: () => void;
 }) {
   return (
-    <div className={styles.errorState} role="alert">
-      <strong>Не удалось загрузить уведомления</strong>
-      <p>Попробуйте ещё раз немного позже.</p>
-      <button onClick={reset} type="button">
-        Повторить
-      </button>
-    </div>
+    <EmptyState
+      action={
+        <button onClick={reset} type="button">
+          Повторить
+        </button>
+      }
+      className={styles.errorState}
+      description="Попробуйте ещё раз немного позже."
+      illustration="error"
+      role="alert"
+      title="Не удалось загрузить уведомления"
+    />
   );
 }

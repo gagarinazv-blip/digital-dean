@@ -12,6 +12,7 @@ import {
   type KeyboardEvent,
 } from "react";
 import { NotificationSymbol } from "@/components/notification-symbol";
+import { EmptyState } from "@/components/empty-state";
 import { cleanStudentFacingText } from "@/lib/campus-labels";
 import { useStudentNotificationStore } from "@/lib/notification-store";
 import type { StudentNotificationItem } from "@/lib/notification-types";
@@ -25,6 +26,7 @@ import {
   type NotificationTypeFilter,
 } from "@/lib/notification-view-utils";
 import { notificationTypeLabels } from "@/lib/notification-workflow";
+import { getUniversityDateTimeFormatter } from "@/lib/campus-time";
 import styles from "./notifications.module.css";
 
 const typeFilters: Array<{
@@ -37,10 +39,9 @@ const typeFilters: Array<{
   { value: "announcement", label: "Объявления" },
 ];
 
-const dateFormatter = new Intl.DateTimeFormat("ru-RU", {
+const dateFormatter = getUniversityDateTimeFormatter({
   dateStyle: "long",
   timeStyle: "short",
-  timeZone: "Europe/Moscow",
 });
 
 function getTargetLabel(notification: StudentNotificationItem): string {
@@ -612,45 +613,58 @@ export function NotificationCenter({
           )}
 
           {state.error && notifications.length === 0 && (
-            <div className={styles.errorState} role="alert">
-              <strong>Не удалось загрузить уведомления</strong>
-              <p>{state.error}</p>
-              <button onClick={() => void state.refresh()} type="button">
-                Повторить
-              </button>
-            </div>
+            <EmptyState
+              action={
+                <button onClick={() => void state.refresh()} type="button">
+                  Повторить
+                </button>
+              }
+              className={styles.errorState}
+              description={state.error}
+              illustration="error"
+              role="alert"
+              title="Не удалось загрузить уведомления"
+            />
           )}
           {state.loading && notifications.length === 0 ? (
             <div aria-label="Загрузка уведомлений" className={styles.skeleton}>
               <span /><span /><span /><span />
             </div>
           ) : noNotifications ? (
-            <div className={styles.emptyState}>
-              <strong>
-                {activeFilter === "unread" ? "Все прочитано" : "Уведомлений нет"}
-              </strong>
-              <p>
-                {activeFilter === "unread"
+            <EmptyState
+              className={styles.emptyState}
+              description={
+                activeFilter === "unread"
                   ? "Непрочитанных уведомлений нет. Вы ничего не пропустили."
-                  : "Здесь появятся важные изменения и напоминания для вас."}
-              </p>
-            </div>
+                  : "Здесь появятся важные изменения и напоминания для вас."
+              }
+              illustration="notifications"
+              title={
+                activeFilter === "unread" ? "Все прочитано" : "Уведомлений нет"
+              }
+            />
           ) : allReadState ? (
-            <div className={styles.emptyState}>
-              <strong>Все прочитано</strong>
-              <p>Непрочитанных уведомлений нет. Вы ничего не пропустили.</p>
-            </div>
+            <EmptyState
+              className={styles.emptyState}
+              description="Непрочитанных уведомлений нет. Вы ничего не пропустили."
+              illustration="notifications"
+              title="Все прочитано"
+            />
           ) : noFilterResults ? (
-            <div className={styles.emptyState}>
-              <strong>Ничего не найдено по фильтрам</strong>
-              <p>Измените запрос или сбросьте фильтры.</p>
-              <button
-                onClick={() => updateUrl({ filter: null, type: null, q: null })}
-                type="button"
-              >
-                Сбросить фильтры
-              </button>
-            </div>
+            <EmptyState
+              action={
+                <button
+                  onClick={() => updateUrl({ filter: null, type: null, q: null })}
+                  type="button"
+                >
+                  Сбросить фильтры
+                </button>
+              }
+              className={styles.emptyState}
+              description="Измените запрос или сбросьте фильтры."
+              illustration="search"
+              title="Ничего не найдено по фильтрам"
+            />
           ) : (
             <>
               <div

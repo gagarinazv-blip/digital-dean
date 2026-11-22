@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { StudentAuditAction } from "@/generated/prisma/enums";
 import { getCorporateMailDomain } from "@/lib/corporate-mail";
+import { getUniversityDateTimeFormatter } from "@/lib/campus-time";
 import { getPrisma } from "@/lib/prisma";
 import { requireStaffContext } from "@/lib/staff";
 import {
@@ -37,10 +38,9 @@ const changedFieldLabels: Record<string, string> = {
   activeSessions: "активные сессии",
 };
 
-const dateFormatter = new Intl.DateTimeFormat("ru-RU", {
+const dateFormatter = getUniversityDateTimeFormatter({
   dateStyle: "medium",
   timeStyle: "short",
-  timeZone: "Europe/Moscow",
 });
 
 function parseId(value: string): number | null {

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { logoutAction } from "@/app/profile/actions";
+import { getAvatarInitials, getAvatarTone } from "@/lib/avatar";
 import { StaffNavigation } from "@/components/staff-navigation";
 import styles from "./staff-layout.module.css";
 
@@ -48,13 +49,12 @@ export function StaffLayout({
           </div>
           <div className={styles.account}>
             <div className={styles.accountText}>
-              <span aria-hidden="true" className={styles.avatar}>
-                {staff.fullName
-                  .split(/\s+/)
-                  .slice(0, 2)
-                  .map((part) => part[0] ?? "")
-                  .join("")
-                  .toLocaleUpperCase("ru-RU")}
+              <span
+                aria-hidden="true"
+                className={styles.avatar}
+                data-tone={getAvatarTone(staff.fullName)}
+              >
+                {getAvatarInitials(staff.fullName)}
               </span>
               <strong title={staff.fullName}>{staff.fullName}</strong>
             </div>

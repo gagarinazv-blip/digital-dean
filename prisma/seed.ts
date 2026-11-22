@@ -15,7 +15,10 @@ import {
 } from "./deadline-seed-data";
 import { getDemoNotificationState } from "./notification-seed-data";
 import { getDemoNow } from "../src/lib/demo-date";
-import { getMoscowDateKey } from "../src/lib/campus-time";
+import {
+  getMoscowDateKey,
+  UNIVERSITY_TIME_ZONE,
+} from "../src/lib/campus-time";
 import { getSessionNotificationPlan } from "../src/lib/session-utils";
 import { encryptCorporateMailPassword } from "../src/lib/corporate-mail-credentials";
 import { getCorporateMailDomain } from "../src/lib/corporate-mail";
@@ -123,7 +126,7 @@ const legacyAcademicLogins = [
 const legacyAcademicGroupNames = ["TEST-ACADEMIC-31"] as const;
 
 const moscowDateTimeFormatter = new Intl.DateTimeFormat("en-US", {
-  timeZone: "Europe/Moscow",
+  timeZone: UNIVERSITY_TIME_ZONE,
   year: "numeric",
   month: "2-digit",
   day: "2-digit",
@@ -1026,7 +1029,7 @@ async function main() {
             studentId,
             type: "DEADLINE",
             title: `Срок сдачи: ${deadline.title}`,
-            text: `${deadline.subject}. Срок: ${deadline.dueAt.toLocaleDateString("ru-RU", { timeZone: "Europe/Moscow" })}.`,
+            text: `${deadline.subject}. Срок: ${deadline.dueAt.toLocaleDateString("ru-RU", { timeZone: UNIVERSITY_TIME_ZONE })}.`,
             targetType: "DEADLINE",
             targetId: seededDeadline.id,
             ...getDemoNotificationState(

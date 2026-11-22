@@ -147,10 +147,19 @@ export async function getCampusTodayData(now = getDemoNow()) {
         lesson.startsAt.getTime() <= now.getTime() &&
         lesson.endsAt.getTime() > now.getTime(),
     ) ?? null;
+  const upcomingCurrentWeekCount = scheduleData.lessons.filter(
+    (lesson) =>
+      lesson.status !== "CANCELLED" &&
+      lesson.startsAt.getTime() > now.getTime(),
+  ).length;
   let nextScheduleLesson =
     activeScheduleLesson ??
     getNextScheduleLesson(scheduleData.lessons, now);
-  if (!nextScheduleLesson) {
+  let nextWeekLessons: typeof scheduleData.lessons = [];
+  if (
+    !nextScheduleLesson ||
+    (!todaySchedule.length && upcomingCurrentWeekCount < 3)
+  ) {
     const nextWeekAnchor = new Date(scheduleData.endDate);
     nextWeekAnchor.setUTCHours(12, 0, 0, 0);
     const nextWeekData = await getScheduleForGroup(
@@ -158,8 +167,37 @@ export async function getCampusTodayData(now = getDemoNow()) {
       "week",
       { now: nextWeekAnchor },
     );
-    nextScheduleLesson = getNextScheduleLesson(nextWeekData.lessons, now);
+    nextWeekLessons = nextWeekData.lessons;
+    nextScheduleLesson ??= getNextScheduleLesson(nextWeekData.lessons, now);
   }
+  const nearbyLessons = [...scheduleData.lessons, ...nextWeekLessons]
+    .filter(
+      (lesson) =>
+        lesson.status !== "CANCELLED" && lesson.startsAt.getTime() > now.getTime(),
+    )
+    .sort(
+      (first, second) =>
+        first.startsAt.getTime() - second.startsAt.getTime() ||
+        first.id.localeCompare(second.id),
+    )
+    .filter(
+      (lesson, index, lessons) =>
+        lessons.findIndex((candidate) => candidate.id === lesson.id) === index,
+    )
+    .slice(0, 3)
+    .map((lesson) => ({
+      occurrenceId: lesson.id,
+      occurrenceDate: new Date(
+        `${getMoscowDateKey(lesson.startsAt)}T00:00:00.000Z`,
+      ),
+      startTime: lesson.startsAt,
+      endTime: lesson.endsAt,
+      kind: lesson.kind,
+      room: lesson.room,
+      teacher: lesson.teacher,
+      status: lesson.status,
+      subject: { name: lesson.subject },
+    }));
   const nextLesson = nextScheduleLesson
     ? {
         occurrenceId: nextScheduleLesson.id,
@@ -185,6 +223,7 @@ export async function getCampusTodayData(now = getDemoNow()) {
     week,
     todaySchedule,
     nextLesson,
+    nearbyLessons,
     deadlines,
     overdueDeadlineCount: overdueDeadlines.length,
     firstOverdueDeadlineId: overdueDeadlines[0]?.id ?? null,

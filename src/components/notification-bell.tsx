@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Bell } from "iconoir-react";
 import {
   useEffect,
   useLayoutEffect,
@@ -11,14 +12,14 @@ import {
 } from "react";
 import { NotificationSymbol } from "@/components/notification-symbol";
 import { cleanStudentFacingText } from "@/lib/campus-labels";
+import { getUniversityDateTimeFormatter } from "@/lib/campus-time";
 import { useStudentNotificationStore } from "@/lib/notification-store";
 import { notificationTypeLabels } from "@/lib/notification-workflow";
 import styles from "./notification-bell.module.css";
 
-const dateFormatter = new Intl.DateTimeFormat("ru-RU", {
+const dateFormatter = getUniversityDateTimeFormatter({
   day: "numeric",
   month: "short",
-  timeZone: "Europe/Moscow",
 });
 
 function relativeTime(value: string): string {
@@ -116,18 +117,10 @@ export function NotificationBell({
         ref={triggerRef}
         type="button"
       >
-        <svg
+        <Bell
           aria-hidden="true"
-          fill="none"
-          stroke="currentColor"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="1.8"
-          viewBox="0 0 24 24"
-        >
-          <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
-          <path d="M10 21h4" />
-        </svg>
+          strokeWidth={1.8}
+        />
         {state.unreadCount > 0 && (
           <span aria-hidden="true" className={styles.badge}>
             {state.unreadCount > 9 ? "9+" : state.unreadCount}

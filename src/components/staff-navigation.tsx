@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { TaskList, User } from "iconoir-react";
 import styles from "./staff-layout.module.css";
 
 const navigationItems = [
-  { href: "/staff", label: "Заявки", icon: "requests" },
-  { href: "/staff/students", label: "Студенты", icon: "students" },
+  { href: "/staff", label: "Заявки", icon: TaskList },
+  { href: "/staff/students", label: "Студенты", icon: User },
 ] as const;
 
 export function StaffNavigation() {
@@ -31,27 +32,10 @@ export function StaffNavigation() {
             key={item.href}
             title={item.label}
           >
-            <svg
+            <item.icon
               aria-hidden="true"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="1.8"
-              viewBox="0 0 24 24"
-            >
-              {item.icon === "requests" ? (
-                <>
-                  <rect x="5" y="5" width="14" height="16" rx="2" />
-                  <path d="M9 5V3h6v2M8 12l2 2 5-5" />
-                </>
-              ) : (
-                <>
-                  <circle cx="9" cy="8" r="3" />
-                  <path d="M3 20v-1a6 6 0 0 1 12 0v1M16 5a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 5v1" />
-                </>
-              )}
-            </svg>
+              strokeWidth={1.8}
+            />
             {item.label}
           </Link>
         );
