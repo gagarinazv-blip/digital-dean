@@ -1,5 +1,6 @@
+import { Suspense } from "react";
 import Link from "next/link";
-import { CampusSection } from "@/components/campus-section";
+import { CampusLoading, CampusSection } from "@/components/campus-section";
 import { CampusArchitectureArt } from "@/components/campus-architecture-art";
 import { EmptyState } from "@/components/empty-state";
 import type { RequestStatus } from "@/generated/prisma/enums";
@@ -411,14 +412,14 @@ export async function HelpWorkspace({
           : activeTab === "portfolio"
             ? "Портфолио"
             : activeTab === "documents"
-              ? "Документы"
+              ? "Готовые документы"
               : "Документы и заявки"
       }
       description={
         activeTab === "requests"
           ? "История обращений и ход их обработки."
           : activeTab === "documents"
-            ? "Готовые документы по обработанным заявкам."
+            ? "Документы, подготовленные деканатом по вашим заявкам."
             : activeTab === "portfolio"
               ? "Ваши дипломы, сертификаты и другие достижения."
               : "Справки и услуги деканата — подайте заявку и следите за её обработкой."
@@ -446,43 +447,6 @@ export async function HelpWorkspace({
             </div>
           </section>
         )}
-
-        <nav className={styles.tabs} aria-label="Документы и заявки">
-          <Link
-            aria-current={activeTab === "documents" ? "page" : undefined}
-            className={activeTab === "documents" ? styles.activeTab : ""}
-            href="/documents?tab=documents"
-          >
-            Мои документы
-          </Link>
-          <Link
-            aria-current={activeTab === "catalog" ? "page" : undefined}
-            className={activeTab === "catalog" ? styles.activeTab : ""}
-            href="/documents?tab=catalog"
-          >
-            Запросить справку
-          </Link>
-          <Link
-            className={styles.tabLink}
-            href="/documents/ready"
-          >
-            Готовые документы
-          </Link>
-          <Link
-            className={styles.tabLink}
-            href="/documents/mine"
-          >
-            Мои документы
-          </Link>
-          <Link
-            aria-current={activeTab === "requests" ? "page" : undefined}
-            className={activeTab === "requests" ? styles.activeTab : ""}
-            href="/requests?tab=requests"
-          >
-            Мои заявки
-            <span className={styles.tabCount}>· {requests.length}</span>
-          </Link>
-        </nav>
 
         {activeTab === "catalog" ? (
           <>
@@ -761,5 +725,9 @@ export async function HelpWorkspace({
 export default function HelpPage({
   searchParams,
 }: Pick<HelpWorkspaceProps, "searchParams">) {
-  return HelpWorkspace({ searchParams });
+  return (
+    <Suspense fallback={<CampusLoading label="сервисы кампуса" />}>
+      <HelpWorkspace searchParams={searchParams} />
+    </Suspense>
+  );
 }
