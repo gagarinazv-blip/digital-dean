@@ -55,3 +55,9 @@
 .stack[data-urgency] .detail {
   font-weight: 500;
 }
+
+/* Зачёркивание не наследуется внутрь inline-grid. */
+:global(s) > .stack .day,
+:global(s) > .stack .detail {
+  text-decoration: line-through;
+}
