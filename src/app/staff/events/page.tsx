@@ -46,7 +46,9 @@ async function StaffEventsContent({
   const now = getDemoNow();
   const week = getDigestWeek(getSingleParam(params.week), now);
   const currentWeek = getDigestWeek(undefined, now);
-  const events = await getStaffDigestEvents(week.startInstant, week.endInstant);
+  const weekEndDate = new Date(week.startDate);
+  weekEndDate.setUTCDate(weekEndDate.getUTCDate() + 7);
+  const events = await getStaffDigestEvents(week.startDate, weekEndDate);
   const days = groupEventsByStartDay(week, events);
   const weekKey = getDigestWeekKey(week);
 
@@ -96,10 +98,14 @@ async function StaffEventsContent({
                   {day.events.map((event) => (
                     <li className={styles.eventCard} key={event.id}>
                       <div className={styles.eventTopline}>
-                        <time dateTime={event.startsAt.toISOString()}>
-                          {formatMoscowTime(event.startsAt)}–
-                          {formatMoscowTime(event.endsAt)}
-                        </time>
+                        {event.startsAt && event.endsAt ? (
+                          <time dateTime={event.startsAt.toISOString()}>
+                            {formatMoscowTime(event.startsAt)}–
+                            {formatMoscowTime(event.endsAt)}
+                          </time>
+                        ) : (
+                          <span>Время уточняется</span>
+                        )}
                         <span
                           className={styles.statusBadge}
                           data-status={event.status}

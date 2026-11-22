@@ -48,6 +48,7 @@ describe("event digest week", () => {
         title: "Ночное мероприятие",
         type: "OTHER",
         description: null,
+        eventDate: new Date("2026-11-16T00:00:00.000Z"),
         startsAt,
         endsAt,
         location: "Аудитория",

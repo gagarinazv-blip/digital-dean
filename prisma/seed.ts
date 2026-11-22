@@ -1470,12 +1470,17 @@ async function main() {
             title: fixture.title,
             type: fixture.type,
             description: "Вымышленное тестовое мероприятие для демонстрации раздела.",
+            eventDate,
             startsAt,
             endsAt,
             location: fixture.location,
             host: fixture.host,
             registrationUrl: fixture.url,
             status: fixture.status,
+            speakerApproval:
+              fixture.status === "PUBLISHED" ? "APPROVED" : "PENDING",
+            roomApproval: "APPROVED",
+            timeApproval: "APPROVED",
             createdById: demoStaffUserId,
           },
         });

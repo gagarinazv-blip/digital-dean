@@ -51,9 +51,11 @@ async function DigestContent({
   const currentWeek = getDigestWeek(undefined, now);
   const rawType = getSingleParam(params.type);
   const eventType = isEventType(rawType) ? rawType : undefined;
+  const weekEndDate = new Date(week.startDate);
+  weekEndDate.setUTCDate(weekEndDate.getUTCDate() + 7);
   const events = await getPublishedDigestEvents(
-    week.startInstant,
-    week.endInstant,
+    week.startDate,
+    weekEndDate,
     eventType,
   );
   const days = groupEventsByStartDay(week, events);
@@ -130,7 +132,8 @@ async function DigestContent({
                   ) : (
                     <ul className={styles.eventList}>
                       {day.events.map((event) => {
-                        const isPast = event.endsAt <= now;
+                        const isPast =
+                          event.endsAt !== null && event.endsAt <= now;
                         const canRegister =
                           event.registrationUrl !== null &&
                           isSafeRegistrationUrl(event.registrationUrl);
@@ -141,9 +144,14 @@ async function DigestContent({
                             key={event.id}
                           >
                             <div className={styles.eventTopline}>
-                              <time dateTime={event.startsAt.toISOString()}>
-                                {formatMoscowTime(event.startsAt)}–{formatMoscowTime(event.endsAt)}
-                              </time>
+                              {event.startsAt && event.endsAt ? (
+                                <time dateTime={event.startsAt.toISOString()}>
+                                  {formatMoscowTime(event.startsAt)}–
+                                  {formatMoscowTime(event.endsAt)}
+                                </time>
+                              ) : (
+                                <span>Время уточняется</span>
+                              )}
                               <span className={styles.typeBadge}>
                                 {eventTypeLabels[event.type]}
                               </span>
