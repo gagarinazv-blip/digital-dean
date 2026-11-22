@@ -171,9 +171,20 @@
   flex: 1 1 300px;
 }
 
+.filterField {
+  min-width: 150px;
+  display: grid;
+  flex: 0 1 190px;
+  gap: var(--space-2);
+  color: var(--color-ink);
+  font-size: var(--font-size-label);
+  font-weight: 500;
+}
+
 .searchField input,
 .field input,
-.field select {
+.field select,
+.filterField select {
   width: 100%;
   min-width: 0;
   min-height: var(--size-field);
@@ -188,7 +199,8 @@
 
 .searchField input:focus-visible,
 .field input:focus-visible,
-.field select:focus-visible {
+.field select:focus-visible,
+.filterField select:focus-visible {
   border-color: var(--color-wine-900);
   outline: 3px solid var(--color-focus);
   outline-offset: 2px;
@@ -413,6 +425,11 @@
 
   .searchField {
     flex-basis: 100%;
+  }
+
+  .filterField {
+    min-width: min(100%, 140px);
+    flex: 1 1 42%;
   }
 
   .form {

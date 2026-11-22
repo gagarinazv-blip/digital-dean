@@ -2,33 +2,30 @@ import Link from "next/link";
 import type { Prisma } from "@/generated/prisma/client";
 import { getPrisma } from "@/lib/prisma";
 import { requireStaffContext } from "@/lib/staff";
+import {
+  getStudentListFilters,
+  type StudentListSearchParams,
+} from "@/lib/staff-student-filters";
 import styles from "./students.module.css";
-
-type SearchParams = {
-  q?: string | string[];
-};
-
-function firstValue(value: string | string[] | undefined): string {
-  return Array.isArray(value) ? (value[0] ?? "") : (value ?? "");
-}
 
 export default async function StaffStudentsPage({
   searchParams,
 }: {
-  searchParams: Promise<SearchParams>;
+  searchParams: Promise<StudentListSearchParams>;
 }) {
   await requireStaffContext();
-  const { q } = await searchParams;
-  const searchTerm = firstValue(q).trim().slice(0, 100);
-  const phoneDigits = searchTerm.replace(/\D/g, "");
-  const where: Prisma.StudentWhereInput | undefined = searchTerm
-    ? {
-        OR: [
-          { fullName: { contains: searchTerm, mode: "insensitive" } },
-          ...(phoneDigits ? [{ phone: { contains: phoneDigits } }] : []),
-        ],
-      }
-    : undefined;
+  const [query, groups] = await Promise.all([
+    searchParams,
+    getPrisma().studentGroup.findMany({
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
+  ]);
+  const filters = getStudentListFilters(
+    query,
+    groups.map((group) => group.id),
+  );
+  const where: Prisma.StudentWhereInput | undefined = filters.where;
   const students = await getPrisma().student.findMany({
     where,
     orderBy: { fullName: "asc" },
@@ -81,13 +78,58 @@ export default async function StaffStudentsPage({
               name="q"
               placeholder="Например, Анна или +7 900…"
               type="search"
-              defaultValue={searchTerm}
+              defaultValue={filters.searchTerm}
             />
           </label>
+          <label className={styles.filterField} htmlFor="student-course">
+            Курс
+            <select
+              defaultValue={filters.course?.toString() ?? ""}
+              id="student-course"
+              name="course"
+            >
+              <option value="">Все курсы</option>
+              {[1, 2, 3, 4, 5, 6].map((course) => (
+                <option key={course} value={course}>
+                  {course} курс
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className={styles.filterField} htmlFor="student-group">
+            Группа
+            <select
+              defaultValue={filters.groupId?.toString() ?? ""}
+              id="student-group"
+              name="groupId"
+            >
+              <option value="">Все группы</option>
+              {groups.map((group) => (
+                <option key={group.id} value={group.id}>
+                  {group.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className={styles.filterField} htmlFor="student-status">
+            Доступ
+            <select
+              defaultValue={filters.accountStatus ?? ""}
+              id="student-status"
+              name="accountStatus"
+            >
+              <option value="">Любой статус</option>
+              <option value="ACTIVE">Активен</option>
+              <option value="INVITED">Ожидает пароль</option>
+            </select>
+          </label>
           <button className={styles.secondaryButton} type="submit">
-            Найти
+            Применить
           </button>
-          {searchTerm ? (
+          {filters.searchTerm ||
+          filters.course !== null ||
+          filters.groupId !== null ||
+          filters.accountStatus !== null ? (
             <Link className={styles.textLink} href="/staff/students">
               Сбросить
             </Link>
@@ -97,13 +139,19 @@ export default async function StaffStudentsPage({
         {students.length === 0 ? (
           <div className={styles.emptyState}>
             <strong>
-              {searchTerm
+              {filters.searchTerm ||
+              filters.course !== null ||
+              filters.groupId !== null ||
+              filters.accountStatus !== null
                 ? "Студенты не найдены"
                 : "Список студентов пока пуст"}
             </strong>
             <p>
-              {searchTerm
-                ? "Проверьте написание ФИО или номера телефона."
+              {filters.searchTerm ||
+              filters.course !== null ||
+              filters.groupId !== null ||
+              filters.accountStatus !== null
+                ? "Измените запрос или выберите другие фильтры."
                 : "Добавьте студента и задайте ему пароль для входа."}
             </p>
           </div>
