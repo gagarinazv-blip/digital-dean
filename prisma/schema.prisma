@@ -665,6 +665,7 @@ model Request {
   type               RequestType
   catalogCode        String?
   formFields         Json?
+  formSchemaSnapshot Json?
   profileSnapshot    Json?
   status             RequestStatus              @default(NEW)
   comment            String?
@@ -681,6 +682,21 @@ model Request {
   @@index([studentId])
   @@index([status])
   @@index([assignedToId])
+}
+
+model CertificateForm {
+  id            Int      @id @default(autoincrement())
+  code          String   @unique @db.VarChar(64)
+  title         String   @db.VarChar(120)
+  description   String   @db.VarChar(1000)
+  executionDays Int
+  fields        Json
+  active        Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([active, sortOrder])
 }
 
 model StaffNotification {

@@ -10,9 +10,9 @@ import type {
   RequestStatus,
 } from "@/generated/prisma/enums";
 import { requestStatusLabels, requestTypeLabels } from "@/lib/campus-labels";
+import { getCertificateForms } from "@/lib/certificate-forms";
 import {
   getRequestCatalogTitle,
-  requestCatalog,
 } from "@/lib/request-catalog";
 import {
   getStudentDocuments,
@@ -163,6 +163,7 @@ function RecentRequests({
                     {getRequestCatalogTitle(
                       request.catalogCode,
                       requestTypeLabels[request.type],
+                      request.formSchemaSnapshot,
                     )}
                   </strong>
                   <span>{formatRequestNumber(request.id)}</span>
@@ -196,6 +197,7 @@ function SelectedRequestPanel({
   const serviceTitle = getRequestCatalogTitle(
     request.catalogCode,
     requestTypeLabels[request.type],
+    request.formSchemaSnapshot,
   );
   const requestNumber = formatRequestNumber(request.id);
   const latestStaffMessage = request.comments
@@ -389,6 +391,7 @@ export async function HelpWorkspace({
     const title = getRequestCatalogTitle(
       request.catalogCode,
       requestTypeLabels[request.type],
+      request.formSchemaSnapshot,
     );
     return [
       title,
@@ -405,7 +408,9 @@ export async function HelpWorkspace({
     activeTab === "requests" && selectedSummary
       ? await getStudentRequest(selectedSummary.publicId)
       : null;
-  const visibleServices = requestCatalog
+  const catalogEntries =
+    activeTab === "catalog" ? await getCertificateForms() : [];
+  const visibleServices = catalogEntries
     .filter((service) => service.active)
     .filter((service) => {
       if (!normalizedSearch) {
@@ -699,6 +704,7 @@ export async function HelpWorkspace({
                           {getRequestCatalogTitle(
                             document.catalogCode,
                             requestTypeLabels[document.type],
+                            document.formSchemaSnapshot,
                           )}
                         </h3>
                         <p>
@@ -777,6 +783,7 @@ export async function HelpWorkspace({
                     const serviceTitle = getRequestCatalogTitle(
                       request.catalogCode,
                       requestTypeLabels[request.type],
+                      request.formSchemaSnapshot,
                     );
                     const isSelected =
                       request.publicId === selectedSummary?.publicId;

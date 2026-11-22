@@ -71,6 +71,7 @@ export async function getCampusTodayData(now = getDemoNow()) {
         publicId: true,
         type: true,
         catalogCode: true,
+        formSchemaSnapshot: true,
         status: true,
         updatedAt: true,
       },

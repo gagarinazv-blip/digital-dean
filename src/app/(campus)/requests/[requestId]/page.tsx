@@ -13,6 +13,7 @@ import {
 } from "@/lib/campus-labels";
 import {
   getRequestCatalogEntry,
+  getRequestCatalogSnapshot,
   getRequestCatalogTitle,
   getRequestFieldEntries,
   getRequestProfileEntries,
@@ -152,8 +153,11 @@ export default async function StudentRequestPage({
   const serviceTitle = getRequestCatalogTitle(
     request.catalogCode,
     requestTypeLabels[request.type],
+    request.formSchemaSnapshot,
   );
-  const service = getRequestCatalogEntry(request.catalogCode);
+  const service =
+    getRequestCatalogSnapshot(request.formSchemaSnapshot) ??
+    getRequestCatalogEntry(request.catalogCode);
   const requestNumber = formatRequestNumber(request.id);
   const resultAttachments = request.comments.flatMap((comment) =>
     comment.attachments.filter((attachment) => attachment.kind === "RESULT"),
@@ -167,6 +171,7 @@ export default async function StudentRequestPage({
   const formEntries = getRequestFieldEntries(
     request.catalogCode,
     request.formFields,
+    request.formSchemaSnapshot,
   );
   const profileEntries = getRequestProfileEntries(request.profileSnapshot) ?? [];
   const latestStatusEntry =

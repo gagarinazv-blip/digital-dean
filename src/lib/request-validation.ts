@@ -1,5 +1,6 @@
 import {
   getRequestCatalogEntry,
+  requestCatalog,
   type RequestCatalogEntry,
 } from "@/lib/request-catalog";
 
@@ -21,11 +22,12 @@ const MAX_DESCRIPTION_LENGTH = 1000;
 
 export function validateRequestForm(
   values: RequestFormValues,
+  services: readonly RequestCatalogEntry[] = requestCatalog,
 ): ValidatedRequestForm {
   const errors: Record<string, string> = {};
   const service =
     typeof values.catalogCode === "string"
-      ? getRequestCatalogEntry(values.catalogCode)
+      ? getRequestCatalogEntry(values.catalogCode, services)
       : undefined;
 
   if (!service) {

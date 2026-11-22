@@ -16,7 +16,8 @@ export function getPrisma(): PrismaClient {
     typeof cachedPrisma.opportunity !== "undefined" &&
     typeof cachedPrisma.opportunityApplication !== "undefined" &&
     typeof cachedPrisma.opportunityBookmark !== "undefined" &&
-    typeof cachedPrisma.applicationFile !== "undefined"
+    typeof cachedPrisma.applicationFile !== "undefined" &&
+    typeof cachedPrisma.certificateForm !== "undefined"
   ) {
     return cachedPrisma;
   }

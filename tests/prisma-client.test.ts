@@ -53,6 +53,7 @@ describe("getPrisma", () => {
       opportunityApplication: {},
       opportunityBookmark: {},
       applicationFile: {},
+      certificateForm: {},
       $disconnect: vi.fn(),
     } as unknown as PrismaClient;
     const adapter = { connectionString: process.env.DATABASE_URL };
@@ -75,6 +76,7 @@ describe("getPrisma", () => {
       opportunityApplication: {},
       opportunityBookmark: {},
       applicationFile: {},
+      certificateForm: {},
       $disconnect: vi.fn(),
     } as unknown as PrismaClient;
     globalPrisma.prisma = client;

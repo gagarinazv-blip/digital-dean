@@ -1,7 +1,7 @@
 import { Suspense, type ReactNode } from "react";
 import { StaffLayout } from "@/components/staff-layout";
 import { CampusLoading } from "@/components/campus-section";
-import { requireStaff } from "@/lib/staff";
+import { requireStaffContext } from "@/lib/staff";
 
 export const instant = false;
 
@@ -22,6 +22,10 @@ export default async function StaffRouteLayout({
 }
 
 async function ProtectedStaff({ children }: { children: ReactNode }) {
-  const staff = await requireStaff();
-  return <StaffLayout staff={staff}>{children}</StaffLayout>;
+  const { staff, isManagerAccount } = await requireStaffContext();
+  return (
+    <StaffLayout isManagerAccount={isManagerAccount} staff={staff}>
+      {children}
+    </StaffLayout>
+  );
 }

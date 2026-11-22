@@ -526,11 +526,13 @@ async function CampusToday() {
                   title={getRequestCatalogTitle(
                     data.latestRequest.catalogCode,
                     requestTypeLabels[data.latestRequest.type],
+                    data.latestRequest.formSchemaSnapshot,
                   )}
                 >
                   {getRequestCatalogTitle(
                     data.latestRequest.catalogCode,
                     requestTypeLabels[data.latestRequest.type],
+                    data.latestRequest.formSchemaSnapshot,
                   )}
                 </strong>
                 <span

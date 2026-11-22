@@ -11,15 +11,27 @@ const navigationItems = [
   { href: "/staff/achievements", label: "Достижения", icon: GraphUp },
   { href: "/staff/events", label: "Дайджест событий", icon: Calendar },
   { href: "/staff/opportunities", label: "Возможности", icon: TaskList },
+  {
+    href: "/staff/certificate-forms",
+    label: "Формы справок",
+    icon: TaskList,
+    managerOnly: true,
+  },
 ] as const;
 
-export function StaffNavigation() {
+export function StaffNavigation({
+  isManagerAccount,
+}: {
+  isManagerAccount: boolean;
+}) {
   const pathname = usePathname();
 
   return (
     <nav className={styles.navigation} aria-label="Разделы сотрудника">
       <p className={styles.navigationTitle}>Рабочее место</p>
-      {navigationItems.map((item) => {
+      {navigationItems
+        .filter((item) => !("managerOnly" in item) || isManagerAccount)
+        .map((item) => {
         const isCurrent =
           pathname === item.href ||
           (item.href === "/staff/students" &&
@@ -48,7 +60,7 @@ export function StaffNavigation() {
             {item.label}
           </Link>
         );
-      })}
+        })}
     </nav>
   );
 }

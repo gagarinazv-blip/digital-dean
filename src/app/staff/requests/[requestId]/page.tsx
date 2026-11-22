@@ -114,10 +114,12 @@ export default async function StaffRequestPage({
   const serviceTitle = getRequestCatalogTitle(
     request.catalogCode,
     requestTypeLabels[request.type],
+    request.formSchemaSnapshot,
   );
   const formEntries = getRequestFieldEntries(
     request.catalogCode,
     request.formFields,
+    request.formSchemaSnapshot,
   );
   const profileEntries = getRequestProfileEntries(request.profileSnapshot) ?? [];
   const transitions = getAllowedStaffRequestTransitions(request.status);

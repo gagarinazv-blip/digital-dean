@@ -18,6 +18,7 @@ const requestListSelection = {
   publicId: true,
   type: true,
   catalogCode: true,
+  formSchemaSnapshot: true,
   status: true,
   createdAt: true,
   student: {
@@ -45,6 +46,7 @@ const requestDetailSelection = {
   publicId: true,
   type: true,
   catalogCode: true,
+  formSchemaSnapshot: true,
   formFields: true,
   profileSnapshot: true,
   status: true,

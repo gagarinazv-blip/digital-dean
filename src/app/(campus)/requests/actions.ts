@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import { assertSameSiteRequest } from "@/lib/auth";
+import { getActiveCertificateForm } from "@/lib/certificate-forms";
 import { getPrisma } from "@/lib/prisma";
+import { createRequestCatalogSnapshot } from "@/lib/request-catalog";
 import { validateRequestUploads } from "@/lib/request-attachments";
 import { validateRequestForm } from "@/lib/request-validation";
 import type { RequestActionState } from "@/lib/request-action-state";
@@ -54,19 +56,34 @@ export async function createRequestAction(
     }
   }
 
+  const rawCatalogCode = formData.get("catalogCode");
+  if (typeof rawCatalogCode !== "string") {
+    return {
+      error: "Выберите услугу из списка.",
+      fieldErrors: { catalogCode: "Выберите услугу из списка." },
+    };
+  }
+  const service = await getActiveCertificateForm(rawCatalogCode);
+  if (!service) {
+    return {
+      error: "Выбранная услуга больше недоступна. Обновите страницу.",
+      fieldErrors: { catalogCode: "Выберите доступную услугу." },
+    };
+  }
+
   const validated = validateRequestForm({
-    catalogCode: formData.get("catalogCode"),
+    catalogCode: service.code,
     fields: rawFields,
     description: formData.get("description"),
-  });
+  }, [service]);
   if (!validated.valid) {
     return {
       ...(validated.errors.fields ? { error: validated.errors.fields } : {}),
       fieldErrors: validated.errors,
     };
   }
-  const service = validated.service;
-  if (!service) {
+  const validatedService = validated.service;
+  if (!validatedService) {
     return { error: "Выберите услугу из списка." };
   }
 
@@ -84,9 +101,10 @@ export async function createRequestAction(
         create: {
           publicId: rawPublicId,
           studentId: student.id,
-          type: service.requestType,
-          catalogCode: service.code,
+          type: validatedService.requestType,
+          catalogCode: validatedService.code,
           formFields: validated.fields,
+          formSchemaSnapshot: createRequestCatalogSnapshot(validatedService),
           comment: content || null,
           profileSnapshot: {
             fullName: student.fullName,

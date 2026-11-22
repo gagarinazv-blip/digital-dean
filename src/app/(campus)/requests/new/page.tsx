@@ -3,13 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CampusSection } from "@/components/campus-section";
 import { NewRequestForm } from "@/app/(campus)/requests/request-forms";
+import { getCertificateForms } from "@/lib/certificate-forms";
 import { requireStudentContext } from "@/lib/student";
 import {
-  getRequestCatalogTitle,
-  getRequestCatalogEntry,
   getRequestFieldValues,
-  isRequestCatalogCode,
-  requestCatalog,
   type RequestProfileSnapshot,
 } from "@/lib/request-catalog";
 import { getStudentRequest } from "@/lib/student-request-data";
@@ -27,15 +24,31 @@ export default async function NewRequestPage({
   }>;
 }) {
   const { student } = await requireStudentContext();
+  const services = await getCertificateForms();
+  if (services.length === 0) {
+    return (
+      <CampusSection
+        eyebrow="Документы и заявки"
+        title="Новая заявка"
+        description="Сейчас нет доступных услуг для подачи заявления."
+      >
+        <p role="status">
+          Попробуйте позже или обратитесь в деканат.
+        </p>
+      </CampusSection>
+    );
+  }
+
   const query = await searchParams;
   const copyPublicId = typeof query.copy === "string" ? query.copy : null;
   const serviceCode =
-    typeof query.service === "string" && isRequestCatalogCode(query.service)
+    typeof query.service === "string" &&
+    services.some((service) => service.code === query.service)
       ? query.service
       : null;
   let initialValues:
     | {
-        catalogCode: (typeof requestCatalog)[number]["code"];
+        catalogCode: string;
         fields: Record<string, string>;
         description: string;
       }
@@ -48,7 +61,7 @@ export default async function NewRequestPage({
     if (
       sourceRequest.status !== "REJECTED" ||
       sourceRequest.catalogCode === null ||
-      !isRequestCatalogCode(sourceRequest.catalogCode)
+      !services.some((service) => service.code === sourceRequest.catalogCode)
     ) {
       notFound();
     }
@@ -58,6 +71,7 @@ export default async function NewRequestPage({
       fields: getRequestFieldValues(
         sourceRequest.catalogCode,
         sourceRequest.formFields,
+        sourceRequest.formSchemaSnapshot,
       ),
       description: sourceRequest.comment ?? "",
     };
@@ -73,7 +87,8 @@ export default async function NewRequestPage({
     studyForm: student.studyForm,
   };
   const selectedService =
-    getRequestCatalogEntry(initialValues?.catalogCode) ?? requestCatalog[0];
+    services.find((service) => service.code === initialValues?.catalogCode) ??
+    services[0];
 
   return (
     <CampusSection
@@ -85,12 +100,7 @@ export default async function NewRequestPage({
         <nav className={styles.breadcrumbs} aria-label="Хлебные крошки">
           <Link href="/documents">Документы и заявки</Link>
           <span aria-hidden="true">/</span>
-          <span>
-            {getRequestCatalogTitle(
-              initialValues?.catalogCode ?? requestCatalog[0].code,
-              "Услуга",
-            )}
-          </span>
+          <span>{selectedService.title}</span>
         </nav>
         <div className={styles.layout}>
           <section
@@ -110,6 +120,7 @@ export default async function NewRequestPage({
               initialValues={initialValues}
               profile={profile}
               publicId={randomUUID()}
+              services={services}
             />
           </section>
           <aside

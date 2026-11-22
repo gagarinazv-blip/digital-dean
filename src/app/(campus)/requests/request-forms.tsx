@@ -5,8 +5,7 @@ import { useActionState, useState } from "react";
 import {
   getRequestProfileEntries,
   getRequestCatalogEntry,
-  requestCatalog,
-  type RequestCatalogCode,
+  type RequestCatalogEntry,
   type RequestCatalogField,
   type RequestProfileSnapshot,
 } from "@/lib/request-catalog";
@@ -47,11 +46,13 @@ export function NewRequestForm({
   profile,
   publicId,
   initialValues,
+  services,
 }: {
   profile: RequestProfileSnapshot;
   publicId: string;
+  services: readonly RequestCatalogEntry[];
   initialValues?: {
-    catalogCode: RequestCatalogCode;
+    catalogCode: string;
     fields: Record<string, string>;
     description: string;
   };
@@ -60,8 +61,8 @@ export function NewRequestForm({
     createRequestAction,
     initialState,
   );
-  const [catalogCode, setCatalogCode] = useState<RequestCatalogCode>(
-    initialValues?.catalogCode ?? requestCatalog[0].code,
+  const [catalogCode, setCatalogCode] = useState(
+    initialValues?.catalogCode ?? services[0]?.code ?? "",
   );
   const [fields, setFields] = useState<Record<string, string>>(
     initialValues?.fields ?? {},
@@ -74,12 +75,12 @@ export function NewRequestForm({
     Record<string, true>
   >({});
   const serverFieldErrors = state.fieldErrors ?? {};
-  const service = getRequestCatalogEntry(catalogCode);
+  const service = getRequestCatalogEntry(catalogCode, services);
   const validation = validateRequestForm({
     catalogCode,
     fields,
     description,
-  });
+  }, services);
 
   const profileEntries = getRequestProfileEntries(profile) ?? [];
 
@@ -120,6 +121,7 @@ export function NewRequestForm({
           onChange={(event) => {
             const nextService = getRequestCatalogEntry(
               event.currentTarget.value,
+              services,
             );
             if (!nextService) {
               return;
@@ -136,7 +138,7 @@ export function NewRequestForm({
           required
           value={catalogCode}
         >
-          {requestCatalog
+          {services
             .filter((entry) => entry.active)
             .map((entry) => (
               <option key={entry.code} value={entry.code}>
