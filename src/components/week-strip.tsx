@@ -1,4 +1,5 @@
 import Link from "next/link";
+import controls from "@/components/ui/controls.module.css";
 import styles from "./week-strip.module.css";
 
 const weekdays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
@@ -21,12 +22,9 @@ export function WeekStrip({
 }) {
   return (
     <section aria-labelledby="week-strip-title" className={styles.week}>
-      <div className={styles.heading}>
-        <h2 id="week-strip-title">{title}</h2>
-        <Link className={styles.link} href="/schedule?view=month">
-          Месяц →
-        </Link>
-      </div>
+      <h2 className={controls.visuallyHidden} id="week-strip-title">
+        Неделя, {title}
+      </h2>
       <ol className={styles.days}>
         {days.map((day, index) => {
           const isToday = day.key === todayKey;
@@ -56,10 +54,9 @@ export function WeekStrip({
           );
         })}
       </ol>
-      <p aria-hidden="true" className={styles.legend}>
-        <span data-kind="lesson">пары</span>
-        <span data-kind="deadline">сроки</span>
-      </p>
+      <Link className={styles.link} href="/schedule?view=month">
+        Месяц →
+      </Link>
     </section>
   );
 }

@@ -1,47 +1,16 @@
+/* Неделя в строке приветствия: без карточки, чтобы не спорить с главным блоком. */
 .week {
   min-width: 0;
-  display: grid;
-  gap: var(--space-2);
-  padding: var(--space-4);
-  border-radius: var(--radius-surface);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-card);
-}
-
-.heading {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-}
-
-.heading h2 {
-  color: var(--color-ink);
-  font-size: var(--font-size-lead);
-  font-weight: 600;
-  line-height: 24px;
-}
-
-.heading h2::first-letter {
-  text-transform: uppercase;
-}
-
-.link {
-  border-radius: var(--radius-sm);
-  color: var(--color-wine-900);
-  font-size: var(--font-size-label);
-  font-weight: 600;
-}
-
-.link:hover {
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  gap: var(--space-4);
 }
 
 .days {
+  min-width: 0;
+  flex: 1 1 auto;
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 0;
+  grid-template-columns: repeat(7, minmax(40px, 1fr));
   margin: 0;
   padding: 0;
   list-style: none;
@@ -49,16 +18,18 @@
 
 .day {
   min-width: 0;
+  min-height: var(--size-touch);
+  position: relative;
   display: grid;
   justify-items: center;
-  gap: 0;
-  padding: var(--space-1) 0;
+  align-content: center;
+  padding: var(--space-1) 0 var(--space-2);
   border-radius: var(--radius-md);
   color: var(--color-ink);
 }
 
 .day:hover {
-  background: var(--color-subtle);
+  background: var(--color-border);
 }
 
 .weekday {
@@ -68,56 +39,60 @@
 }
 
 .date {
-  width: 32px;
-  height: 32px;
-  display: grid;
-  place-items: center;
-  border-radius: var(--radius-pill);
   font-size: var(--font-size-body-compact);
   font-weight: 600;
+  line-height: 20px;
   font-variant-numeric: tabular-nums;
 }
 
-.day[aria-current="date"] .date {
+.day[aria-current="date"] {
   background: var(--color-wine-900);
   color: var(--color-surface);
 }
 
+.day[aria-current="date"] .weekday {
+  color: var(--color-on-wine-muted);
+}
+
 .dots {
-  height: 6px;
+  position: absolute;
+  bottom: 4px;
   display: flex;
   gap: 4px;
 }
 
-.dots i,
-.legend span::before {
-  width: 6px;
-  height: 6px;
+.dots i {
+  width: 4px;
+  height: 4px;
   border-radius: var(--radius-pill);
   background: var(--color-control-border);
 }
 
-.dots i[data-kind="deadline"],
-.legend span[data-kind="deadline"]::before {
+.dots i[data-kind="deadline"] {
   background: var(--color-wine-900);
 }
 
-.legend {
-  display: flex;
-  gap: var(--space-4);
-  color: var(--color-muted);
+.day[aria-current="date"] .dots i {
+  background: var(--color-surface);
+}
+
+.day[aria-current="date"] .dots i[data-kind="deadline"] {
+  background: var(--color-accent-yellow);
+}
+
+.link {
+  flex: 0 0 auto;
+  border-radius: var(--radius-sm);
+  color: var(--color-wine-900);
   font-size: var(--font-size-label);
-  line-height: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  white-space: nowrap;
 }
 
-.legend span {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.legend span::before {
-  content: "";
+.link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .link:focus-visible,
@@ -126,8 +101,13 @@
   outline-offset: 1px;
 }
 
-@media (min-width: 1200px) and (max-height: 859px) {
-  .legend {
-    display: none;
+@media (max-width: 480px) {
+  .week {
+    width: 100%;
+    gap: var(--space-2);
+  }
+
+  .days {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
   }
 }

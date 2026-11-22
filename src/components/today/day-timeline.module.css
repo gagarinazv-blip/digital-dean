@@ -1,0 +1,145 @@
+/* Лента лежит на бордовой заливке карточки. */
+.timeline {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-1);
+  /* Подписи крайних часов центрируются по своей отметке. */
+  padding-inline: var(--space-5);
+}
+
+.hours {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  padding: 0;
+  color: var(--color-on-wine-muted);
+  font-size: var(--font-size-body-compact);
+  line-height: 20px;
+  font-variant-numeric: tabular-nums;
+  list-style: none;
+}
+
+.hours li {
+  width: 0;
+  display: flex;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.track {
+  --lane-height: 32px;
+  --lane-gap: 4px;
+  position: relative;
+  height: calc(
+    var(--lanes) * var(--lane-height) + (var(--lanes) - 1) * var(--lane-gap)
+  );
+  background: repeating-linear-gradient(
+    to right,
+    var(--color-on-wine-line) 0 1px,
+    transparent 1px calc((100% - 1px) / var(--hours))
+  );
+}
+
+.track ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.track li {
+  position: absolute;
+  top: calc(var(--lane) * (var(--lane-height) + var(--lane-gap)));
+  height: var(--lane-height);
+  padding-right: 2px;
+}
+
+.event {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding-inline: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-on-wine-block);
+  color: var(--color-surface);
+  font-size: var(--font-size-body-compact);
+  line-height: 20px;
+}
+
+.event > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.event:hover {
+  background: var(--color-on-wine-block-hover);
+}
+
+.event[data-kind="session"] {
+  background: var(--color-accent-yellow);
+  color: var(--color-ink);
+}
+
+.event[data-main] {
+  background: var(--color-surface);
+  color: var(--color-wine-900);
+  font-weight: 600;
+}
+
+.event[data-past] {
+  background: var(--color-wine-900);
+  box-shadow: inset 0 0 0 1px var(--color-on-wine-line);
+  color: var(--color-on-wine-muted);
+}
+
+.event[data-cancelled] {
+  background: var(--color-ink);
+  box-shadow: inset 0 0 0 1px var(--color-on-wine-muted);
+  color: var(--color-on-wine-muted);
+  text-decoration: line-through;
+}
+
+.event:focus-visible {
+  outline: 3px solid var(--color-focus-on-dark);
+  outline-offset: 2px;
+}
+
+/* «Сейчас» идёт позади блоков, чтобы не резать названия; в самом блоке
+   прошедшая часть чуть темнее. */
+.event[data-running][data-main] {
+  background: linear-gradient(
+    to right,
+    var(--color-on-wine-done) var(--done),
+    var(--color-surface) var(--done)
+  );
+}
+
+.now {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent-yellow);
+  pointer-events: none;
+}
+
+.now::before {
+  position: absolute;
+  top: -4px;
+  left: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: inherit;
+  content: "";
+}
+
+/* В узкой карточке блоки нечитаемы: накладку называет строка с экзаменом. */
+@container next-lesson (max-width: 639px) {
+  .timeline {
+    display: none;
+  }
+}

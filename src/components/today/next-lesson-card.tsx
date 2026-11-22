@@ -11,30 +11,16 @@ import {
   getDateStackLabels,
 } from "@/lib/date-stack";
 import { formatMoscowTime } from "@/lib/campus-time";
-import { formatRoom } from "@/lib/room-format";
+import { formatRoom, joinDetails } from "@/lib/room-format";
+import { getDayTimeline } from "@/lib/day-timeline";
 import { getTodayFocus, type TodayEvent } from "@/lib/today-view-utils";
+import { DayTimeline } from "./day-timeline";
 import styles from "./next-lesson-card.module.css";
 
 function getProgress(event: TodayEvent, now: Date): number {
   const start = event.startsAt.getTime();
   const share = (now.getTime() - start) / (event.endsAt.getTime() - start);
   return Math.round(Math.min(1, Math.max(0, share)) * 100);
-}
-
-function getChip(
-  event: TodayEvent,
-  state: string,
-  now: Date,
-): { label: string; tone?: "accent" | "danger" } | null {
-  if (state === "cancelled") return { label: "Отменено", tone: "danger" };
-  if (state === "current") {
-    return {
-      label: `Идёт сейчас · осталось ${formatRemaining(event.endsAt, now)}`,
-      tone: "accent",
-    };
-  }
-  const { relative } = getDateStackLabels(event.startsAt, { now });
-  return relative ? { label: relative } : null;
 }
 
 /** Прежнее время перенесённого занятия, если оно действительно другое. */
@@ -61,7 +47,7 @@ export function NextLessonCard({
   serverNow: Date;
 }) {
   const now = useDemoNow() ?? serverNow;
-  const { state, main, next, isNextUrgent, isOverlapping } = getTodayFocus(
+  const { state, main, next, isOverlapping } = getTodayFocus(
     events,
     now,
   );
@@ -78,11 +64,9 @@ export function NextLessonCard({
             <h2 className={styles.title} id="next-lesson-title">
               Ближайших занятий нет
             </h2>
-            <p className={styles.type}>
-              Новые занятия появятся здесь, когда их внесут в расписание.
-            </p>
+            <p>Новые занятия появятся здесь, когда их внесут в расписание.</p>
           </div>
-          <div className={styles.actions}>
+          <div className={styles.emptyAction}>
             <Link className={controls.primary} href="/schedule">
               Открыть расписание
             </Link>
@@ -92,10 +76,25 @@ export function NextLessonCard({
     );
   }
 
-  const chip = getChip(main, state, now);
   const previousTime = getPreviousTime(main, now);
-  const isRescheduled = main.status === "RESCHEDULED";
+  const chips = [
+    state === "cancelled" ? { label: "Отменено", isStrong: true } : null,
+    state === "current"
+      ? {
+          label: `Идёт сейчас · осталось ${formatRemaining(main.endsAt, now)}`,
+          isStrong: true,
+        }
+      : null,
+    main.status === "RESCHEDULED"
+      ? { label: previousTime ? "Перенесено" : "Изменено", isStrong: false }
+      : null,
+  ].filter((chip) => chip !== null);
   const room = formatRoom(main.room);
+  const time = [main.startsAt, main.endsAt].map(formatMoscowTime).join("–");
+  const timeline = getDayTimeline(events, main, now);
+  const isNextOnTimeline = Boolean(
+    next && timeline?.items.some((item) => item.event.id === next.id),
+  );
   const label =
     main.kind === "session" ? "Ближайшее событие сессии" : "Ближайшее занятие";
 
@@ -105,20 +104,124 @@ export function NextLessonCard({
       className={styles.card}
       data-state={state}
     >
-      <div className={styles.topline}>
-        <p className={styles.label}>{label}</p>
-        <div className={styles.chips}>
-          {isRescheduled ? (
-            <span className={styles.chip} data-tone="accent">
-              {previousTime ? "Перенесено" : "Изменено"}
-            </span>
-          ) : null}
-          {chip ? (
-            <span className={styles.chip} data-tone={chip.tone}>
-              {chip.label}
-            </span>
+      <div className={styles.body}>
+        <div className={styles.heading}>
+          <div className={styles.topline}>
+            <p className={styles.label}>
+              {label} · {main.typeLabel}
+            </p>
+            {chips.map((chip) => (
+              <span
+                className={styles.chip}
+                data-strong={chip.isStrong || undefined}
+                key={chip.label}
+              >
+                {chip.label}
+              </span>
+            ))}
+          </div>
+          <h2
+            className={styles.title}
+            id="next-lesson-title"
+            title={main.title}
+          >
+            {main.title}
+          </h2>
+          {room || main.teacher ? (
+            <ul className={styles.details}>
+              {room ? (
+                <li>
+                  <MapPin aria-hidden="true" />
+                  {room}
+                </li>
+              ) : null}
+              {main.teacher ? (
+                <li>
+                  <User aria-hidden="true" />
+                  {main.teacher}
+                </li>
+              ) : null}
+            </ul>
           ) : null}
         </div>
+        <div className={styles.when}>
+          <p className={styles.day}>
+            {joinDetails(
+              formatStackDay(main.startsAt, now),
+              state === "today" || state === "upcoming"
+                ? getDateStackLabels(main.startsAt, { now }).relative
+                : null,
+            )}
+          </p>
+          <p className={styles.time}>
+            {state === "cancelled" ? <s>{time}</s> : time}
+          </p>
+          {previousTime ? (
+            <p className={styles.previous}>
+              Было: <s>{previousTime}</s>
+            </p>
+          ) : null}
+  <div className={styles.actions}>
+            {main.onlineUrl && state !== "cancelled" ? (
+              <>
+                <a
+                  className={styles.button}
+                  href={main.onlineUrl}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  Подключиться
+                  <span className={controls.visuallyHidden}>
+                    {" "}
+                    (откроется в новой вкладке)
+                  </span>
+                </a>
+                <Link className={styles.link} href={main.scheduleHref}>
+                  Открыть в расписании →
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link className={styles.button} href={main.scheduleHref}>
+                  Открыть в расписании
+                </Link>
+                {main.detailsHref !== main.scheduleHref ? (
+                  <Link className={styles.link} href={main.detailsHref}>
+                    Подробнее →
+                  </Link>
+                ) : null}
+              </>
+            )}
+          </div>
+        </div>
+        {next ? (
+          <Link
+            className={styles.next}
+            data-on-timeline={isNextOnTimeline || undefined}
+            data-overlap={isOverlapping || undefined}
+            href={next.detailsHref}
+          >
+            <span>
+              {next.typeLabel}
+              <span className={styles.nextName}> · {next.title}</span>
+              <span className={styles.nextMoment}>
+                {" · "}
+                <DateTimeStack
+                  end={next.endsAt}
+                  value={next.startsAt}
+                  variant="moment"
+                />
+              </span>
+              {isOverlapping ? (
+                <span className={styles.overlap}>
+                  {" "}
+                  пересекается по времени
+                </span>
+              ) : null}
+            </span>
+            <NavArrowRight aria-hidden="true" />
+          </Link>
+        ) : null}
       </div>
       {state === "current" ? (
         <div
@@ -127,125 +230,19 @@ export function NextLessonCard({
           aria-valuemin={0}
           aria-valuenow={getProgress(main, now)}
           className={styles.progress}
+          data-on-timeline={timeline ? true : undefined}
           role="progressbar"
         >
           <span style={{ width: `${getProgress(main, now)}%` }} />
         </div>
       ) : null}
-      <div className={styles.heading}>
-        <h2
-          className={styles.title}
-          id="next-lesson-title"
-          title={main.title}
-        >
-          {main.title}
-        </h2>
-        <p className={styles.type}>{main.typeLabel}</p>
-      </div>
-      <div className={styles.body}>
-        <div className={styles.when}>
-            <p
-              className={styles.moment}
-              data-cancelled={state === "cancelled" || undefined}
-            >
-              {state === "cancelled" ? (
-                <s>
-                  <DateTimeStack
-                    end={main.endsAt}
-                    value={main.startsAt}
-                    variant="moment"
-                  />
-                </s>
-              ) : (
-                <DateTimeStack
-                  end={main.endsAt}
-                  value={main.startsAt}
-                  variant="moment"
-                />
-              )}
-            </p>
-            {previousTime ? (
-              <p className={styles.type}>
-                Было: <s>{previousTime}</s>
-              </p>
-            ) : null}
-            {room || main.teacher ? (
-              <ul className={styles.details}>
-                {room ? (
-                  <li>
-                    <MapPin aria-hidden="true" />
-                    {room}
-                  </li>
-                ) : null}
-                {main.teacher ? (
-                  <li>
-                    <User aria-hidden="true" />
-                    {main.teacher}
-                  </li>
-                ) : null}
-              </ul>
-            ) : null}
-          </div>
-        <div className={styles.actions}>
-          {main.onlineUrl && state !== "cancelled" ? (
-            <>
-              <a
-                className={controls.primary}
-                href={main.onlineUrl}
-                rel="noreferrer"
-                target="_blank"
-              >
-                Подключиться
-                <span className={controls.visuallyHidden}>
-                  {" "}
-                  (откроется в новой вкладке)
-                </span>
-              </a>
-              <Link className={styles.link} href={main.scheduleHref}>
-                Открыть в расписании →
-              </Link>
-            </>
-          ) : (
-            <>
-              <Link className={controls.primary} href={main.scheduleHref}>
-                Открыть в расписании
-              </Link>
-              {main.detailsHref !== main.scheduleHref ? (
-                <Link className={styles.link} href={main.detailsHref}>
-                  Подробнее →
-                </Link>
-              ) : null}
-            </>
-          )}
-        </div>
-      </div>
-      {next ? (
-        <Link className={styles.next} href={next.detailsHref}>
-          <span className={styles.nextText}>
-            <span className={styles.nextName}>
-              <span
-                className={styles.chip}
-                data-tone={isNextUrgent ? "accent" : undefined}
-              >
-                Далее · {next.typeLabel}
-              </span>
-              <span className={styles.nextTitle} title={next.title}>
-                {next.title}
-              </span>
-            </span>
-            <span className={styles.nextMeta}>
-              <DateTimeStack
-                end={next.endsAt}
-                value={next.startsAt}
-                variant="moment"
-              />
-              {isOverlapping ? (
-                <span className={styles.overlap}>Пересекается по времени</span>
-              ) : null}
-            </span>
-          </span>
-          <NavArrowRight aria-hidden="true" className={styles.nextArrow} />
-        </Link>
+      {timeline ? (
+        <DayTimeline
+          label={`События дня: ${formatStackDay(main.startsAt, now)}`}
+          mainId={main.id}
+          now={now}
+          timeline={timeline}
+        />
       ) : null}
     </section>
   );

@@ -72,15 +72,29 @@ async function render(events: TodayEvent[], now: string): Promise<string> {
 describe("next lesson card", () => {
   it("shows tomorrow's lesson with the overlapping exam strip", async () => {
     const text = await render([lesson, exam], "2026-11-22T14:30:00Z");
-    expect(text).toContain("через 15 ч");
-    expect(text).toContain("Завтра, 08:30–10:00");
-    expect(text).toContain("Далее · Экзамен");
-    expect(text).toContain("Завтра, 09:00–11:00");
-    expect(text).toContain("Пересекается по времени");
+    expect(text).toContain("Завтра · через 15 ч");
+    expect(text).toContain("08:30–10:00");
+    expect(text).toContain("Экзамен · Компьютерные сети · Завтра, 09:00–11:00");
+    expect(text).toContain("пересекается по времени");
     expect(text.match(/ауд\./g)).toHaveLength(1);
     expect(
       [...container.querySelectorAll("a")].map((link) => link.getAttribute("href")),
-    ).toEqual([lesson.scheduleHref, lesson.detailsHref, exam.detailsHref]);
+    ).toEqual([
+      lesson.scheduleHref,
+      lesson.detailsHref,
+      exam.detailsHref,
+      // Лента дня: пара и экзамен.
+      lesson.detailsHref,
+      exam.detailsHref,
+    ]);
+    expect(
+      [...container.querySelectorAll("ul[aria-label] a")].map((link) =>
+        link.getAttribute("aria-label"),
+      ),
+    ).toEqual([
+      "08:30–10:00, История вымышленных цивилизаций, Лекция, МО-101, ауд. 101, показано выше",
+      "09:00–11:00, Компьютерные сети, Экзамен, МО-101, ауд. 101",
+    ]);
   });
 
   it("shows the running lesson with the remaining time and progress", async () => {
@@ -98,8 +112,7 @@ describe("next lesson card", () => {
 
   it("shows a later lesson today", async () => {
     const text = await render([lesson], "2026-11-23T03:30:00Z");
-    expect(text).toContain("через 2 ч");
-    expect(text).toContain("Сегодня, 08:30–10:00");
+    expect(text).toContain("Сегодня · через 2 ч");
     expect(container.querySelector("[role=progressbar]")).toBeNull();
   });
 
@@ -109,7 +122,7 @@ describe("next lesson card", () => {
       "2026-11-23T03:30:00Z",
     );
     expect(text).toContain("Отменено");
-    expect(container.querySelector("s")?.textContent).toBe("Сегодня, 08:30–10:00");
+    expect(container.querySelector("s")?.textContent).toBe("08:30–10:00");
   });
 
   it("shows the previous time of a rescheduled lesson", async () => {
@@ -131,7 +144,7 @@ describe("next lesson card", () => {
   it("makes the exam the main event with a single link", async () => {
     const text = await render([exam], "2026-11-22T14:30:00Z");
     expect(text).toContain("Ближайшее событие сессии");
-    expect(text).not.toContain("Далее");
+    expect(text).not.toContain("пересекается");
     expect(container.querySelectorAll("a")).toHaveLength(1);
   });
 

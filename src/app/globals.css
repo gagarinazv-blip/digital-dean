@@ -14,6 +14,12 @@
   --color-blue-300: #c3d1ea;
   --color-hero: #dfe7f5;
   --color-hero-end: #ebf0f8;
+  --color-on-wine-muted: #dfd0d1;
+  --color-on-wine-line: rgb(255 255 255 / 16%);
+  --color-on-wine-fill: rgb(255 255 255 / 16%);
+  --color-on-wine-done: #ecd3d5;
+  --color-on-wine-block: #754650;
+  --color-on-wine-block-hover: #86585f;
   --color-accent-blue: #a9bfe6;
   --color-accent-yellow: #fbd99a;
   --color-accent-mix: #dcd6cf;
@@ -46,6 +52,8 @@
   --font-size-lead: 18px;
   --font-size-h2: 20px;
   --font-size-title: 24px;
+  --font-size-headline: 28px;
+  --font-size-display: 32px;
   --font-size-h1: 30px;
   --font-size-h1-mobile: 24px;
   --font-size-hero: 36px;
@@ -85,6 +93,19 @@
   --size-content-max: 1280px;
 
   --shadow-soft: 0 4px 16px rgb(33 28 27 / 6%);
+  /* Главная карточка: бордовый фон с отсветом фирменных синего и жёлтого. */
+  --fill-hero:
+    radial-gradient(
+      52% 130% at 100% 0%,
+      rgb(169 191 230 / 22%) 0%,
+      rgb(169 191 230 / 0%) 100%
+    ),
+    radial-gradient(
+      46% 110% at 72% 120%,
+      rgb(251 217 154 / 12%) 0%,
+      rgb(251 217 154 / 0%) 100%
+    ),
+    linear-gradient(100deg, var(--color-wine-900) 0%, #5d0d18 100%);
   --shadow-card: 0 1px 2px rgb(33 28 27 / 4%), 0 8px 24px rgb(33 28 27 / 5%);
   --shadow-overlay: 0 12px 32px rgb(33 28 27 / 14%);
 
