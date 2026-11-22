@@ -407,8 +407,9 @@ export function NotificationCenter({
   );
 
   useEffect(() => {
-    if (preview) return;
     const handleKeyDown = (event: globalThis.KeyboardEvent) => {
+      // Открытый предпросмотр, в том числе из колокольчика, сам обрабатывает клавиши.
+      if (document.querySelector("dialog:modal")) return;
       const target = event.target;
       if (
         target instanceof HTMLElement &&
@@ -469,7 +470,6 @@ export function NotificationCenter({
     selectNotification,
     selectedIndex,
     markRead,
-    preview,
     updateUrl,
   ]);
 

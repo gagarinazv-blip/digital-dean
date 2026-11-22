@@ -174,7 +174,9 @@ async function DeadlineContent({ params }: DeadlinePageProps) {
               </>
             ) : (
               <p className={styles.hint}>
-                До срока меньше суток — напоминание за день недоступно.
+                {remaining?.urgency === "overdue"
+                  ? "Срок уже прошёл — напоминание недоступно."
+                  : "До срока меньше суток — напоминание за день недоступно."}
               </p>
             )}
           </div>
