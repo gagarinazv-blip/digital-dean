@@ -1,39 +1,40 @@
-import { SectionHeader } from "@/components/section-header";
-import { DateTimeStack } from "@/components/date-time-stack";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { CampusLoading } from "@/components/campus-section";
+import { SectionHeader } from "@/components/section-header";
+import { getMoscowDateKey } from "@/lib/campus-time";
 import { getDemoNow } from "@/lib/demo-date";
-import { eventStatusLabels, eventTypeLabels } from "@/lib/event-constants";
+import { getDigestState } from "@/lib/event-approvals";
+import { getStaffDigestEvents, getStaffDigestOverview } from "@/lib/event-data";
 import {
   formatDigestWeekRange,
   getDigestWeek,
   getDigestWeekHref,
   getDigestWeekKey,
   groupEventsByStartDay,
+  shiftDigestWeek,
 } from "@/lib/event-digest";
-import { getStaffDigestEvents } from "@/lib/event-data";
 import { requireStaffContext } from "@/lib/staff";
-import {
-  copyEventToNextWeekAction,
-  updateEventAction,
-} from "./actions";
-import {
-  CopyEventButton,
-  EventDeleteDialog,
-  EventForm,
-} from "./event-form";
-import { EventCreatePanel } from "./event-create-panel";
+import { DigestPlanner, type PlannerWeekTab } from "./planner";
 import styles from "./events.module.css";
 
 type StaffEventsPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
+// Неделя назад, выбранная и три вперёд: план готовят заранее.
+const tabOffsets = [-1, 0, 1, 2, 3] as const;
+
 function getSingleParam(
   value: string | string[] | undefined,
 ): string | undefined {
   return typeof value === "string" ? value : undefined;
+}
+
+function getRelativeLabel(weeks: number): string | null {
+  if (weeks === 0) return "Эта неделя";
+  if (weeks === 1) return "Следующая";
+  return weeks === -1 ? "Прошлая" : null;
 }
 
 async function StaffEventsContent({
@@ -47,127 +48,59 @@ async function StaffEventsContent({
   const now = getDemoNow();
   const week = getDigestWeek(getSingleParam(params.week), now);
   const currentWeek = getDigestWeek(undefined, now);
-  const weekEndDate = new Date(week.startDate);
-  weekEndDate.setUTCDate(weekEndDate.getUTCDate() + 7);
-  const events = await getStaffDigestEvents(week.startDate, weekEndDate);
-  const days = groupEventsByStartDay(week, events);
   const weekKey = getDigestWeekKey(week);
+  const firstWeek = shiftDigestWeek(week, tabOffsets[0]);
+  const lastWeek = shiftDigestWeek(week, tabOffsets[tabOffsets.length - 1] + 1);
+  const [events, overview] = await Promise.all([
+    getStaffDigestEvents(week.startDate, shiftDigestWeek(week, 1).startDate),
+    getStaffDigestOverview(firstWeek.startDate, lastWeek.startDate),
+  ]);
+
+  const tabs: PlannerWeekTab[] = tabOffsets.map((offset) => {
+    const tabWeek = shiftDigestWeek(week, offset);
+    const end = shiftDigestWeek(tabWeek, 1).startDate;
+    const items = overview.filter(
+      (event) => event.eventDate >= tabWeek.startDate && event.eventDate < end,
+    );
+    return {
+      key: getDigestWeekKey(tabWeek),
+      href: getDigestWeekHref(tabWeek, 0, undefined, "/staff/events"),
+      range: formatDigestWeekRange(tabWeek),
+      relative: getRelativeLabel(
+        Math.round(
+          (tabWeek.startDate.getTime() - currentWeek.startDate.getTime()) /
+            (7 * 24 * 60 * 60 * 1000),
+        ),
+      ),
+      total: items.length,
+      published: items.filter((event) => event.status === "PUBLISHED").length,
+      state: getDigestState(items),
+    };
+  });
 
   return (
     <main className={styles.page}>
       <SectionHeader
-        description={`${formatDigestWeekRange(week)} · события и черновики`}
+        description="Готовьте недели заранее: черновики студенты не видят."
         eyebrow="Рабочее место"
         illustration="events"
         title="Дайджест событий"
         tone="wine"
       />
-
-      <section className={styles.workspace}>
-        <EventCreatePanel />
-        <nav className={styles.weekNavigation} aria-label="Выбор недели">
-          <a href={getDigestWeekHref(week, -1)}>
-            <span aria-hidden="true">←</span> Предыдущая
-          </a>
-          <a
-            aria-current={weekKey === getDigestWeekKey(currentWeek) ? "date" : undefined}
-            href={getDigestWeekHref(currentWeek, 0)}
-          >
-            Эта неделя
-          </a>
-          <a href={getDigestWeekHref(week, 1)}>
-            Следующая <span aria-hidden="true">→</span>
-          </a>
-        </nav>
-
-        <div className={styles.weekGrid}>
-          {days.map((day) => (
-            <section
-              aria-labelledby={`staff-events-day-${day.dateKey}`}
-              className={styles.day}
-              data-has-events={day.events.length > 0}
-              key={day.dateKey}
-            >
-              <header className={styles.dayHeader}>
-                <h2 id={`staff-events-day-${day.dateKey}`}>{day.dateLabel}</h2>
-                <span>{day.events.length}</span>
-              </header>
-              {day.events.length === 0 ? (
-                <p className={styles.noDayEvents}>Событий нет</p>
-              ) : (
-                <ul className={styles.eventList}>
-                  {day.events.map((event) => (
-                    <li className={styles.eventCard} key={event.id}>
-                      <div className={styles.eventTopline}>
-                        {event.startsAt && event.endsAt ? (
-                          <time dateTime={event.startsAt.toISOString()}>
-                            {formatMoscowTime(event.startsAt)}–
-                            {formatMoscowTime(event.endsAt)}
-                          </time>
-                        ) : (
-                          <span>Время уточняется</span>
-                        )}
-                        <DateTimeStack
-                          end={event.endsAt}
-                          value={event.startsAt}
-                        />
-                        <span
-                          className={styles.statusBadge}
-                          data-status={event.status}
-                        >
-                          {eventStatusLabels[event.status]}
-                        </span>
-                      </div>
-                      <h3>{event.title}</h3>
-                      <p className={styles.eventMeta}>
-                        {eventTypeLabels[event.type]} · {event.location} ·{" "}
-                        {event.host}
-                      </p>
-                      {event.registrationUrl ? (
-                        <a
-                          className={styles.externalLink}
-                          href={event.registrationUrl}
-                          rel="noopener noreferrer"
-                          target="_blank"
-                        >
-                          Ссылка регистрации
-                        </a>
-                      ) : null}
-                      <div className={styles.eventActions}>
-                        <details className={styles.editPanel}>
-                          <summary className={styles.secondaryButton}>
-                            Редактировать
-                          </summary>
-                          <EventForm
-                            action={updateEventAction}
-                            event={event}
-                            submitLabel="Сохранить изменения"
-                          />
-                        </details>
-                        <form action={copyEventToNextWeekAction}>
-                          <input
-                            name="eventId"
-                            type="hidden"
-                            value={event.id}
-                          />
-                          <CopyEventButton />
-                        </form>
-                        <EventDeleteDialog
-                          eventId={event.id}
-                          title={event.title}
-                        />
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-          ))}
-        </div>
-        {events.length === 0 ? (
-          <p className={styles.emptyState}>На этой неделе событий пока нет.</p>
-        ) : null}
-      </section>
+      <DigestPlanner
+        currentHref={getDigestWeekHref(currentWeek, 0, undefined, "/staff/events")}
+        days={groupEventsByStartDay(week, events).map((day) => ({
+          ...day,
+          isToday: day.dateKey === getMoscowDateKey(now),
+        }))}
+        // Состояние формы и сообщения принадлежат одной неделе.
+        key={weekKey}
+        nextHref={getDigestWeekHref(week, 1, undefined, "/staff/events")}
+        previousHref={getDigestWeekHref(week, -1, undefined, "/staff/events")}
+        range={formatDigestWeekRange(week)}
+        tabs={tabs}
+        weekKey={weekKey}
+      />
     </main>
   );
 }

@@ -57,6 +57,7 @@ export function getDigestWeekHref(
   week: DigestWeek,
   offset: number,
   eventType?: string,
+  basePath: "/digest" | "/staff/events" = "/digest",
 ): string {
   const date = new Date(week.startDate);
   date.setUTCDate(date.getUTCDate() + offset * 7);
@@ -64,7 +65,14 @@ export function getDigestWeekHref(
     week: date.toISOString().slice(0, 10),
   });
   if (eventType) params.set("type", eventType);
-  return `/digest?${params.toString()}`;
+  return `${basePath}?${params.toString()}`;
+}
+
+/** Неделя, сдвинутая на offset: та же московская сетка понедельник–воскресенье. */
+export function shiftDigestWeek(week: DigestWeek, offset: number): DigestWeek {
+  const date = new Date(week.startDate);
+  date.setUTCDate(date.getUTCDate() + offset * 7);
+  return getMoscowCalendarWeek(new Date(`${date.toISOString().slice(0, 10)}T12:00:00.000Z`));
 }
 
 export function formatDigestWeekRange(week: DigestWeek): string {
@@ -96,7 +104,7 @@ export function formatDigestWeekRange(week: DigestWeek): string {
   return `${start.day} ${start.month} – ${end.day} ${end.month}${year}`;
 }
 
-export function groupEventsByStartDay<T extends DigestEvent>(
+export function groupEventsByStartDay<T extends Pick<DigestEvent, "eventDate">>(
   week: DigestWeek,
   events: readonly T[],
 ) {

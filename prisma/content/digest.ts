@@ -1,4 +1,8 @@
-import type { EventStatus, EventType } from "../../src/generated/prisma/enums";
+import type {
+  EventApprovalStatus,
+  EventStatus,
+  EventType,
+} from "../../src/generated/prisma/enums";
 
 /**
  * Дайджест сезона «Невидимый город»: пять недель — пять способов увидеть город.
@@ -7,14 +11,19 @@ import type { EventStatus, EventType } from "../../src/generated/prisma/enums";
 export type DigestContent = {
   week: number;
   day: number;
-  from: string;
-  to: string;
+  /** null — время ещё согласуется. */
+  from: string | null;
+  to: string | null;
   type: EventType;
   title: string;
-  location: string;
-  host: string;
+  location: string | null;
+  host: string | null;
   description: string | null;
   status?: EventStatus;
+  /** Спикер, аудитория, время; по умолчанию всё согласовано. */
+  approvals?: readonly [EventApprovalStatus, EventApprovalStatus, EventApprovalStatus];
+  /** Примечание для коллег о спикере. */
+  note?: string;
 };
 
 export const digestContent: readonly DigestContent[] = [
@@ -57,6 +66,11 @@ export const digestContent: readonly DigestContent[] = [
   { week: 3, day: 3, from: "10:00", to: "18:00", type: "CONFERENCE", title: "Итоговая конференция сезона «Невидимый город»", location: "Арочный зал", host: "Студенческий научный совет", description: "Лучшие доклады пяти недель, защита командных проектов и открытие выставки в аркаде второго этажа." },
   { week: 3, day: 5, from: "18:30", to: "22:00", type: "OTHER", title: "Зимний бал факультетов", location: "Арочный зал", host: "Культурный центр", description: "Живая музыка, танцевальные карточки и фотозона из работ мастерской. Репетиции вальса — по четвергам в 18:00." },
   // Готовятся: видны только сотрудникам
-  { week: 2, day: 5, from: "12:00", to: "13:30", type: "SPEAKER_MEETING", title: "Встреча с командой полярной станции", location: "Обсерватория «Кольцо»", host: "Матвей Северин", description: "Прямое включение. Время зависит от расписания связи со станцией.", status: "DRAFT" },
-  { week: 3, day: 4, from: "15:00", to: "17:00", type: "MASTER_CLASS", title: "Каллиграфия для тех, кто пишет в телефоне", location: "Студенческое пространство «Верстак»", host: "Юна Чернильная", description: null, status: "DRAFT" },
+  { week: 2, day: 5, from: "12:00", to: "13:30", type: "SPEAKER_MEETING", title: "Встреча с командой полярной станции", location: "Обсерватория «Кольцо»", host: "Матвей Северин", description: "Прямое включение. Время зависит от расписания связи со станцией.", status: "DRAFT", approvals: ["PENDING", "APPROVED", "PENDING"], note: "Ждём окно связи со станцией" },
+  { week: 3, day: 4, from: "15:00", to: "17:00", type: "MASTER_CLASS", title: "Каллиграфия для тех, кто пишет в телефоне", location: "Студенческое пространство «Верстак»", host: "Юна Чернильная", description: null, status: "DRAFT", approvals: ["PENDING", "APPROVED", "APPROVED"] },
+  { week: 1, day: 6, from: "13:00", to: "15:00", type: "MASTER_CLASS", title: "Читаем город вслух: поэтическая прогулка", location: "Сбор во Дворе Аркад", host: "Дана Вольная, эссеист", description: "Пять остановок, пять стихотворений и одна общая строка, которую участники напишут на ходу.", status: "DRAFT" },
+  { week: 2, day: 4, from: "18:00", to: "19:30", type: "SPEAKER_MEETING", title: "Мосты, которые не построили", location: null, host: "Тимур Гранин, материаловед", description: "Пять проектов, отвергнутых городом, и чему они научили инженеров.", status: "DRAFT", approvals: ["APPROVED", "PENDING", "APPROVED"] },
+  { week: 3, day: 2, from: null, to: null, type: "SPEAKER_MEETING", title: "Архитектор тишины", location: null, host: "Вера Тихомир, исследователь звука", description: "Как проектируют комнаты, в которых хочется говорить шёпотом.", status: "DRAFT", approvals: ["PENDING", "NOT_APPROVED", "NOT_APPROVED"], note: "Отправлено приглашение" },
+  { week: 3, day: 6, from: "12:00", to: "16:00", type: "OTHER", title: "Открытая мастерская зимних открыток", location: "Студенческое пространство «Верстак»", host: null, description: "Печать с резных форм, конверты и почтовый ящик, который заберут в последний день года.", status: "DRAFT", approvals: ["NOT_APPROVED", "APPROVED", "APPROVED"] },
+  { week: 4, day: 3, from: "10:00", to: "18:00", type: "CONFERENCE", title: "Что останется от зимы: студенческие чтения", location: "Арочный зал", host: "Кафедра истории и культуры", description: null, status: "DRAFT", approvals: ["PENDING", "PENDING", "NOT_APPROVED"] },
 ];

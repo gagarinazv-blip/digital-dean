@@ -21,10 +21,11 @@ export type EventInput = {
   title: string;
   type: EventType;
   description: string | null;
-  startsAt: Date;
-  endsAt: Date;
-  location: string;
-  host: string;
+  eventDate: Date;
+  startsAt: Date | null;
+  endsAt: Date | null;
+  location: string | null;
+  host: string | null;
   registrationUrl: string | null;
   status: EventStatus;
 };
@@ -109,11 +110,13 @@ export function parseEventInput(
   if (description.length > 1000) {
     fieldErrors.description = "Описание — не более 1000 символов.";
   }
-  if (!location || location.length > 160) {
-    fieldErrors.location = "Аудитория обязательна (до 160 символов).";
+  // Черновик можно завести заранее: время, аудитория и спикер ещё согласуются.
+  const isDraft = statusValue === "DRAFT";
+  if ((!location && !isDraft) || location.length > 160) {
+    fieldErrors.location = "Укажите аудиторию (до 160 символов).";
   }
-  if (!host || host.length > 160) {
-    fieldErrors.host = "Укажите ведущего (до 160 символов).";
+  if ((!host && !isDraft) || host.length > 160) {
+    fieldErrors.host = "Укажите спикера или ведущего (до 160 символов).";
   }
   if (
     !isEventStatus(statusValue)
@@ -125,8 +128,13 @@ export function parseEventInput(
   const startTime = parseTime(startsAtValue);
   const endTime = parseTime(endsAtValue);
   if (!calendarDate) fieldErrors.date = "Укажите корректную дату.";
-  if (!startTime) fieldErrors.startsAt = "Укажите корректное время начала.";
-  if (!endTime) fieldErrors.endsAt = "Укажите корректное время окончания.";
+  const isTimeOpen = isDraft && !startsAtValue && !endsAtValue;
+  if (!startTime && !isTimeOpen) {
+    fieldErrors.startsAt = "Укажите корректное время начала.";
+  }
+  if (!endTime && !isTimeOpen) {
+    fieldErrors.endsAt = "Укажите корректное время окончания.";
+  }
 
   const registrationUrl = parseEventUrl(registrationUrlValue);
   if (registrationUrl === undefined) {
@@ -149,8 +157,7 @@ export function parseEventInput(
 
   if (
     !calendarDate ||
-    !startTime ||
-    !endTime ||
+    (!isTimeOpen && (!startTime || !endTime)) ||
     !isEventType(typeValue) ||
     !isEventStatus(statusValue)
   ) {
@@ -160,17 +167,15 @@ export function parseEventInput(
     };
   }
 
-  const endDate = new Date(calendarDate);
-  if (endTime.minutes < startTime.minutes) {
-    endDate.setUTCDate(endDate.getUTCDate() + 1);
-  }
-  const startsAt = getMoscowDateTime(calendarDate, startTime.date);
-  const endsAt = getMoscowDateTime(endDate, endTime.date);
-  if (endsAt <= startsAt) {
-    return {
-      ok: false,
-      fieldErrors: { endsAt: "Окончание должно быть позже начала." },
-    };
+  let startsAt: Date | null = null;
+  let endsAt: Date | null = null;
+  if (startTime && endTime) {
+    const endDate = new Date(calendarDate);
+    if (endTime.minutes < startTime.minutes) {
+      endDate.setUTCDate(endDate.getUTCDate() + 1);
+    }
+    startsAt = getMoscowDateTime(calendarDate, startTime.date);
+    endsAt = getMoscowDateTime(endDate, endTime.date);
   }
 
   return {
@@ -179,10 +184,11 @@ export function parseEventInput(
       title,
       type: typeValue,
       description: description || null,
+      eventDate: calendarDate,
       startsAt,
       endsAt,
-      location,
-      host,
+      location: location || null,
+      host: host || null,
       registrationUrl: registrationUrl ?? null,
       status: statusValue,
     },
