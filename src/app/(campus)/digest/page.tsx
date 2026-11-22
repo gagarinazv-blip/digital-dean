@@ -22,6 +22,8 @@ type DigestPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
+export const instant = false;
+
 function getSingleParam(
   value: string | string[] | undefined,
 ): string | undefined {
