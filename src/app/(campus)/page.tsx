@@ -588,7 +588,6 @@ async function CampusToday() {
           <section
             className={`${styles.card} ${styles.notificationCard}`}
             aria-labelledby="dashboard-notifications-title"
-            data-empty={notifications.length === 0 || undefined}
           >
             <div className={styles.cardHeading}>
               <h2 id="dashboard-notifications-title">
@@ -628,10 +627,13 @@ async function CampusToday() {
               </ul>
               </div>
             ) : (
-              <p className={styles.compactEmpty}>
-                Новых уведомлений нет. Здесь появятся изменения расписания, сроки
-                и статусы заявок.
-              </p>
+              <EmptyState
+                art="notifications"
+                className={styles.cardEmptyState}
+                description="Здесь появятся изменения расписания, сроки и статусы заявок."
+                illustration="notifications"
+                title="Новых уведомлений нет"
+              />
             )}
             <Link className={styles.cardFooterLink} href="/notifications">
               Все уведомления ({notificationTotal}) →

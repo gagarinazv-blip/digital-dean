@@ -182,8 +182,8 @@ async function StaffOpportunitiesContent({
                   />
                 </div>
                 <div className={styles.rowLinks}>
-                  <Link href={`/staff/opportunities/${item.id}/edit`}>Редактировать</Link>
-                  <Link href={`/staff/opportunities/${item.id}/applications`}>Заявки</Link>
+                  <Link className={styles.secondaryButton} href={`/staff/opportunities/${item.id}/edit`}>Редактировать</Link>
+                  <Link className={styles.secondaryButton} href={`/staff/opportunities/${item.id}/applications`}>Заявки</Link>
                   <OpportunityListActions
                     opportunityId={item.id}
                     hasApplications={item._count.applications > 0}

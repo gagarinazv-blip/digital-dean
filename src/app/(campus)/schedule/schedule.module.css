@@ -156,7 +156,7 @@
 
 .dateNavigationGroup {
   display: grid;
-  grid-template-columns: var(--size-touch) minmax(0, auto) var(--size-touch);
+  grid-template-columns: var(--size-touch) max-content var(--size-touch);
   align-items: center;
   gap: var(--space-2);
 }
@@ -2526,13 +2526,13 @@
 
   .dateNavigationGroup {
     width: 100%;
-    grid-template-columns: 44px 44px 44px;
-    gap: 2px;
+    grid-template-columns: 44px max-content 44px;
+    gap: var(--space-2);
     overflow-x: auto;
   }
 
   .todayButton {
-    padding-inline: var(--space-1);
+    padding-inline: var(--space-4);
   }
 
   .periodPicker > summary {

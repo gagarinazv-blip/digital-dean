@@ -597,16 +597,14 @@
   line-height: 18px;
 }
 
-.compactEmpty {
-  color: var(--color-muted);
-  font-size: var(--font-size-body-compact);
-  line-height: 20px;
-}
-
 .cardEmptyState {
   min-height: 0;
   flex: 1 1 auto;
   padding: var(--space-2);
+}
+
+.notificationCard .cardEmptyState img {
+  height: clamp(96px, 16vh, 190px);
 }
 
 .skeletonHeading,
@@ -730,14 +728,6 @@
 
   .notificationCard {
     flex: 1 1 0;
-  }
-
-  .notificationCard[data-empty] {
-    flex: 0 0 auto;
-  }
-
-  .notificationCard[data-empty] + .requestCard {
-    flex: 1 1 auto;
   }
 
   .fit {
