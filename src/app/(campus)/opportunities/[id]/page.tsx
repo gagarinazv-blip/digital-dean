@@ -4,6 +4,7 @@ import { CampusLoading, CampusSection } from "@/components/campus-section";
 import { getPrisma } from "@/lib/prisma";
 import { requireStudent } from "@/lib/student";
 import { parseRequirements } from "@/lib/opportunities";
+import { getDemoNow } from "@/lib/demo-date";
 import { submitOpportunityAction } from "../actions";
 import styles from "./opportunity.module.css";
 
@@ -18,7 +19,7 @@ async function OpportunityContent({ id }: { id: number }) {
       status: { notIn: ["WITHDRAWN", "ACCEPTED", "REJECTED"] },
     },
   });
-  const open = opportunity.deadline.getTime() > Date.now();
+  const open = opportunity.deadline.getTime() > getDemoNow().getTime();
   const requirements = parseRequirements(opportunity.requiredDocuments);
   const submit = submitOpportunityAction.bind(null, id);
 
