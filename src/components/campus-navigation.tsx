@@ -8,6 +8,7 @@ import styles from "./campus-navigation.module.css";
 const navigation = [
   { href: "/", label: "Сегодня", icon: "home" },
   { href: "/schedule", label: "Расписание", icon: "calendar" },
+  { href: "/digest", label: "Дайджест событий", icon: "digest" },
   { href: "/grades", label: "Успеваемость", icon: "chart" },
   { href: "/documents", label: "Документы", icon: "page" },
   { href: "/requests", label: "Заявки", icon: "request" },
@@ -23,6 +24,13 @@ const iconPaths: Record<(typeof navigation)[number]["icon"], ReactNode> = {
     <>
       <rect x="3" y="5" width="18" height="16" rx="2" />
       <path d="M16 3v4M8 3v4M3 10h18" />
+    </>
+  ),
+  digest: (
+    <>
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M16 3v4M8 3v4M3 10h18M8 14h3m-3 3h7" />
+      <path d="m17 13 .7 1.4 1.5.2-1.1 1.1.3 1.5-1.4-.7-1.3.7.2-1.5-1.1-1.1 1.5-.2z" />
     </>
   ),
   chart: (

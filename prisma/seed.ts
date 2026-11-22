@@ -15,7 +15,10 @@ import {
 } from "./deadline-seed-data";
 import { getDemoNotificationState } from "./notification-seed-data";
 import { getDemoNow } from "../src/lib/demo-date";
-import { getMoscowDateKey } from "../src/lib/campus-time";
+import {
+  getMoscowCalendarWeek,
+  getMoscowDateKey,
+} from "../src/lib/campus-time";
 import { getSessionNotificationPlan } from "../src/lib/session-utils";
 import { encryptCorporateMailPassword } from "../src/lib/corporate-mail-credentials";
 import { getCorporateMailDomain } from "../src/lib/corporate-mail";
@@ -332,8 +335,14 @@ async function main() {
       await tx.student.deleteMany({
         where: { userId: { in: users.map((user) => user.id) } },
       });
+      await tx.session.deleteMany({
+        where: { userId: { in: users.map((user) => user.id) } },
+      });
       await tx.user.deleteMany({
-        where: { login: { in: managedLogins } },
+        where: {
+          login: { in: managedLogins },
+          OR: [{ role: "STUDENT" }, { createdEvents: { none: {} } }],
+        },
       });
       await tx.studentGroup.deleteMany({
         where: {
@@ -609,20 +618,30 @@ async function main() {
       const staffProfileIds = new Map<string, number>();
       const staffUserIds = new Map<string, number>();
       for (const [index, account] of staffAccounts.entries()) {
-        const user = await tx.user.create({
-          data: {
-            login: account.login,
+        const staffProfileData = {
+          fullName: account.fullName,
+          position: account.position,
+          department: account.department,
+          phone: account.phone,
+          isSupervisor: account.isSupervisor,
+        };
+        const user = await tx.user.upsert({
+          where: { login: account.login },
+          update: {
             passwordHash: staffPasswordHashes[index],
             role: "STAFF",
             staffProfile: {
-              create: {
-                fullName: account.fullName,
-                position: account.position,
-                department: account.department,
-                phone: account.phone,
-                isSupervisor: account.isSupervisor,
+              upsert: {
+                update: staffProfileData,
+                create: staffProfileData,
               },
             },
+          },
+          create: {
+            login: account.login,
+            passwordHash: staffPasswordHashes[index],
+            role: "STAFF",
+            staffProfile: { create: staffProfileData },
           },
           include: { staffProfile: { select: { id: true } } },
         });
@@ -1056,6 +1075,195 @@ async function main() {
             studentId,
             type: "ANNOUNCEMENT",
             ...getDemoNotificationState(login, "announcement", seedNow),
+          },
+        });
+      }
+
+      const currentDigestWeek = getMoscowCalendarWeek(seedNow);
+      const digestFixtures = [
+        {
+          weekOffset: 0,
+          dayOffset: 0,
+          start: "14:00",
+          end: "15:30",
+          title: "Конференция о цифровой дипломатии",
+          type: "CONFERENCE",
+          location: "Аудитория Д-204",
+          host: "Анна Вересова",
+          status: "PUBLISHED",
+          url: "https://example.com/register/1",
+        },
+        {
+          weekOffset: 0,
+          dayOffset: 1,
+          start: "16:00",
+          end: "17:00",
+          title: "Разговор с культурным атташе",
+          type: "SPEAKER_MEETING",
+          location: "Зал заседаний Б-310",
+          host: "Марк Левин",
+          status: "PUBLISHED",
+          url: "https://example.com/register/2",
+        },
+        {
+          weekOffset: 0,
+          dayOffset: 2,
+          start: "12:30",
+          end: "14:00",
+          title: "Мастер-класс по публичным выступлениям",
+          type: "MASTER_CLASS",
+          location: "Аудитория В-115",
+          host: "Елена Соколова",
+          status: "PUBLISHED",
+          url: "https://example.com/register/3",
+        },
+        {
+          weekOffset: 0,
+          dayOffset: 2,
+          start: "17:00",
+          end: "18:00",
+          title: "Встреча клуба международных исследований",
+          type: "OTHER",
+          location: "Коворкинг А-02",
+          host: "Илья Миронов",
+          status: "DRAFT",
+          url: "https://example.com/register/4",
+        },
+        {
+          weekOffset: 0,
+          dayOffset: 3,
+          start: "15:00",
+          end: "16:30",
+          title: "Научный семинар по региональным исследованиям",
+          type: "CONFERENCE",
+          location: "Аудитория Г-418",
+          host: "Дарья Ветрова",
+          status: "PUBLISHED",
+          url: "https://example.com/register/5",
+        },
+        {
+          weekOffset: 0,
+          dayOffset: 4,
+          start: "13:00",
+          end: "14:30",
+          title: "Мастер-класс по академическому письму",
+          type: "MASTER_CLASS",
+          location: "Компьютерный класс Е-102",
+          host: "Павел Орлов",
+          status: "PUBLISHED",
+          url: "https://example.com/register/6",
+        },
+        {
+          weekOffset: 0,
+          dayOffset: 5,
+          start: "11:00",
+          end: "12:00",
+          title: "Встреча с выпускницей международной организации",
+          type: "SPEAKER_MEETING",
+          location: "Аудитория А-207",
+          host: "София Мельник",
+          status: "DRAFT",
+          url: "https://example.com/register/7",
+        },
+        {
+          weekOffset: 0,
+          dayOffset: 6,
+          start: "14:00",
+          end: "15:00",
+          title: "Открытая дискуссия о городских проектах",
+          type: "OTHER",
+          location: "Лекторий В-001",
+          host: "Роман Тихонов",
+          status: "PUBLISHED",
+          url: "https://example.com/register/8",
+        },
+        {
+          weekOffset: 1,
+          dayOffset: 0,
+          start: "15:00",
+          end: "16:30",
+          title: "Конференция молодых исследователей",
+          type: "CONFERENCE",
+          location: "Аудитория Д-204",
+          host: "Мария Белова",
+          status: "PUBLISHED",
+          url: "https://example.com/register/9",
+        },
+        {
+          weekOffset: 1,
+          dayOffset: 1,
+          start: "17:00",
+          end: "18:00",
+          title: "Встреча с переводчиком международных переговоров",
+          type: "SPEAKER_MEETING",
+          location: "Зал заседаний Б-310",
+          host: "Алексей Неверов",
+          status: "PUBLISHED",
+          url: "https://example.com/register/10",
+        },
+        {
+          weekOffset: 1,
+          dayOffset: 3,
+          start: "12:00",
+          end: "13:30",
+          title: "Мастер-класс по аналитической презентации",
+          type: "MASTER_CLASS",
+          location: "Аудитория В-115",
+          host: "Кира Ланская",
+          status: "PUBLISHED",
+          url: "https://example.com/register/11",
+        },
+        {
+          weekOffset: 1,
+          dayOffset: 4,
+          start: "16:00",
+          end: "17:00",
+          title: "Дискуссия о студенческих инициативах",
+          type: "OTHER",
+          location: "Коворкинг А-02",
+          host: "Никита Рощин",
+          status: "DRAFT",
+          url: "https://example.com/register/12",
+        },
+        {
+          weekOffset: 1,
+          dayOffset: 6,
+          start: "13:00",
+          end: "14:00",
+          title: "Встреча с экспертом по международному праву",
+          type: "SPEAKER_MEETING",
+          location: "Аудитория Г-418",
+          host: "Вера Литвинова",
+          status: "PUBLISHED",
+          url: "https://example.com/register/13",
+        },
+      ] as const;
+
+      for (const fixture of digestFixtures) {
+        const eventDate = new Date(currentDigestWeek.startDate);
+        eventDate.setUTCDate(
+          eventDate.getUTCDate() + fixture.weekOffset * 7 + fixture.dayOffset,
+        );
+        const startsAt = dateTimeInMoscow(eventDate, fixture.start);
+        const existingEvent = await tx.event.findFirst({
+          where: { title: fixture.title, startsAt },
+          select: { id: true },
+        });
+        if (existingEvent) continue;
+
+        const endsAt = dateTimeInMoscow(eventDate, fixture.end);
+        await tx.event.create({
+          data: {
+            title: fixture.title,
+            type: fixture.type,
+            description: "Вымышленное тестовое мероприятие для демонстрации раздела.",
+            startsAt,
+            endsAt,
+            location: fixture.location,
+            host: fixture.host,
+            registrationUrl: fixture.url,
+            status: fixture.status,
+            createdById: demoStaffUserId,
           },
         });
       }
