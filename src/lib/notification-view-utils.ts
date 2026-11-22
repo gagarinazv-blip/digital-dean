@@ -7,7 +7,8 @@ export type NotificationTypeFilter =
   | "schedule"
   | "deadline"
   | "request"
-  | "announcement";
+  | "announcement"
+  | "opportunity";
 export type NotificationGroupKey = "today" | "yesterday" | "week" | "earlier";
 
 export type NotificationGroup = {
@@ -21,6 +22,7 @@ const typeByFilter: Record<NotificationTypeFilter, NotificationType> = {
   deadline: "DEADLINE",
   request: "REQUEST_STATUS",
   announcement: "ANNOUNCEMENT",
+  opportunity: "OPPORTUNITY_STATUS",
 };
 
 export function parseNotificationFilter(value: string | null): NotificationFilter {
