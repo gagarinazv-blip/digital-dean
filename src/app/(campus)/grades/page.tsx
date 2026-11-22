@@ -7,7 +7,8 @@ import { getAcademicRecords } from "@/lib/academic-records";
 import { getAverageGrade } from "@/lib/grade-average";
 import { analyzeGrade } from "@/lib/grade-analysis";
 import { getGradebookEntry } from "@/lib/gradebook-data";
-import { GradeCalculator } from "./grade-calculator";
+import { getTypicalFormula } from "@/lib/typical-formula";
+import { GradeCalculator, type CalculatorEntry } from "./grade-calculator";
 import {
   GradesOverview,
   type GradeSemesterSummary,
@@ -82,18 +83,28 @@ async function GradesContent({ searchParams }: Required<GradesPageProps>) {
   const params = await searchParams;
   const { dataset, login } = await getAcademicRecords();
   const initialTab = params.tab === "calculator" ? "calculator" : "results";
-  const calculatorEntries =
+  const calculatorEntries: CalculatorEntry[] =
     dataset?.semesters.flatMap((semester) =>
-      semester.planItems.flatMap((item) => {
-        const entry = getGradebookEntry(login, semester.code, item.id);
-        return entry
-          ? [
-              {
-                ...entry,
-                officialResult: item.result?.value ?? null,
-              },
-            ]
-          : [];
+      semester.planItems.map((item) => {
+        // Без опубликованной формулы считаем по типовой схеме.
+        const entry = getGradebookEntry(login, semester.code, item.id) ?? {
+          formula: getTypicalFormula({
+            id: item.id,
+            name: item.name,
+            controlType: item.controlType,
+            semesterCode: semester.code,
+          }),
+          components: {},
+          scores: {},
+        };
+        return {
+          ...entry,
+          controlLabel: controlTypeLabels[item.controlType],
+          isGraded: item.controlType !== "CREDIT",
+          isCurrent: semester.isCurrent,
+          officialResult: item.result?.value ?? null,
+          semesterName: semester.name,
+        };
       }),
     ) ?? [];
   const requestedSubject =

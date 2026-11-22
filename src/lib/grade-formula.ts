@@ -7,7 +7,8 @@ export type GradeFormulaComponent = {
   requiredForFinal: boolean;
 };
 
-export type GradeFormulaSource = "PUBLISHED" | "DEMONSTRATION";
+/** TYPICAL — типовая схема калькулятора, пока формула не опубликована. */
+export type GradeFormulaSource = "PUBLISHED" | "DEMONSTRATION" | "TYPICAL";
 
 export type GradeScaleBand = {
   minimumPoints: number;
@@ -331,7 +332,7 @@ export function validateGradeFormula(formula: GradeFormula): void {
     !formula.semesterCode ||
     !formula.subjectName ||
     !formula.sourceNote ||
-    !["PUBLISHED", "DEMONSTRATION"].includes(formula.source) ||
+    !["PUBLISHED", "DEMONSTRATION", "TYPICAL"].includes(formula.source) ||
     formula.roundingMode !== "HALF_UP_TO_INTEGER" ||
     !Array.isArray(formula.components) ||
     !formula.components.length

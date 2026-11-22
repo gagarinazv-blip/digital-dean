@@ -42,7 +42,7 @@ describe("grade calculator input", () => {
     });
   });
 
-  it("keeps received scores fixed and uses only missing-component inputs as hypotheses", () => {
+  it("lets a hypothesis replace any score without touching the received ones", () => {
     const actualScores = Object.freeze({
       "midterm-1": 19,
       "midterm-2": 18,
@@ -50,74 +50,58 @@ describe("grade calculator input", () => {
       activity: 9,
     });
     const prepared = prepareGradeInputs(computerNetworksFormula, actualScores, {
-      "midterm-1": "0",
+      "midterm-1": "10",
       exam: "2,5",
     });
 
-    expect(prepared.errors).toEqual({});
-    expect(prepared.hypotheses).toEqual({ exam: 2.5 });
-    expect(prepared.scores).toMatchObject({
-      "midterm-1": 19,
-      "midterm-2": 18,
-      labs: 28,
-      activity: 9,
-      exam: 2.5,
+    expect(prepared).toEqual({
+      facts: { "midterm-2": 18, labs: 28, activity: 9 },
+      hypotheses: { "midterm-1": 10, exam: 2.5 },
+      errors: {},
     });
-    expect(calculateGrade(computerNetworksFormula, prepared.scores)).toMatchObject({
-      totalPoints: 77,
-      grade: 4,
-      passed: true,
-    });
+    expect(
+      calculateGrade(computerNetworksFormula, {
+        ...prepared.facts,
+        ...prepared.hypotheses,
+      }),
+    ).toMatchObject({ totalPoints: 68, grade: 3, passed: true });
     expect(actualScores["midterm-1"]).toBe(19);
   });
 
-  it("leaves blank hypotheses empty instead of filling baseline scores", () => {
-    const prepared = prepareGradeInputs(computerNetworksFormula, {}, {});
+  it("returns to the fact when the hypothesis is cleared, equal or invalid", () => {
+    const received = { labs: 28 };
+    for (const value of ["", "  ", "28", "28,0", "31", "abc"]) {
+      const prepared = prepareGradeInputs(computerNetworksFormula, received, {
+        labs: value,
+      });
+      expect(prepared.facts).toEqual({ labs: 28 });
+      expect(prepared.hypotheses).toEqual({});
+    }
+    expect(
+      prepareGradeInputs(computerNetworksFormula, received, { labs: "31" }).errors,
+    ).toEqual({ labs: "Максимум за компонент — 30 баллов." });
+  });
 
-    expect(prepared).toEqual({
-      scores: {
-        "midterm-1": undefined,
-        "midterm-2": undefined,
-        labs: undefined,
-        activity: undefined,
-        exam: undefined,
-      },
+  it("leaves blank hypotheses empty instead of filling baseline scores", () => {
+    expect(prepareGradeInputs(computerNetworksFormula, {}, {})).toEqual({
+      facts: {},
       hypotheses: {},
       errors: {},
     });
   });
 
   it("excludes invalid hypotheses but keeps other valid hypotheses", () => {
-    const formula = formulaWithTwoPendingComponents();
-    const actualScores = {
-      "midterm-1": 19,
-      "midterm-2": 18,
-      labs: 28,
-      activity: 9,
-    };
-    const prepared = prepareGradeInputs(formula, actualScores, {
-      exam: "21",
-      project: "5",
-    });
-    const result = calculateGrade(formula, prepared.scores);
+    const prepared = prepareGradeInputs(
+      formulaWithTwoPendingComponents(),
+      { "midterm-1": 19, "midterm-2": 18, labs: 28, activity: 9 },
+      { exam: "21", project: "5" },
+    );
 
     expect(prepared.errors).toEqual({
       exam: "Максимум за компонент — 20 баллов.",
     });
     expect(prepared.hypotheses).toEqual({ project: 5 });
-    expect(prepared.scores).toMatchObject({
-      "midterm-1": 19,
-      "midterm-2": 18,
-      labs: 28,
-      activity: 9,
-      exam: undefined,
-      project: 5,
-    });
-    expect(result).toMatchObject({
-      grade: null,
-      passed: null,
-      missingComponents: ["exam"],
-    });
+    expect(prepared.facts).not.toHaveProperty("exam");
   });
 });
 

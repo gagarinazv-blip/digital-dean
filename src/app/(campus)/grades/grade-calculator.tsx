@@ -1,54 +1,80 @@
 "use client";
 
-import { DateTimeStack } from "@/components/date-time-stack";
 import { useState } from "react";
-import { prepareGradeInputs } from "@/lib/grade-calculator-input";
+import { Check, Minus, Plus, Undo } from "iconoir-react";
+import { DateTimeStack } from "@/components/date-time-stack";
+import controls from "@/components/ui/controls.module.css";
 import { analyzeGrade } from "@/lib/grade-analysis";
+import { getAverageGrade } from "@/lib/grade-average";
+import { prepareGradeInputs } from "@/lib/grade-calculator-input";
+import {
+  getForecastRange,
+  planForTarget,
+  type TargetGrade,
+} from "@/lib/grade-forecast";
+import type { GradeCalculation } from "@/lib/grade-formula";
 import type { GradebookEntry } from "@/lib/gradebook-data";
 import styles from "./grade-calculator.module.css";
 
-function ComponentIcon({ index }: { index: number }) {
-  return (
-    <svg
-      aria-hidden="true"
-      fill="none"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="1.7"
-      viewBox="0 0 24 24"
-    >
-      {index % 3 === 0 ? (
-        <>
-          <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 0 4 22z" />
-          <path d="M4 5.5v14A2.5 2.5 0 0 1 6.5 17H20" />
-        </>
-      ) : index % 3 === 1 ? (
-        <>
-          <path d="M6 3h8l5 5v13H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
-          <path d="M14 3v5h5M8 13h8M8 17h6" />
-        </>
-      ) : (
-        <>
-          <path d="m2 9 10-5 10 5-10 5z" />
-          <path d="M6 11v5c3 2 9 2 12 0v-5M22 9v6" />
-        </>
-      )}
-    </svg>
-  );
+export type CalculatorEntry = GradebookEntry & {
+  controlLabel: string;
+  /** Зачёт без оценки в средний балл не входит. */
+  isGraded: boolean;
+  isCurrent: boolean;
+  officialResult: string | null;
+  semesterName: string;
+};
+
+type Values = Record<string, string>;
+
+const targets: readonly TargetGrade[] = [3, 4, 5];
+
+const gradeNames: Record<number, string> = {
+  2: "неудовлетворительно",
+  3: "удовлетворительно",
+  4: "хорошо",
+  5: "отлично",
+};
+
+const sourceLabels = {
+  PUBLISHED: "Опубликованная формула",
+  DEMONSTRATION: "Демонстрационная формула",
+  TYPICAL: "Типовая схема",
+} as const;
+
+const pointsFormatter = new Intl.NumberFormat("ru-RU", {
+  maximumFractionDigits: 2,
+});
+
+function formatPoints(value: number): string {
+  return pointsFormatter.format(value);
 }
 
-type CalculatorEntry = GradebookEntry & { officialResult: string | null };
-
-function getEntryKey(entry: CalculatorEntry) {
+function getEntryKey(entry: CalculatorEntry): string {
   return `${entry.formula.semesterCode}:${entry.formula.subjectId}`;
 }
 
-function formatPoints(value: number) {
-  return new Intl.NumberFormat("ru-RU", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(value);
+function forecast(entry: CalculatorEntry, values: Values) {
+  const inputs = prepareGradeInputs(entry.formula, entry.scores, values);
+  const scores = { ...inputs.facts, ...inputs.hypotheses };
+  const analysis = analyzeGrade(
+    entry.formula,
+    inputs.facts,
+    inputs.hypotheses,
+    entry.officialResult,
+    entry.components,
+  );
+  return { ...inputs, scores, analysis, calculation: analysis.forecastCalculation };
+}
+
+/** Короткий итог: «5» для оценки, «зачтено» для зачёта, null — данных мало. */
+function getOutcome(
+  entry: CalculatorEntry,
+  calculation: GradeCalculation,
+): string | null {
+  if (calculation.grade === null) return null;
+  if (entry.isGraded) return String(calculation.grade);
+  return calculation.passed ? "зачтено" : "не зачтено";
 }
 
 export function GradeCalculator({
@@ -60,333 +86,482 @@ export function GradeCalculator({
 }) {
   const initialEntry =
     entries.find((item) => item.formula.subjectId === initialSubjectId) ??
+    entries.find((item) => item.isCurrent) ??
     entries[0];
-  const [selectedEntryKey, setSelectedEntryKey] = useState(
+  const [selectedKey, setSelectedKey] = useState(
     initialEntry ? getEntryKey(initialEntry) : "",
   );
-  const [valuesBySubject, setValuesBySubject] = useState<
-    Record<string, Record<string, string>>
-  >({});
+  const [valuesBySubject, setValuesBySubject] = useState<Record<string, Values>>(
+    {},
+  );
   const entry =
-    entries.find((item) => getEntryKey(item) === selectedEntryKey) ??
-    entries[0];
+    entries.find((item) => getEntryKey(item) === selectedKey) ?? entries[0];
 
   if (!entry) return null;
 
-  const { formula } = entry;
-  const entryKey = getEntryKey(entry);
-  const values = valuesBySubject[entryKey] ?? {};
-  const { hypotheses, errors } = prepareGradeInputs(
-    formula,
-    entry.scores,
-    values,
+  const semesters = [
+    ...new Map(entries.map((item) => [item.formula.semesterCode, item])).values(),
+  ].sort((first, second) => Number(second.isCurrent) - Number(first.isCurrent));
+  const summaries = new Map(
+    entries.map((item) => {
+      const key = getEntryKey(item);
+      const values = valuesBySubject[key] ?? {};
+      const result = forecast(item, values);
+      const hasHypotheses = Object.keys(result.hypotheses).length > 0;
+      return [
+        key,
+        {
+          hasHypotheses,
+          outcome: getOutcome(item, result.calculation),
+          // Пока студент ничего не предположил, действует официальный итог.
+          grade:
+            !hasHypotheses && item.officialResult
+              ? item.officialResult
+              : result.calculation.grade === null
+                ? undefined
+                : String(result.calculation.grade),
+        },
+      ] as const;
+    }),
   );
-  const analysis = analyzeGrade(
-    formula,
-    entry.scores,
-    hypotheses,
-    entry.officialResult,
-    entry.components,
+  const graded = entries.filter(
+    (item) =>
+      item.isGraded && item.formula.semesterCode === entry.formula.semesterCode,
   );
-  const calculation = analysis.forecastCalculation;
-  const componentNames = new Map(
-    formula.components.map((component) => [component.code, component.name]),
-  );
-  const missingNames = calculation.missingComponents.map(
-    (code) => componentNames.get(code) ?? code,
-  );
-  const outcome =
-    calculation.grade === null
-      ? "Оценка пока не определена"
-      : calculation.passed
-        ? `Прогнозная оценка: ${calculation.grade} · зачтено`
-        : `Прогнозная оценка: ${calculation.grade} · не сдано`;
-
-  function setHypothesis(code: string, value: string) {
-    setValuesBySubject((current) => ({
-      ...current,
-      [entryKey]: {
-        ...current[entryKey],
-        [code]: value,
-      },
-    }));
-  }
+  const grades = graded
+    .map((item) => summaries.get(getEntryKey(item))?.grade)
+    .filter((grade) => grade !== undefined);
+  const average = getAverageGrade(grades);
 
   return (
     <section aria-labelledby="grade-calculator-title" className={styles.panel}>
       <header className={styles.heading}>
         <div>
-          <h2 id="grade-calculator-title">Калькулятор прогноза</h2>
-          <p className={styles.subjectName}>
-            {formula.subjectName} ·{" "}
-            {formula.source === "DEMONSTRATION"
-              ? "демонстрационная формула"
-              : "опубликованная формула"}
+          <h2 id="grade-calculator-title">Калькулятор оценки</h2>
+          <p>
+            Меняйте баллы как угодно: это примерка. Настоящие оценки останутся
+            прежними, а предположения исчезнут, когда вы закроете страницу.
           </p>
         </div>
-        {entries.length > 1 ? (
-          <label className={styles.subjectPicker}>
-            <span>Дисциплина</span>
-            <select
-              onChange={(event) => setSelectedEntryKey(event.target.value)}
-              value={entryKey}
-            >
-              {entries.map((item) => (
-                <option
-                  key={getEntryKey(item)}
-                  value={getEntryKey(item)}
-                >
-                  {item.formula.subjectName}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : (
-          <span className={styles.forecastBadge}>Прогноз</span>
-        )}
+        <dl className={styles.average}>
+          <dt>Прогноз среднего балла</dt>
+          <dd>
+            {average === null ? "—" : average.toFixed(1).replace(".", ",")}
+            <span>
+              {" "}
+              по {grades.length} из {graded.length}
+            </span>
+          </dd>
+        </dl>
       </header>
 
-      <div className={styles.disclaimer}>
-        <span className={styles.infoIcon} aria-hidden="true">
-          <svg
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="1.8"
-            viewBox="0 0 24 24"
-          >
-            <circle cx="12" cy="12" r="9" />
-            <path d="M12 11v5m0-8h.01" />
-          </svg>
-        </span>
-        <span>
-          <strong>Это прогноз, а не официальная оценка</strong>
-          <small>
-            Фактические оценки нельзя изменить. Гипотезы действуют только пока
-            открыта эта страница и не сохраняются.
-          </small>
-        </span>
-      </div>
-      <p className={styles.sourceNote}>{formula.sourceNote}</p>
-
-      <div className={styles.calculatorGrid}>
-        <section
-          aria-labelledby="grade-components-title"
-          className={styles.componentsPanel}
-        >
-          <div className={styles.panelHeading}>
-            <div>
-              <h3 id="grade-components-title">Компоненты оценки</h3>
-              <p>
-                Полученные баллы зафиксированы. Введите гипотезы только для
-                компонентов, по которым оценки ещё нет.
-              </p>
-            </div>
-          </div>
-
-          <ul className={styles.componentList}>
-            {formula.components.map((component, index) => {
-              const details = entry.components[component.code];
-              const receivedScore = entry.scores[component.code];
-              const isReceived = receivedScore !== undefined;
-              const inputId = `grade-input-${component.code}`;
-              const descriptionId = `grade-description-${component.code}`;
-              const error = errors[component.code];
-              const score = isReceived
-                ? receivedScore
-                : hypotheses[component.code];
-              const inputValue = values[component.code] ?? "";
-              const progress =
-                score === undefined ? 0 : (score / component.maxPoints) * 100;
-
-              return (
-                <li className={styles.component} key={component.code}>
-                  <span className={styles.componentIcon}>
-                    <ComponentIcon index={index} />
-                  </span>
-                  <div className={styles.componentMain}>
-                    <div className={styles.componentHeading}>
-                      <h4>{component.name}</h4>
-                      <span className={styles.weightBadge}>
-                        {component.weight}%
-                      </span>
-                    </div>
-                    <p className={styles.componentMeta}>
-                      Максимум {component.maxPoints} баллов
-                    </p>
-                    {details.date ? (
-                      <DateTimeStack allDay value={details.date} />
-                    ) : null}
-
-                    {isReceived ? (
-                      <div className={styles.receivedScore}>
-                        <strong>
-                          Получено: {formatPoints(receivedScore)} /{" "}
-                          {component.maxPoints}
-                        </strong>
-                        {details.comment && <span>{details.comment}</span>}
-                      </div>
-                    ) : (
-                      <div className={styles.field}>
-                        <label htmlFor={inputId}>
-                          Гипотеза (0–{component.maxPoints})
-                        </label>
-                        <div className={styles.scoreControls}>
-                          <input
-                            aria-describedby={descriptionId}
-                            aria-invalid={Boolean(error)}
-                            autoComplete="off"
-                            className={
-                              error ? styles.invalidInput : styles.input
-                            }
-                            id={inputId}
-                            inputMode="decimal"
-                            maxLength={24}
-                            onChange={(event) =>
-                              setHypothesis(
-                                component.code,
-                                event.currentTarget.value,
-                              )
-                            }
-                            placeholder={`0–${component.maxPoints}`}
-                            type="text"
-                            value={inputValue}
-                          />
-                          <span className={styles.scoreMaximum}>
-                            / {component.maxPoints}
-                          </span>
-                        </div>
-                        <input
-                          aria-label={`Гипотеза баллов за ${component.name}`}
-                          aria-describedby={descriptionId}
-                          aria-invalid={Boolean(error)}
-                          aria-valuetext={`${score ?? 0} из ${component.maxPoints} баллов`}
-                          className={styles.range}
-                          max={component.maxPoints}
-                          min={0}
-                          onChange={(event) =>
-                            setHypothesis(
-                              component.code,
-                              event.currentTarget.value,
-                            )
-                          }
-                          step="0.1"
-                          type="range"
-                          value={score ?? 0}
-                        />
-                        <p
-                          className={error ? styles.error : styles.help}
-                          id={descriptionId}
+      <div className={styles.layout}>
+        <nav aria-label="Дисциплины" className={styles.subjects}>
+          {semesters.map((semester) => (
+            <details
+              className={styles.semester}
+              key={semester.formula.semesterCode}
+              open={
+                semester.isCurrent ||
+                semester.formula.semesterCode === initialEntry?.formula.semesterCode
+              }
+            >
+              <summary>{semester.semesterName} семестр</summary>
+              <ul>
+                {entries
+                  .filter(
+                    (item) =>
+                      item.formula.semesterCode === semester.formula.semesterCode,
+                  )
+                  .map((item) => {
+                    const key = getEntryKey(item);
+                    const summary = summaries.get(key);
+                    const shown =
+                      !summary?.hasHypotheses && item.officialResult
+                        ? item.officialResult
+                        : summary?.outcome;
+                    return (
+                      <li key={key}>
+                        <button
+                          aria-current={key === selectedKey ? "true" : undefined}
+                          className={styles.subject}
+                          onClick={() => setSelectedKey(key)}
+                          type="button"
                         >
-                          {error ??
-                            "Не сохраняется и не влияет на официальный итог."}
-                        </p>
-                      </div>
-                    )}
-                    <div
-                      aria-hidden="true"
-                      className={styles.progressTrack}
-                    >
-                      <span style={{ width: `${progress}%` }} />
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-
-          <button
-            className={styles.resetButton}
-            onClick={() =>
-              setValuesBySubject((current) => ({
-                ...current,
-                [entryKey]: {},
-              }))
-            }
-            type="button"
-          >
-            Сбросить гипотезы
-          </button>
-        </section>
-
-        <div className={styles.resultColumn}>
-          <section
-            aria-atomic="true"
-            aria-labelledby="grade-result-title"
-            aria-live="polite"
-            className={styles.scoreCard}
-          >
-            <h3 id="grade-result-title">Прогноз результата</h3>
-            <div className={styles.scoreHero}>
-              <strong className={styles.totalScore}>
-                {calculation.totalPoints} / 100
-              </strong>
-              <span className={styles.gradeSummary}>
-                {outcome}
-              </span>
-              <div className={styles.resultTrack} aria-hidden="true">
-                <span
-                  style={{
-                    width: `${calculation.totalPoints}%`,
-                  }}
-                />
-              </div>
-            </div>
-            <div className={styles.officialResult}>
-              <span>Официальный итог</span>
-              <strong>{entry.officialResult ?? "Не выставлен"}</strong>
-            </div>
-            {calculation.missingComponents.length > 0 && (
-              <div className={styles.resultNote}>
-                {analysis.remainingWeight}% веса ещё не оценено
-                {missingNames.length > 0
-                  ? ` · Не заполнены гипотезы: ${missingNames.join(", ")}`
-                  : ""}
-              </div>
-            )}
-            {calculation.notes.length > 0 && (
-              <ul className={styles.notes}>
-                {calculation.notes.map((note) => (
-                  <li key={note}>{note}</li>
-                ))}
+                          <span className={styles.subjectText}>
+                            <strong>{item.formula.subjectName}</strong>
+                            <span>{item.controlLabel}</span>
+                          </span>
+                          <span
+                            className={styles.subjectGrade}
+                            data-hypothesis={summary?.hasHypotheses || undefined}
+                          >
+                            <span className={controls.visuallyHidden}>
+                              {summary?.hasHypotheses ? "прогноз: " : "итог: "}
+                            </span>
+                            {shown ?? "—"}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
               </ul>
-            )}
-          </section>
+            </details>
+          ))}
+        </nav>
 
-          <section className={styles.calculationCard}>
-            <h3>Расчёт</h3>
-            <ul className={styles.breakdown}>
-              {formula.components.map((component) => {
-                const grade = analysis.components.find(
-                  (item) => item.code === component.code,
-                );
-
-                return (
-                  <li key={component.code}>
-                    <span>{component.name}</span>
-                    <strong>
-                      {grade?.status === "RECEIVED"
-                        ? `Факт: ${formatPoints(grade.score ?? 0)} / ${component.maxPoints} · вклад ${formatPoints(grade.currentContribution ?? 0)}`
-                        : grade?.status === "HYPOTHESIS"
-                          ? `Гипотеза: ${formatPoints(grade.score ?? 0)} / ${component.maxPoints} · вклад ${formatPoints(grade.forecastContribution ?? 0)}`
-                          : "Гипотеза не задана"}
-                    </strong>
-                  </li>
-                );
-              })}
-              <li className={styles.breakdownTotal}>
-                <span>Итого</span>
-                <strong>
-                  {calculation.grade === null
-                    ? `${calculation.totalPoints} / 100 · промежуточный прогноз`
-                    : `${calculation.totalPoints} / 100 · прогноз`}
-                </strong>
-              </li>
-            </ul>
-          </section>
-        </div>
+        <SubjectCalculator
+          entry={entry}
+          key={selectedKey}
+          onChange={(values) =>
+            setValuesBySubject((current) => ({ ...current, [selectedKey]: values }))
+          }
+          values={valuesBySubject[selectedKey] ?? {}}
+        />
       </div>
     </section>
+  );
+}
+
+function SubjectCalculator({
+  entry,
+  onChange,
+  values,
+}: {
+  entry: CalculatorEntry;
+  onChange: (values: Values) => void;
+  values: Values;
+}) {
+  const [target, setTarget] = useState<TargetGrade | null>(null);
+  const { formula } = entry;
+  const { analysis, calculation, errors, hypotheses, scores } = forecast(
+    entry,
+    values,
+  );
+  const range = getForecastRange(formula, scores);
+  const outcome = getOutcome(entry, calculation);
+  const hypothesisCount = Object.keys(hypotheses).length;
+  // Подбираем только то, за что ещё нет балла; остальное считаем заданным.
+  const openCodes = formula.components
+    .filter(({ code }) => entry.scores[code] === undefined)
+    .map(({ code }) => code);
+  const plan = target ? planForTarget(formula, scores, openCodes, target) : null;
+  const threshold = (grade: TargetGrade) =>
+    formula.scale.find((band) => band.grade === grade)?.minimumPoints ?? 0;
+  const visibleTargets = entry.isGraded ? targets : ([3] as const);
+
+  function setValue(code: string, value: string) {
+    onChange({ ...values, [code]: value });
+  }
+
+  function clearValue(code: string) {
+    const next = { ...values };
+    delete next[code];
+    onChange(next);
+  }
+
+  return (
+    <div className={styles.workspace}>
+      <section
+        aria-labelledby="calculator-components-title"
+        className={styles.components}
+      >
+        <header className={styles.componentsHeading}>
+          <div>
+            <h3 id="calculator-components-title">{formula.subjectName}</h3>
+            <p>
+              {entry.controlLabel} · {sourceLabels[formula.source]}
+            </p>
+          </div>
+          <button
+            className={controls.secondary}
+            disabled={hypothesisCount === 0 && Object.keys(errors).length === 0}
+            onClick={() => {
+              setTarget(null);
+              onChange({});
+            }}
+            type="button"
+          >
+            <Undo aria-hidden="true" height={18} width={18} />
+            Сбросить
+          </button>
+        </header>
+
+        <ul>
+          {formula.components.map((component) => {
+            const received = entry.scores[component.code];
+            const hypothesis = hypotheses[component.code];
+            const error = errors[component.code];
+            const score = scores[component.code];
+            const details = entry.components[component.code];
+            const result = analysis.components.find(
+              ({ code }) => code === component.code,
+            );
+            const inputId = `grade-input-${component.code}`;
+            const helpId = `grade-help-${component.code}`;
+            const state =
+              hypothesis !== undefined
+                ? "hypothesis"
+                : received !== undefined
+                  ? "fact"
+                  : "empty";
+            const stepTo = (delta: number) => {
+              const next = Math.min(
+                component.maxPoints,
+                Math.max(0, (score ?? 0) + delta),
+              );
+              setValue(component.code, formatPoints(next).replace(/\s/g, ""));
+            };
+
+            return (
+              <li className={styles.component} data-state={state} key={component.code}>
+                <div className={styles.componentTop}>
+                  <label htmlFor={inputId}>{component.name}</label>
+                  <span className={styles.weight}>{component.weight}% итога</span>
+                </div>
+                <div className={styles.control}>
+                  <div className={styles.slider}>
+                    <input
+                      aria-label={`${component.name}: предполагаемый балл`}
+                      aria-valuetext={`${formatPoints(score ?? 0)} из ${component.maxPoints}`}
+                      max={component.maxPoints}
+                      min={0}
+                      onChange={(event) =>
+                        setValue(component.code, event.currentTarget.value)
+                      }
+                      step={0.5}
+                      style={
+                        {
+                          "--share": `${((score ?? 0) / component.maxPoints) * 100}%`,
+                        } as React.CSSProperties
+                      }
+                      type="range"
+                      value={score ?? 0}
+                    />
+                    {received !== undefined ? (
+                      <span
+                        aria-hidden="true"
+                        className={styles.factMark}
+                        style={
+                          {
+                            "--fact": received / component.maxPoints,
+                          } as React.CSSProperties
+                        }
+                      />
+                    ) : null}
+                  </div>
+                  <div className={styles.number}>
+                    <button
+                      aria-label={`${component.name}: меньше на балл`}
+                      disabled={(score ?? 0) <= 0}
+                      onClick={() => stepTo(-1)}
+                      type="button"
+                    >
+                      <Minus aria-hidden="true" />
+                    </button>
+                    <input
+                      aria-describedby={helpId}
+                      aria-invalid={error ? true : undefined}
+                      autoComplete="off"
+                      id={inputId}
+                      inputMode="decimal"
+                      maxLength={8}
+                      onChange={(event) =>
+                        setValue(component.code, event.currentTarget.value)
+                      }
+                      onBlur={() => {
+                        // Стёртое поле снова показывает полученный балл.
+                        if (values[component.code]?.trim() === "") {
+                          clearValue(component.code);
+                        }
+                      }}
+                      onFocus={(event) => event.currentTarget.select()}
+                      placeholder="—"
+                      type="text"
+                      value={
+                        values[component.code] ??
+                        (received === undefined ? "" : formatPoints(received))
+                      }
+                    />
+                    <span aria-hidden="true">/ {component.maxPoints}</span>
+                    <button
+                      aria-label={`${component.name}: больше на балл`}
+                      disabled={(score ?? 0) >= component.maxPoints}
+                      onClick={() => stepTo(1)}
+                      type="button"
+                    >
+                      <Plus aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
+                <div className={styles.componentBottom}>
+                  <p className={error ? styles.error : styles.help} id={helpId}>
+                    {error ? (
+                      error
+                    ) : state === "hypothesis" ? (
+                      <>
+                        <span className={styles.badge}>Предположение</span>
+                        {received === undefined
+                          ? null
+                          : ` на деле ${formatPoints(received)}`}
+                      </>
+                    ) : state === "fact" ? (
+                      <>
+                        Получено
+                        {details?.date ? (
+                          <>
+                            {" "}
+                            <DateTimeStack allDay value={details.date} variant="moment" />
+                          </>
+                        ) : null}
+                        {details?.comment ? ` · ${details.comment}` : null}
+                      </>
+                    ) : (
+                      "Балла ещё нет, попробуйте свой"
+                    )}
+                  </p>
+                  <span className={styles.contribution}>
+                    {values[component.code] !== undefined ? (
+                      <button
+                        className={styles.revert}
+                        onClick={() => clearValue(component.code)}
+                        type="button"
+                      >
+                        {received === undefined ? "Очистить" : "Вернуть"}
+                        <span className={controls.visuallyHidden}>
+                          : {component.name}
+                        </span>
+                      </button>
+                    ) : null}
+                    +{formatPoints(result?.forecastContribution ?? result?.currentContribution ?? 0)}
+                  </span>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+        {formula.source === "PUBLISHED" ? null : (
+          <p className={styles.note}>{formula.sourceNote}</p>
+        )}
+      </section>
+
+      <aside aria-labelledby="calculator-result-title" className={styles.result}>
+        <div aria-atomic="true" aria-live="polite" className={styles.resultMain}>
+          <h3 id="calculator-result-title">
+            {hypothesisCount > 0 ? "Прогноз" : "По текущим баллам"}
+          </h3>
+          <p className={styles.total}>
+            <strong>{calculation.totalPoints}</strong> / 100
+          </p>
+          <p className={styles.outcome}>
+            {outcome === null
+              ? `Оценено не всё: итог может быть от ${range.minimum} до ${range.maximum}`
+              : entry.isGraded && calculation.grade
+                ? `Оценка ${outcome}, ${gradeNames[calculation.grade]}`
+                : outcome}
+          </p>
+        </div>
+
+        <div
+          aria-hidden="true"
+          className={styles.scale}
+          style={
+            {
+              "--from": `${range.minimum}%`,
+              "--to": `${range.maximum}%`,
+              "--now": `${calculation.totalPoints}%`,
+            } as React.CSSProperties
+          }
+        >
+          <span className={styles.scaleRange} />
+          <span className={styles.scaleNow} />
+          {visibleTargets.map((grade) => (
+            <span
+              className={styles.scaleMark}
+              data-reached={calculation.totalPoints >= threshold(grade) || undefined}
+              key={grade}
+              style={{ left: `${threshold(grade)}%` }}
+            >
+              {entry.isGraded ? grade : "зачёт"}
+            </span>
+          ))}
+        </div>
+
+        <div className={styles.target}>
+          <p id="calculator-target-title">
+            {entry.isGraded ? "Хочу получить" : "Хочу зачёт"}
+          </p>
+          <div
+            aria-labelledby="calculator-target-title"
+            className={styles.targetButtons}
+            role="group"
+          >
+            {visibleTargets.map((grade) => (
+              <button
+                aria-pressed={target === grade}
+                key={grade}
+                onClick={() => setTarget(target === grade ? null : grade)}
+                type="button"
+              >
+                {entry.isGraded ? grade : "Сколько нужно?"}
+              </button>
+            ))}
+          </div>
+          <div aria-live="polite" className={styles.plan}>
+            {plan?.kind === "reached" ? (
+              <p>
+                <Check aria-hidden="true" /> Уже обеспечено
+                {openCodes.length > 0 ? ", даже если дальше будут нули." : "."}
+              </p>
+            ) : plan?.kind === "impossible" ? (
+              <p>
+                {openCodes.length > 0
+                  ? `Даже с максимумом за остальное выйдет ${plan.maximum}. Нужно ${threshold(target ?? 3)}.`
+                  : `Все баллы уже стоят: ${plan.maximum} из нужных ${threshold(target ?? 3)}. Измените любой выше и посмотрите, что было бы.`}
+              </p>
+            ) : plan?.kind === "plan" ? (
+              <>
+                <p>Нужно набрать не меньше:</p>
+                <ul>
+                  {formula.components
+                    .filter(({ code }) => plan.scores[code] !== undefined)
+                    .map((component) => (
+                      <li key={component.code}>
+                        <span>{component.name}</span>
+                        <strong>
+                          {formatPoints(plan.scores[component.code])} /{" "}
+                          {component.maxPoints}
+                        </strong>
+                      </li>
+                    ))}
+                </ul>
+                <button
+                  className={controls.primary}
+                  onClick={() =>
+                    onChange({
+                      ...values,
+                      ...Object.fromEntries(
+                        Object.entries(plan.scores).map(([code, score]) => [
+                          code,
+                          formatPoints(score),
+                        ]),
+                      ),
+                    })
+                  }
+                  type="button"
+                >
+                  Подставить эти баллы
+                </button>
+              </>
+            ) : null}
+          </div>
+        </div>
+
+        <p className={styles.official}>
+          <span>Официальный итог</span>
+          <strong>{entry.officialResult ?? "не выставлен"}</strong>
+        </p>
+      </aside>
+    </div>
   );
 }

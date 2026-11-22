@@ -9,7 +9,8 @@ export type ParsedGradeInput =
   | { kind: "invalid"; message: string };
 
 export type PreparedGradeInputs = {
-  scores: Record<string, number | undefined>;
+  /** Полученные баллы, которые студент не заменил предположением. */
+  facts: Record<string, number>;
   hypotheses: Record<string, number>;
   errors: Record<string, string>;
 };
@@ -55,34 +56,34 @@ export function parseGradeInput(
   return { kind: "valid", score };
 }
 
+/**
+ * Делит баллы на факты и предположения. Предположить можно любой компонент:
+ * введённое значение действует вместо полученного только внутри калькулятора.
+ */
 export function prepareGradeInputs(
   formula: GradeFormula,
   receivedScores: Readonly<Record<string, number>>,
   values: Readonly<Record<string, string>>,
 ): PreparedGradeInputs {
   calculateGrade(formula, receivedScores);
-  const scores: Record<string, number | undefined> = {
-    ...receivedScores,
-  };
+  const facts: Record<string, number> = {};
   const hypotheses: Record<string, number> = {};
   const errors: Record<string, string> = {};
 
-  for (const component of formula.components) {
-    if (Object.prototype.hasOwnProperty.call(receivedScores, component.code)) {
-      continue;
-    }
+  for (const { code, maxPoints } of formula.components) {
+    const received = Object.prototype.hasOwnProperty.call(receivedScores, code)
+      ? receivedScores[code]
+      : undefined;
+    const parsed = parseGradeInput(values[code] ?? "", maxPoints);
+    if (parsed.kind === "invalid") errors[code] = parsed.message;
 
-    const parsed = parseGradeInput(values[component.code] ?? "", component.maxPoints);
-    if (parsed.kind === "valid") {
-      scores[component.code] = parsed.score;
-      hypotheses[component.code] = parsed.score;
-    } else {
-      scores[component.code] = undefined;
-      if (parsed.kind === "invalid") {
-        errors[component.code] = parsed.message;
-      }
+    if (parsed.kind === "valid" && parsed.score !== received) {
+      hypotheses[code] = parsed.score;
+    } else if (received !== undefined) {
+      // Пустое, ошибочное или совпавшее значение возвращает полученный балл.
+      facts[code] = received;
     }
   }
 
-  return { scores, hypotheses, errors };
+  return { facts, hypotheses, errors };
 }
