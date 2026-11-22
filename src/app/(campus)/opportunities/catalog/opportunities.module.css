@@ -1,0 +1,9 @@
+.grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.card { border: 1px solid #e6dfd7; border-radius: 16px; background: #fff; padding: 18px; }
+.badge { display: inline-flex; border-radius: 999px; background: #f1e8ea; color: #7a2638; padding: 5px 9px; font-size: 12px; }
+.card h2 { font-size: 18px; margin: 12px 0 8px; }
+.deadline { color: #7a2638; }
+.closed { color: #777; }
+.link { display: inline-flex; margin-top: 8px; color: #7a2638; font-weight: 700; }
+@media (max-width: 900px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }

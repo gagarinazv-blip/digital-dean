@@ -1,0 +1,5 @@
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; }
+.layout aside { border: 1px solid #e6dfd7; border-radius: 16px; background: #fff; padding: 18px; }
+.layout textarea { width: 100%; min-height: 120px; margin: 8px 0 12px; }
+.layout button { border: 0; border-radius: 10px; background: #7a2638; color: #fff; padding: 10px 14px; }
+@media (max-width: 800px) { .layout { grid-template-columns: 1fr; } }

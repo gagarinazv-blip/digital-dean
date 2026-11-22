@@ -117,6 +117,7 @@ enum NotificationType {
   DEADLINE
   REQUEST_STATUS
   ANNOUNCEMENT
+  OPPORTUNITY_STATUS
 }
 
 enum NotificationTargetType {
@@ -124,6 +125,7 @@ enum NotificationTargetType {
   DEADLINE
   REQUEST
   ACADEMIC_SESSION
+  OPPORTUNITY_APPLICATION
 }
 
 enum DeadlineStatus {
@@ -150,6 +152,7 @@ enum StaffNotificationType {
   DOCUMENT_ADDED
   REQUEST_ASSIGNED
   REQUEST_REASSIGNED
+  NEW_OPPORTUNITY_APPLICATION
 }
 
 enum EventType {
@@ -162,6 +165,36 @@ enum EventType {
 enum EventStatus {
   DRAFT
   PUBLISHED
+}
+
+enum OpportunityType {
+  COMPETITION
+  INTERNSHIP
+  CONFERENCE
+  OTHER
+}
+
+enum OpportunityStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum OpportunityApplicationStatus {
+  SUBMITTED
+  IN_REVIEW
+  NEEDS_INFO
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
+enum StudentDocumentType {
+  PASSPORT
+  SNILS
+  INSURANCE
+  CONTRACT
+  OTHER
 }
 
 model User {
@@ -179,6 +212,8 @@ model User {
   uploadedPortfolioItems   PortfolioItem[]             @relation("PortfolioItemUploader")
   staffNotifications       StaffNotification[]         @relation("StaffNotificationRecipient")
   createdEvents            Event[]                    @relation("EventCreator")
+  createdOpportunities     Opportunity[]               @relation("OpportunityCreator")
+  decidedApplications      OpportunityApplication[]    @relation("ApplicationDecider")
   createdAt                DateTime                   @default(now())
 }
 
@@ -244,6 +279,8 @@ model Student {
   portfolioFolders               PortfolioFolder[]
   portfolioItems                 PortfolioItem[]
   staffNotifications             StaffNotification[]
+  studentDocuments               StudentDocument[]
+  opportunityApplications        OpportunityApplication[]
 
   @@index([groupId])
 }
@@ -347,6 +384,80 @@ model PortfolioItem {
   @@index([studentId, category, eventDate])
   @@index([folderId])
   @@index([source])
+}
+
+model StudentDocument {
+  id           Int                @id @default(autoincrement())
+  studentId    Int
+  title        String             @db.VarChar(120)
+  documentType StudentDocumentType @default(OTHER)
+  storedName   String             @unique @db.VarChar(100)
+  originalName String             @db.VarChar(255)
+  mimeType     String             @db.VarChar(100)
+  size         Int
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  student      Student            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, createdAt])
+  @@index([studentId, documentType])
+}
+
+model Opportunity {
+  id                Int                  @id @default(autoincrement())
+  title             String               @db.VarChar(120)
+  type              OpportunityType
+  organizer         String               @db.VarChar(160)
+  description       String               @db.Text
+  requirements      String               @db.Text
+  deadline          DateTime
+  officialUrl       String?              @db.VarChar(2048)
+  eventDate         DateTime?
+  format            String?              @db.VarChar(100)
+  requiredDocuments Json
+  status            OpportunityStatus    @default(DRAFT)
+  createdById       Int
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  createdBy         User                 @relation("OpportunityCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  applications      OpportunityApplication[]
+
+  @@index([status, deadline])
+  @@index([createdById])
+}
+
+model OpportunityApplication {
+  id            Int                        @id @default(autoincrement())
+  publicId      String                     @unique @default(uuid())
+  opportunityId Int
+  studentId     Int
+  status        OpportunityApplicationStatus @default(SUBMITTED)
+  motivation    String?                    @db.VarChar(2000)
+  studentSnapshot Json
+  staffComment  String?                    @db.VarChar(2000)
+  decidedById   Int?
+  submittedAt   DateTime                   @default(now())
+  updatedAt     DateTime                   @updatedAt
+  opportunity   Opportunity                @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  student       Student                    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  decidedBy     User?                      @relation("ApplicationDecider", fields: [decidedById], references: [id], onDelete: SetNull)
+  files         ApplicationFile[]
+
+  @@index([studentId, submittedAt])
+  @@index([opportunityId, status])
+}
+
+model ApplicationFile {
+  id           Int                   @id @default(autoincrement())
+  applicationId Int
+  requirementKey String              @db.VarChar(80)
+  originalName String                @db.VarChar(255)
+  storedName   String                @unique @db.VarChar(100)
+  mimeType     String                @db.VarChar(100)
+  size         Int
+  application  OpportunityApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
 }
 
 model Subject {

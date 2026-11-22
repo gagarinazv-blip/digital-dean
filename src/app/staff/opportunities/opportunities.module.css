@@ -1,0 +1,5 @@
+.page { max-width: 960px; }
+.form { display: grid; gap: 12px; max-width: 620px; }
+.form label { display: grid; gap: 6px; }
+.form input, .form textarea, .form select { border: 1px solid #ddd4cb; border-radius: 8px; padding: 9px; }
+.form button { justify-self: start; border: 0; border-radius: 8px; background: #7a2638; color: #fff; padding: 10px 14px; }
