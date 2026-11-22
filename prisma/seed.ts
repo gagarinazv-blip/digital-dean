@@ -9,10 +9,7 @@ import {
   shiftAcademicRecordDate,
 } from "./academic-records-seed-data";
 import { buildTargetScheduleSeed } from "./schedule-seed-data";
-import {
-  buildDeadlineSeedData,
-  getDeadlineSeedSyncPlan,
-} from "./deadline-seed-data";
+import { syncDeadlineSeed } from "./deadline-seed";
 import { getDemoNotificationState } from "./notification-seed-data";
 import { getDemoNow } from "../src/lib/demo-date";
 import {
@@ -263,7 +260,6 @@ async function main() {
   );
   const seedDay = startOfMoscowDay(seedNow);
   const targetScheduleRows = buildTargetScheduleSeed(seedNow);
-  const deadlineSeedRows = buildDeadlineSeedData(seedNow);
 
   const prisma = new PrismaClient({
     adapter: new PrismaPg({ connectionString }),
@@ -986,61 +982,7 @@ async function main() {
         });
       }
 
-      const deadlineNotificationIndex = new Map<string, number>();
-      for (const deadline of deadlineSeedRows) {
-        const studentId = studentIds.get(deadline.login);
-        if (studentId === undefined) {
-          throw new Error(`Deadline student "${deadline.login}" is missing.`);
-        }
-        const existingDeadlines = await tx.deadline.findMany({
-          where: {
-            studentId,
-            subject: deadline.subject,
-            title: deadline.title,
-          },
-          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-          select: { id: true, status: true },
-        });
-        const syncPlan = getDeadlineSeedSyncPlan(existingDeadlines);
-        if (syncPlan.openDeadlineIds.length > 0) {
-          await tx.deadline.updateMany({
-            where: { id: { in: syncPlan.openDeadlineIds } },
-            data: { dueAt: deadline.dueAt },
-          });
-        }
-        const seededDeadline = syncPlan.deadlineId
-          ? { id: syncPlan.deadlineId }
-          : await tx.deadline.create({
-              data: {
-                studentId,
-                subject: deadline.subject,
-                title: deadline.title,
-                dueAt: deadline.dueAt,
-                status: "OPEN",
-                description: deadline.description,
-                createdAt: seedNow,
-              },
-              select: { id: true },
-            });
-        const index = deadlineNotificationIndex.get(deadline.login) ?? 0;
-        deadlineNotificationIndex.set(deadline.login, index + 1);
-        await tx.notification.create({
-          data: {
-            studentId,
-            type: "DEADLINE",
-            title: `Срок сдачи: ${deadline.title}`,
-            text: `${deadline.subject}. Срок: ${deadline.dueAt.toLocaleDateString("ru-RU", { timeZone: UNIVERSITY_TIME_ZONE })}.`,
-            targetType: "DEADLINE",
-            targetId: seededDeadline.id,
-            ...getDemoNotificationState(
-              deadline.login,
-              "deadline",
-              seedNow,
-              index,
-            ),
-          },
-        });
-      }
+      await syncDeadlineSeed(tx, studentIds, seedNow);
 
       for (const [index, login] of (
         ["student.alpha", "student.beta"] as const

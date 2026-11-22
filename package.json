@@ -12,6 +12,7 @@
     "db:down": "docker compose down",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
+    "db:seed:deadlines": "tsx prisma/seed-deadlines.ts",
     "db:studio": "prisma studio"
   },
   "dependencies": {
