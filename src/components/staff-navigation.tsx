@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { GraphUp, TaskList, User } from "iconoir-react";
+import { Calendar, GraphUp, TaskList, User } from "iconoir-react";
 import styles from "./staff-layout.module.css";
 
 const navigationItems = [
   { href: "/staff", label: "Заявки", icon: TaskList },
   { href: "/staff/students", label: "Студенты", icon: User },
   { href: "/staff/achievements", label: "Достижения", icon: GraphUp },
+  { href: "/staff/events", label: "Дайджест событий", icon: Calendar },
 ] as const;
 
 export function StaffNavigation() {
@@ -24,6 +25,10 @@ export function StaffNavigation() {
             pathname.startsWith("/staff/students/")) ||
           (item.href === "/staff/achievements" &&
             pathname.startsWith("/staff/achievements")) ||
+          (item.href === "/staff/achievements" &&
+            pathname.startsWith("/staff/achievements")) ||
+          (item.href === "/staff/events" &&
+            pathname.startsWith("/staff/events/")) ||
           (item.href === "/staff" &&
             (pathname.startsWith("/staff/requests") ||
               pathname === "/staff"));

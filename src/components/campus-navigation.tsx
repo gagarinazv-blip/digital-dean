@@ -19,13 +19,13 @@ import styles from "./campus-navigation.module.css";
 const navigation = [
   { href: "/", label: "Сегодня", icon: HomeSimple },
   { href: "/schedule", label: "Расписание", icon: Calendar },
+  { href: "/digest", label: "Дайджест событий", icon: Calendar },
   { href: "/grades", label: "Успеваемость", icon: GraphUp },
   { href: "/documents", label: "Документы", icon: Page },
   { href: "/requests", label: "Заявки", icon: TaskList },
   { href: "/notifications", label: "Уведомления", icon: Bell },
   { href: "/profile", label: "Профиль", icon: User },
 ] as const;
-
 const unreadCountEvent = "campus:unread-notification-count";
 
 export function CampusNavigation({
