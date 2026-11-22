@@ -1,3 +1,4 @@
+import { DateTimeStack } from "@/components/date-time-stack";
 import { Suspense } from "react";
 import Link from "next/link";
 import { CampusLoading, CampusSection } from "@/components/campus-section";
@@ -22,7 +23,6 @@ import {
   getStudentRequests,
 } from "@/lib/student-request-data";
 import { formatRequestNumber } from "@/lib/request-number";
-import { getUniversityDateTimeFormatter } from "@/lib/campus-time";
 import { getStudentPortfolio } from "@/lib/portfolio";
 import { requireStudent, requireStudentContext } from "@/lib/student";
 import { getPrisma } from "@/lib/prisma";
@@ -35,15 +35,6 @@ import { RequestWindow } from "@/app/(campus)/requests/request-window";
 import { RequestSearchForm } from "./request-search-form";
 import controls from "@/components/ui/controls.module.css";
 import styles from "./help.module.css";
-
-const requestDateFormatter = getUniversityDateTimeFormatter({
-  dateStyle: "medium",
-});
-
-const requestDateTimeFormatter = getUniversityDateTimeFormatter({
-  dateStyle: "medium",
-  timeStyle: "short",
-});
 
 const requestStatuses = Object.keys(requestStatusLabels) as RequestStatus[];
 const opportunityApplicationStatusLabels = {
@@ -172,12 +163,10 @@ function RecentRequests({
                   </strong>
                   <span>{formatRequestNumber(request.id)}</span>
                 </span>
-                <time
+                <DateTimeStack
                   className={styles.recentRequestDate}
-                  dateTime={request.createdAt.toISOString()}
-                >
-                  {requestDateFormatter.format(request.createdAt)}
-                </time>
+                  value={request.createdAt}
+                />
                 <span
                   className={styles.statusBadge}
                   data-status={request.status}
@@ -237,10 +226,20 @@ function SelectedRequestPanel({
           {requestStatusLabels[request.status]}
         </span>
       </div>
-      <p className={styles.detailDates}>
-        Подана {requestDateFormatter.format(request.createdAt)} · Обновлена{" "}
-        {requestDateTimeFormatter.format(request.updatedAt)}
-      </p>
+      <dl className={styles.detailDates}>
+        <div>
+          <dt>Подана</dt>
+          <dd>
+            <DateTimeStack value={request.createdAt} />
+          </dd>
+        </div>
+        <div>
+          <dt>Обновлена</dt>
+          <dd>
+            <DateTimeStack value={request.updatedAt} />
+          </dd>
+        </div>
+      </dl>
 
       {requestMessage && (
         <section className={styles.staffMessage}>
@@ -255,10 +254,7 @@ function SelectedRequestPanel({
             </h3>
             <p>{requestMessage}</p>
             {latestStaffMessage && (
-              <span>
-                Комментарий от деканата ·{" "}
-                {requestDateTimeFormatter.format(latestStaffMessage.createdAt)}
-              </span>
+              <DateTimeStack value={latestStaffMessage.createdAt} />
             )}
           </div>
         </section>
@@ -314,9 +310,7 @@ function SelectedRequestPanel({
                 </span>
                 <div className={styles.timelineContent}>
                   <strong>{requestStatusLabels[entry.status]}</strong>
-                  <time dateTime={entry.changedAt.toISOString()}>
-                    {requestDateTimeFormatter.format(entry.changedAt)}
-                  </time>
+                  <DateTimeStack value={entry.changedAt} />
                   <p>
                     {entry.comment ??
                       (entry.status === "NEW"
@@ -724,9 +718,9 @@ export async function HelpWorkspace({
                           )}
                         </h3>
                         <p>
-                          Заявка {formatRequestNumber(document.requestId)} ·{" "}
-                          {requestDateFormatter.format(document.updatedAt)}
+                          Заявка {formatRequestNumber(document.requestId)}
                         </p>
+                        <DateTimeStack value={document.updatedAt} />
                       </div>
                     </div>
                     <a
@@ -833,9 +827,10 @@ export async function HelpWorkspace({
                               {formatRequestNumber(request.id)}
                             </span>
                           </span>
-                          <time className={styles.requestListDate}>
-                            {requestDateFormatter.format(request.createdAt)}
-                          </time>
+                          <DateTimeStack
+                            className={styles.requestListDate}
+                            value={request.createdAt}
+                          />
                           <span className={styles.requestListStatus}>
                             <span
                               className={styles.statusBadge}

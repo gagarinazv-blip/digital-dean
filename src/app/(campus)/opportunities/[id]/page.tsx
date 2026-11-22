@@ -1,3 +1,4 @@
+import { DateTimeStack } from "@/components/date-time-stack";
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -22,21 +23,6 @@ type SearchParams = Record<string, string | string[] | undefined>;
 
 function first(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
-}
-
-function formatDate(value: Date): string {
-  return new Intl.DateTimeFormat("ru-RU", {
-    dateStyle: "long",
-    timeZone: "Europe/Moscow",
-  }).format(value);
-}
-
-function formatDateTime(value: Date): string {
-  return new Intl.DateTimeFormat("ru-RU", {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "Europe/Moscow",
-  }).format(value);
 }
 
 function isHttpUrl(value: string): boolean {
@@ -159,10 +145,10 @@ async function OpportunityContent({
               <div><dt>Место проведения</dt><dd>{opportunity.location}</dd></div>
             )}
             {opportunity.startsAt && (
-              <div><dt>Начало</dt><dd>{formatDateTime(opportunity.startsAt)}</dd></div>
+              <div><dt>Начало</dt><dd><DateTimeStack value={opportunity.startsAt} /></dd></div>
             )}
             {opportunity.endsAt && (
-              <div><dt>Окончание</dt><dd>{formatDateTime(opportunity.endsAt)}</dd></div>
+              <div><dt>Окончание</dt><dd><DateTimeStack value={opportunity.endsAt} /></dd></div>
             )}
             {(opportunity.minCourse || opportunity.maxCourse) && (
               <div>
@@ -181,7 +167,7 @@ async function OpportunityContent({
                 <dd>{opportunity.allowedFaculties.join(", ")}</dd>
               </div>
             )}
-            <div><dt>Дедлайн</dt><dd>{formatDate(opportunity.deadline)}</dd></div>
+            <div><dt>Дедлайн</dt><dd><DateTimeStack kind="deadline" value={opportunity.deadline} /></dd></div>
           </dl>
           {requirements.length > 0 && (
             <>
@@ -243,11 +229,15 @@ async function OpportunityContent({
           ) : (
             <p className={styles.errorMessage}>Приём закрыт.</p>
           )}
-          {open && <p className={styles.deadlineText}>Дедлайн: {formatDate(opportunity.deadline)}</p>}
+          {open && <div className={styles.deadlineText}>
+              <span>Дедлайн</span>
+              <DateTimeStack kind="deadline" value={opportunity.deadline} />
+            </div>}
           {!open && lateRequestAvailable && opportunity.lateRequestsUntil && (
-            <p className={styles.deadlineText}>
-              Индивидуальные запросы принимаются до {formatDate(opportunity.lateRequestsUntil)}.
-            </p>
+            <div className={styles.deadlineText}>
+              <span>Индивидуальные запросы принимаются до</span>
+              <DateTimeStack kind="deadline" value={opportunity.lateRequestsUntil} />
+            </div>
           )}
         </aside>
       </article>

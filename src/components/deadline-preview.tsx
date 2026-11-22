@@ -78,8 +78,7 @@ export function DeadlinePreview({
           <p className={styles.topic}>Тема: {deadline.topic}</p>
         )}
         <DeadlineRemaining
-          dueIso={deadline.dueAt}
-          dueLabel={deadline.dueLabel}
+          dueAt={deadline.dueAt}
           remaining={deadline.remaining}
         />
         <p className={styles.format}>
@@ -88,7 +87,7 @@ export function DeadlinePreview({
         <div className={styles.actions}>
           <DeadlineHandIn
             deadlineId={deadline.id}
-            dueLabel={deadline.dueLabel}
+            dueAt={deadline.dueAt}
             format={deadline.format}
             location={deadline.location}
             showCalendar

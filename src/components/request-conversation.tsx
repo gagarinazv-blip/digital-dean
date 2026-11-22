@@ -1,5 +1,5 @@
+import { DateTimeStack } from "@/components/date-time-stack";
 import type { RequestCommentVisibility, UserRole } from "@/generated/prisma/enums";
-import { getUniversityDateTimeFormatter } from "@/lib/campus-time";
 import styles from "@/app/request-workflow.module.css";
 
 type RequestMessage = {
@@ -18,11 +18,6 @@ type RequestMessage = {
     sizeBytes: number;
   }[];
 };
-
-const messageDateFormatter = getUniversityDateTimeFormatter({
-  dateStyle: "medium",
-  timeStyle: "short",
-});
 
 function formatFileSize(sizeBytes: number): string {
   return sizeBytes < 1024 * 1024
@@ -66,10 +61,11 @@ export function RequestConversation({
           >
             <div className={styles.messageHeader}>
               <strong>{authorName}</strong>
-              <span>
-                {messageDateFormatter.format(message.createdAt)}
-                {showVisibility &&
-                  ` · ${isInternal ? "только сотрудникам" : "видно студенту"}`}
+              <span className={styles.messageMeta}>
+                <DateTimeStack align="end" value={message.createdAt} />
+                {showVisibility && (
+                  <span>{isInternal ? "Только сотрудникам" : "Видно студенту"}</span>
+                )}
               </span>
             </div>
             <p className={styles.messageBody}>

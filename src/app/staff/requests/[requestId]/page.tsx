@@ -1,3 +1,4 @@
+import { DateTimeStack } from "@/components/date-time-stack";
 import Link from "next/link";
 import { RequestFieldValue } from "@/components/request-field-value";
 import { CampusSection } from "@/components/campus-section";
@@ -20,7 +21,6 @@ import { formatStackDay } from "@/lib/date-stack";
 import { getDemoNow } from "@/lib/demo-date";
 import { getStaffRequestDetails } from "@/lib/staff-data";
 import { formatRequestNumber } from "@/lib/request-number";
-import { getUniversityDateTimeFormatter } from "@/lib/campus-time";
 import {
   RequestAssignmentForm,
   RequestRollbackForm,
@@ -32,11 +32,6 @@ import styles from "./request-detail.module.css";
 import type { RequestStatus } from "@/generated/prisma/enums";
 
 export const instant = false;
-
-const requestDateFormatter = getUniversityDateTimeFormatter({
-  dateStyle: "long",
-  timeStyle: "short",
-});
 
 const requestStatusClasses: Record<RequestStatus, string> = {
   NEW: workflowStyles.statusNew,
@@ -280,12 +275,12 @@ export default async function StaffRequestPage({
                 )}
                 <div>
                   <dt><span aria-hidden="true">▦</span> Дата отправки</dt>
-                  <dd>{requestDateFormatter.format(request.createdAt)}</dd>
+                  <dd><DateTimeStack value={request.createdAt} /></dd>
                 </div>
                 {request.updatedAt.getTime() !== request.createdAt.getTime() && (
                   <div>
                     <dt><span aria-hidden="true">◷</span> Последнее действие</dt>
-                    <dd>{requestDateFormatter.format(request.updatedAt)}</dd>
+                    <dd><DateTimeStack value={request.updatedAt} /></dd>
                   </div>
                 )}
               </dl>
@@ -473,9 +468,7 @@ export default async function StaffRequestPage({
                               ? `Начальный статус: ${requestStatusLabels[entry.status]}`
                               : `${requestStatusLabels[entry.fromStatus]} → ${requestStatusLabels[entry.status]}${entry.isRollback ? " · откат" : ""}`}
                           </strong>
-                          <time dateTime={entry.changedAt.toISOString()}>
-                            {requestDateFormatter.format(entry.changedAt)}
-                          </time>
+                          <DateTimeStack value={entry.changedAt} />
                           <span>
                             {isLatest &&
                             entry.status === "IN_PROGRESS" &&
@@ -510,9 +503,7 @@ export default async function StaffRequestPage({
                             {entry.fromAssignedTo?.fullName ?? "Не назначен"} →{" "}
                             {entry.toAssignedTo?.fullName ?? "Не назначен"}
                           </strong>
-                          <time dateTime={entry.changedAt.toISOString()}>
-                            {requestDateFormatter.format(entry.changedAt)}
-                          </time>
+                          <DateTimeStack value={entry.changedAt} />
                           <span>{author}</span>
                         </div>
                       </li>

@@ -2,6 +2,7 @@ import {
   formatMoscowTime,
   getMoscowDateKey,
   getUniversityDateTimeFormatter,
+  parseMoscowDateTime,
 } from "@/lib/campus-time";
 
 const MINUTE = 60_000;
@@ -170,6 +171,6 @@ export function getDateStackLabels(
 
 export function parseStackDate(value: Date | string): Date {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)
-    ? new Date(`${value}T12:00:00+03:00`)
+    ? parseMoscowDateTime(value, "12:00")
     : new Date(value);
 }

@@ -1,7 +1,7 @@
 "use client";
 
+import { DateTimeStack } from "@/components/date-time-stack";
 import { useState } from "react";
-import { formatCampusDate } from "@/lib/campus-time";
 import { prepareGradeInputs } from "@/lib/grade-calculator-input";
 import { analyzeGrade } from "@/lib/grade-analysis";
 import type { GradebookEntry } from "@/lib/gradebook-data";
@@ -214,12 +214,10 @@ export function GradeCalculator({
                     </div>
                     <p className={styles.componentMeta}>
                       Максимум {component.maxPoints} баллов
-                      {details.date
-                        ? ` · оценено ${formatCampusDate(
-                            new Date(`${details.date}T12:00:00Z`),
-                          )}`
-                        : ""}
                     </p>
+                    {details.date ? (
+                      <DateTimeStack allDay value={details.date} />
+                    ) : null}
 
                     {isReceived ? (
                       <div className={styles.receivedScore}>

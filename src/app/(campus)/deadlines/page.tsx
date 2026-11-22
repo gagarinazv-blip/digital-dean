@@ -1,3 +1,4 @@
+import { DateTimeStack } from "@/components/date-time-stack";
 import Link from "next/link";
 import { CampusSection } from "@/components/campus-section";
 import { EmptyState } from "@/components/empty-state";
@@ -5,7 +6,6 @@ import {
   getDeadlineCountdown,
   getDeadlineCountdownTone,
 } from "@/lib/deadline-utils";
-import { getUniversityDateTimeFormatter } from "@/lib/campus-time";
 import { getStudentDeadlines } from "@/lib/deadline-data";
 import { getDeadlineHref } from "@/lib/deadline-action";
 import { getDemoNow } from "@/lib/demo-date";
@@ -13,10 +13,6 @@ import { requireStudent } from "@/lib/student";
 import styles from "./deadlines.module.css";
 
 export const instant = false;
-
-const deadlineDateFormatter = getUniversityDateTimeFormatter({
-  dateStyle: "long",
-});
 
 export default async function DeadlinesPage() {
   const student = await requireStudent();
@@ -76,9 +72,11 @@ export default async function DeadlinesPage() {
                   </Link>
                 </h2>
                 {deadline.description && <p>{deadline.description}</p>}
-                <time dateTime={deadline.dueAt.toISOString()}>
-                  Срок: {deadlineDateFormatter.format(deadline.dueAt)}
-                </time>
+                <DateTimeStack
+                  done={deadline.status === "SUBMITTED"}
+                  kind="deadline"
+                  value={deadline.dueAt}
+                />
               </li>
             );
           })}

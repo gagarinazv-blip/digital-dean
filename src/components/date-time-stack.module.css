@@ -1,4 +1,4 @@
-.stack {
+.stack.stack {
   min-width: 0;
   max-width: 100%;
   display: inline-grid;
@@ -9,7 +9,7 @@
   text-align: left;
 }
 
-.stack[data-align="end"] {
+.stack.stack[data-align="end"] {
   justify-items: end;
   text-align: right;
 }

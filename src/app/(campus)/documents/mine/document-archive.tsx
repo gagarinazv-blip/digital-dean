@@ -1,5 +1,6 @@
 "use client";
 
+import { DateTimeStack } from "@/components/date-time-stack";
 import { useActionState, useId, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
@@ -270,11 +271,6 @@ function formatFileSize(size: number): string {
   return `${Math.max(1, Math.round(size / 1024))} КБ`;
 }
 
-const dateFormatter = new Intl.DateTimeFormat("ru-RU", {
-  dateStyle: "medium",
-  timeZone: "Europe/Moscow",
-});
-
 export function StudentDocumentArchive({
   documents,
 }: {
@@ -383,12 +379,7 @@ export function StudentDocumentArchive({
                   {documentTypeLabels[document.documentType]}
                 </span>
                 <div className={styles.metadata}>
-                  <span>
-                    Загружен:{" "}
-                    <time dateTime={document.createdAt.toISOString()}>
-                      {dateFormatter.format(document.createdAt)}
-                    </time>
-                  </span>
+                  <DateTimeStack value={document.createdAt} />
                   <span>Размер: {formatFileSize(document.size)}</span>
                   <span className={styles.originalName}>
                     {document.originalName}
