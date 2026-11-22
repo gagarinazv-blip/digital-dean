@@ -11,7 +11,8 @@ export function getPrisma(): PrismaClient {
   if (
     cachedPrisma &&
     typeof cachedPrisma.portfolioFolder !== "undefined" &&
-    typeof cachedPrisma.portfolioItem !== "undefined"
+    typeof cachedPrisma.portfolioItem !== "undefined" &&
+    typeof cachedPrisma.studentDocument !== "undefined"
   ) {
     return cachedPrisma;
   }
