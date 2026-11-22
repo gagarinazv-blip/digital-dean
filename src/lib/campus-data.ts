@@ -103,6 +103,8 @@ export async function getCampusTodayData(now = getDemoNow()) {
     ),
     startTime: item.startsAt,
     endTime: item.endsAt,
+    originalStartTime: item.originalStartsAt,
+    originalEndTime: item.originalEndsAt,
     kind: item.kind,
     room: item.room,
     teacher: item.teacher,
@@ -208,10 +210,13 @@ export async function getCampusTodayData(now = getDemoNow()) {
       ),
       startTime: lesson.startsAt,
       endTime: lesson.endsAt,
+      originalStartTime: lesson.originalStartsAt,
+      originalEndTime: lesson.originalEndsAt,
       kind: lesson.kind,
       room: lesson.room,
       teacher: lesson.teacher,
       status: lesson.status,
+      changeNote: lesson.changeNote,
       subject: { name: lesson.subject },
     }));
   const nextLesson = nextScheduleLesson

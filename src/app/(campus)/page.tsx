@@ -28,14 +28,20 @@ import controls from "@/components/ui/controls.module.css";
 import { getDeadlineHref } from "@/lib/deadline-action";
 import { formatRequestNumber } from "@/lib/request-number";
 import { WeekStrip } from "@/components/week-strip";
-import { DeadlineListItem } from "@/components/deadline-list-item";
 import { EmptyState } from "@/components/empty-state";
-import { CampusArchitectureArt } from "@/components/campus-architecture-art";
+import { DeadlineList, type TodayDeadline } from "@/components/today/deadline-list";
+import { FitList } from "@/components/today/fit-list";
+import { LessonList } from "@/components/today/lesson-list";
+import { NextLessonCard } from "@/components/today/next-lesson-card";
+import { getOnlineLink } from "@/lib/room-format";
+import { buildScheduleHref } from "@/lib/schedule-view-utils";
 import {
   getRequestStatusTone,
-  getTodayHeroState,
+  getTodayFocus,
   type RequestStatusTone,
+  type TodayEvent,
 } from "@/lib/today-view-utils";
+import lists from "@/components/today/today-lists.module.css";
 import styles from "./page.module.css";
 
 const requestStatusTones: Record<RequestStatusTone, string> = {
@@ -128,7 +134,86 @@ function CampusFallback() {
 }
 
 // Больше строк не поместится и на высоком экране: лишние не запрашиваем.
-const DASHBOARD_ROWS = 12;
+const DASHBOARD_ROWS = 8;
+
+type CampusTodayData = Awaited<ReturnType<typeof getCampusTodayData>>;
+type AcademicDataset = Awaited<ReturnType<typeof getAcademicRecords>>["dataset"];
+
+function getLessonEvents(data: CampusTodayData): TodayEvent[] {
+  const lessons = [...data.todaySchedule, ...data.nearbyLessons];
+  return lessons
+    .filter(
+      (lesson, index) =>
+        lessons.findIndex(
+          (candidate) => candidate.occurrenceId === lesson.occurrenceId,
+        ) === index,
+    )
+    .map((lesson) => {
+      const dateKey = getMoscowDateKey(lesson.startTime);
+      return {
+        id: lesson.occurrenceId,
+        kind: "lesson",
+        title: lesson.subject.name,
+        typeLabel: scheduleKindLabels[lesson.kind],
+        startsAt: lesson.startTime,
+        endsAt: lesson.endTime,
+        originalStartsAt: lesson.originalStartTime,
+        originalEndsAt: lesson.originalEndTime,
+        status: lesson.status,
+        room: lesson.room,
+        teacher: lesson.teacher,
+        onlineUrl: getOnlineLink(lesson.room, lesson.changeNote),
+        scheduleHref: buildScheduleHref("week", dateKey),
+        detailsHref: buildScheduleHref(
+          "week",
+          dateKey,
+          {},
+          // Идентификатор занятия — «<id записи>-<дата>».
+          lesson.occurrenceId.slice(0, -(dateKey.length + 1)),
+        ),
+      };
+    });
+}
+
+function getSessionEvents(
+  dataset: AcademicDataset,
+  todayKey: string,
+): TodayEvent[] {
+  return (dataset?.semesters ?? [])
+    .filter((semester) => semester.isCurrent)
+    .flatMap((semester) => semester.planItems)
+    .flatMap((item) =>
+      item.sessions
+        .filter(
+          (session) =>
+            (session.status === "PLANNED" ||
+              session.status === "RESCHEDULED") &&
+            session.date.toISOString().slice(0, 10) >= todayKey &&
+            (!item.result ||
+              (item.result.status === "ACADEMIC_DEBT" &&
+                session.date > item.result.date)),
+        )
+        .map((session): TodayEvent => {
+          const href = `/schedule?section=session&event=${session.id}`;
+          return {
+            id: `session-${session.id}`,
+            kind: "session",
+            title: item.name,
+            typeLabel: controlTypeLabels[item.controlType],
+            startsAt: getMoscowDateTime(session.date, session.startTime),
+            endsAt: getMoscowDateTime(session.date, session.endTime),
+            originalStartsAt: null,
+            originalEndsAt: null,
+            status: session.status === "RESCHEDULED" ? "RESCHEDULED" : "PLANNED",
+            room: session.room,
+            teacher: null,
+            onlineUrl: getOnlineLink(session.room),
+            scheduleHref: href,
+            detailsHref: href,
+          };
+        }),
+    );
+}
 
 async function CampusToday() {
   await connection();
@@ -155,7 +240,6 @@ async function CampusToday() {
       id: item.publicId,
       kind: notificationTypeLabels[item.type],
       title: item.title,
-      text: item.text,
       date: new Date(item.createdAt),
       href: `/notifications/${item.publicId}`,
       isUnread: item.readAt === null,
@@ -164,7 +248,6 @@ async function CampusToday() {
       id: change.id,
       kind: change.kind,
       title: change.title,
-      text: change.text,
       date: change.date,
       href: change.id.startsWith("schedule-")
         ? `/schedule?view=week&date=${getMoscowDateKey(change.date)}`
@@ -179,61 +262,40 @@ async function CampusToday() {
     )
     .slice(0, DASHBOARD_ROWS);
   const todayKey = getMoscowDateKey(data.now);
-  const sessionDeadlines =
-    academicRecords.dataset?.semesters
-      .filter((semester) => semester.isCurrent)
-      .flatMap((semester) =>
-        semester.planItems.flatMap((item) =>
-          item.sessions
-            .filter(
-              (session) =>
-                (session.status === "PLANNED" ||
-                  session.status === "RESCHEDULED") &&
-                session.date.toISOString().slice(0, 10) >= todayKey &&
-                (!item.result ||
-                  (item.result.status === "ACADEMIC_DEBT" &&
-                    session.date > item.result.date)),
-            )
-            .map((session) => ({
-              id: `session-${session.id}`,
-              title: item.name,
-              subject: controlTypeLabels[item.controlType],
-              startsAt: getMoscowDateTime(session.date, session.startTime),
-              endsAt: getMoscowDateTime(session.date, session.endTime),
-              href: `/schedule?section=session&event=${session.id}`,
-            })),
-        ),
-      )
-      .sort(
-        (first, second) => first.startsAt.getTime() - second.startsAt.getTime(),
-      ) ?? [];
-  const deadlineRows = [
+  const lessonEvents = getLessonEvents(data);
+  const sessionEvents = getSessionEvents(academicRecords.dataset, todayKey);
+  const events = [...lessonEvents, ...sessionEvents];
+  const focus = getTodayFocus(events, data.now);
+  const upcomingDeadlines: TodayDeadline[] = [
     ...data.deadlines.map((deadline) => ({
       id: deadline.id,
+      kind: "deadline" as const,
       title: deadline.title,
       subject: deadline.subject,
       dueAt: deadline.dueAt,
+      endsAt: null,
       href: getDeadlineHref(deadline.id),
     })),
-    ...sessionDeadlines.map((session) => ({
-      id: session.id,
-      title: session.title,
-      subject: session.subject,
-      dueAt: session.startsAt,
-      href: session.href,
-    })),
-  ]
-    .sort((first, second) => first.dueAt.getTime() - second.dueAt.getTime())
+    ...sessionEvents
+      .filter((event) => event.endsAt > data.now)
+      .map((event) => ({
+        id: event.id,
+        kind: "session" as const,
+        title: event.title,
+        subject: event.typeLabel,
+        dueAt: event.startsAt,
+        endsAt: event.endsAt,
+        href: event.detailsHref,
+      })),
+  ].sort((first, second) => first.dueAt.getTime() - second.dueAt.getTime());
+  // Экзамен из главной карточки в списке сроков не повторяется.
+  const deadlineRows = upcomingDeadlines
+    .filter(
+      (row) => row.id !== focus.next?.id && row.id !== focus.main?.id,
+    )
     .slice(0, DASHBOARD_ROWS);
-  const nextSession = sessionDeadlines[0];
-  const lessonRows = [
-    ...data.todaySchedule,
-    ...data.nearbyLessons.filter(
-      (lesson) => getMoscowDateKey(lesson.startTime) !== todayKey,
-    ),
-  ];
   const deadlineKeys = new Set(
-    deadlineRows.map((row) => getMoscowDateKey(row.dueAt)),
+    upcomingDeadlines.map((row) => getMoscowDateKey(row.dueAt)),
   );
   const averageGrade = getAverageGrade(
     (academicRecords.dataset?.semesters ?? [])
@@ -270,15 +332,6 @@ async function CampusToday() {
       )
     : "";
   const firstName = data.student.fullName.split(" ")[0];
-  const hero = getTodayHeroState(
-    data.todaySchedule,
-    data.nextLesson,
-    data.now,
-  );
-  const activeLessonId =
-    hero.kind === "current" ? hero.lesson?.occurrenceId : undefined;
-  const nextLessonId =
-    hero.kind === "next" ? hero.lesson?.occurrenceId : undefined;
 
   return (
     <main className={styles.page}>
@@ -288,7 +341,7 @@ async function CampusToday() {
             <h1 id="welcome-title">
               {getCampusGreeting(data.now)}, {firstName}
             </h1>
-            <p className={styles.eyebrow}>
+            <p className={styles.welcomeDate}>
               {welcomeDateFormatter.format(todayDate)} · группа{" "}
               {getStudentFacingGroupName(data.student.group.name)}
             </p>
@@ -332,100 +385,9 @@ async function CampusToday() {
             </nav>
           </section>
 
-          <section
-            className={styles.heroCard}
-            aria-labelledby="next-lesson-title"
-          >
-            <div className={styles.heroArt} aria-hidden="true">
-              <CampusArchitectureArt
-                priority
-                sizes="(max-width: 767px) 0px, (max-width: 1099px) 42vw, 30vw"
-              />
-            </div>
-            <div className={styles.heroContent}>
-              <div className={styles.heroTopline}>
-                <span className={styles.heroBadge}>
-                  {hero.kind === "current"
-                    ? "Идёт сейчас"
-                    : hero.kind === "next"
-                      ? "Следующая пара"
-                      : "Ближайшее занятие"}
-                </span>
-                {hero.kind === "current" && hero.countdown ? (
-                  <span className={styles.heroNote}>{hero.countdown}</span>
-                ) : hero.kind === "upcoming" ? (
-                  <span className={styles.heroNote}>
-                    {hero.hasTodayLessons
-                      ? "На сегодня пары закончились"
-                      : "Сегодня занятий нет"}
-                  </span>
-                ) : null}
-              </div>
-              {hero.lesson ? (
-                <div className={styles.lesson}>
-                  <h2 id="next-lesson-title" title={hero.lesson.subject.name}>
-                    {hero.lesson.subject.name}
-                  </h2>
-                  <p
-                    title={`${scheduleKindLabels[hero.lesson.kind]} · ауд. ${hero.lesson.room} · ${hero.lesson.teacher}`}
-                  >
-                    {scheduleKindLabels[hero.lesson.kind]} · ауд.{" "}
-                    {hero.lesson.room} · {hero.lesson.teacher}
-                  </p>
-                </div>
-              ) : (
-                <div className={styles.lesson}>
-                  <h2 id="next-lesson-title">
-                    {hero.hasTodayLessons
-                      ? "На сегодня пары закончились"
-                      : "На сегодня занятий нет"}
-                  </h2>
-                  <p>
-                    {hero.hasTodayLessons
-                      ? "Посмотрите расписание на другие дни."
-                      : "В расписании пока нет ближайших занятий."}
-                  </p>
-                </div>
-              )}
-              <div className={styles.heroFooter}>
-                {hero.lesson ? (
-                  <DateTimeStack
-                    end={hero.lesson.endTime}
-                    value={hero.lesson.startTime}
-                  />
-                ) : null}
-                <div className={styles.heroActions}>
-                  <Link className={controls.primary} href="/schedule">
-                    Открыть расписание
-                  </Link>
-                  {hero.lesson && (
-                    <Link
-                      className={controls.secondary}
-                      href={`/schedule?view=week&date=${hero.lesson.occurrenceDate.toISOString().slice(0, 10)}`}
-                    >
-                      Подробнее
-                    </Link>
-                  )}
-                </div>
-              </div>
-            </div>
-            {nextSession && (
-              <Link
-                aria-label={`Ближайшее событие сессии: ${nextSession.title}`}
-                className={styles.heroSession}
-                href={nextSession.href}
-              >
-                <span className={styles.heroSessionBadge}>
-                  {nextSession.subject}
-                </span>
-                <strong title={nextSession.title}>{nextSession.title}</strong>
-                <DateTimeStack
-                  end={nextSession.endsAt}
-                  value={nextSession.startsAt}
-                />
-              </Link>
-            )}
-          </section>
+          <div className={styles.heroSlot}>
+            <NextLessonCard events={events} serverNow={data.now} />
+          </div>
 
           <div className={styles.lists}>
             <section
@@ -433,87 +395,12 @@ async function CampusToday() {
               aria-labelledby="today-schedule-title"
             >
               <div className={styles.cardHeading}>
-                <h2 id="today-schedule-title">
-                  {data.todaySchedule.length > 0
-                    ? "Расписание на сегодня"
-                    : "Ближайшие занятия"}
-                </h2>
+                <h2 id="today-schedule-title">Ближайшие занятия</h2>
                 <Link className={styles.headingLink} href="/schedule">
                   Все занятия →
                 </Link>
               </div>
-              {lessonRows.length > 0 ? (
-                <div className={styles.fit}>
-                <ol className={styles.rows}>
-                  {lessonRows.map((lesson) => {
-                    const details = `${scheduleKindLabels[lesson.kind]} · ауд. ${lesson.room}`;
-                    const note =
-                      lesson.status === "CANCELLED"
-                        ? "Отменено"
-                        : lesson.status === "RESCHEDULED"
-                          ? "Перенесено"
-                          : lesson.occurrenceId === activeLessonId
-                            ? "Сейчас"
-                            : lesson.occurrenceId === nextLessonId
-                              ? "Далее"
-                              : null;
-                    return (
-                      <li
-                        className={styles.row}
-                        data-kind={lesson.kind}
-                        data-state={
-                          lesson.occurrenceId === activeLessonId
-                            ? "current"
-                            : lesson.status === "CANCELLED" ||
-                                lesson.endTime.getTime() <= data.now.getTime()
-                              ? "past"
-                              : undefined
-                        }
-                        key={lesson.occurrenceId}
-                      >
-                        <div className={styles.rowText}>
-                          <strong title={lesson.subject.name}>
-                            {lesson.subject.name}
-                          </strong>
-                          <span title={details}>
-                            {note ? (
-                              <em
-                                data-tone={
-                                  lesson.status === "CANCELLED"
-                                    ? "danger"
-                                    : lesson.status === "RESCHEDULED"
-                                      ? "warning"
-                                      : "accent"
-                                }
-                              >
-                                {note}
-                              </em>
-                            ) : null}
-                            {details}
-                          </span>
-                        </div>
-                        <DateTimeStack
-                          align="end"
-                          end={lesson.endTime}
-                          value={lesson.startTime}
-                        />
-                      </li>
-                    );
-                  })}
-                </ol>
-                </div>
-              ) : (
-              <EmptyState
-                action={
-                  <Link className={styles.textLink} href="/schedule?view=week">
-                    Показать неделю →
-                  </Link>
-                }
-                className={styles.cardEmptyState}
-                illustration="schedule"
-                title="Ближайших занятий нет"
-              />
-              )}
+              <LessonList events={events} serverNow={data.now} />
             </section>
 
             <section
@@ -521,49 +408,39 @@ async function CampusToday() {
               aria-labelledby="deadlines-title"
             >
               <div className={styles.cardHeading}>
-                <h2 id="deadlines-title">
-                  Ближайшие дедлайны{" "}
-                  {deadlineRows.length > 0 ? (
-                    <span
-                      aria-label={`Предстоящих сроков: ${deadlineRows.length}`}
-                      className={controls.badge}
-                      data-tone="accent"
-                    >
-                      {deadlineRows.length}
-                    </span>
-                  ) : null}
-                </h2>
+                <h2 id="deadlines-title">Дедлайны</h2>
+                {upcomingDeadlines.length > 0 ||
+                data.overdueDeadlineCount > 0 ? (
+                  <div className={styles.headingChips}>
+                    {upcomingDeadlines.length > 0 ? (
+                      <span className={lists.chip}>
+                        <span className={controls.visuallyHidden}>
+                          Предстоящих сроков:{" "}
+                        </span>
+                        {upcomingDeadlines.length}
+                      </span>
+                    ) : null}
+                    {data.overdueDeadlineCount > 0 ? (
+                      <Link
+                        aria-label={`Показать просроченные задания: ${data.overdueDeadlineCount}`}
+                        className={styles.overdueChip}
+                        href={
+                          data.firstOverdueDeadlineId
+                            ? `/deadlines#deadline-${data.firstOverdueDeadlineId}`
+                            : "/deadlines"
+                        }
+                      >
+                        Просрочено: {data.overdueDeadlineCount}
+                      </Link>
+                    ) : null}
+                  </div>
+                ) : null}
                 <Link className={styles.headingLink} href="/deadlines">
                   Все сроки →
                 </Link>
-              {data.overdueDeadlineCount > 0 ? (
-                <Link
-                  aria-label={`Показать просроченные задания: ${data.overdueDeadlineCount}`}
-                  className={styles.overdueChip}
-                  href={
-                    data.firstOverdueDeadlineId
-                      ? `/deadlines#deadline-${data.firstOverdueDeadlineId}`
-                      : "/deadlines"
-                  }
-                >
-                  Просрочено: {data.overdueDeadlineCount}
-                </Link>
-              ) : null}
               </div>
-              {deadlineRows.length ? (
-                <div className={styles.fit}>
-                <ul className={styles.rows}>
-                  {deadlineRows.map((deadline) => (
-                    <DeadlineListItem
-                      dueAt={deadline.dueAt}
-                      href={deadline.href}
-                      key={deadline.id}
-                      subject={deadline.subject}
-                      title={deadline.title}
-                    />
-                  ))}
-                </ul>
-                </div>
+              {deadlineRows.length > 0 ? (
+                <DeadlineList deadlines={deadlineRows} serverNow={data.now} />
               ) : (
                 <EmptyState
                   className={styles.cardEmptyState}
@@ -590,42 +467,39 @@ async function CampusToday() {
             aria-labelledby="dashboard-notifications-title"
           >
             <div className={styles.cardHeading}>
-              <h2 id="dashboard-notifications-title">
-                Уведомления{" "}
-                {notificationPage.unreadCount > 0 ? (
-                  <span className={controls.badge} data-tone="accent">
-                    Новых: {notificationPage.unreadCount}
-                  </span>
-                ) : null}
-              </h2>
+              <h2 id="dashboard-notifications-title">Уведомления</h2>
             </div>
             {notifications.length > 0 ? (
-              <div className={styles.fit}>
-              <ul className={styles.rows}>
+              <FitList>
                 {notifications.map((notification) => (
-                  <li className={styles.row} key={notification.id}>
-                    <Link className={styles.rowLink} href={notification.href}>
-                      <span className={styles.rowText}>
-                        <strong title={notification.title}>
+                  <li className={lists.row} key={notification.id}>
+                    <Link className={lists.rowLink} href={notification.href}>
+                      <span className={lists.rowText}>
+                        <span
+                          className={lists.title}
+                          title={notification.title}
+                        >
                           {notification.isUnread ? (
                             <span
                               aria-label="Не прочитано"
-                              className={styles.unreadDot}
+                              className={lists.unread}
                               role="img"
                             />
                           ) : null}
                           {notification.title}
-                        </strong>
-                        <span title={notification.text}>
-                          {notification.text || notification.kind}
+                        </span>
+                        <span className={lists.metaLine} title={notification.kind}>
+                          <DateTimeStack
+                            value={notification.date}
+                            variant="relative"
+                          />{" "}
+                          · {notification.kind}
                         </span>
                       </span>
-                      <DateTimeStack align="end" value={notification.date} />
                     </Link>
                   </li>
                 ))}
-              </ul>
-              </div>
+              </FitList>
             ) : (
               <EmptyState
                 art="notifications"
@@ -646,41 +520,39 @@ async function CampusToday() {
           >
             <div className={styles.cardHeading}>
               <h2 id="request-title">Моя последняя заявка</h2>
-              {data.latestRequest ? (
-                <span
-                  className={controls.badge}
-                  data-tone={
-                    requestStatusTones[
-                      getRequestStatusTone(data.latestRequest.status)
-                    ]
-                  }
-                >
-                  {requestStatusLabels[data.latestRequest.status]}
-                </span>
-              ) : null}
             </div>
             {data.latestRequest ? (
               <>
-                <div className={styles.requestRow}>
-                  <div className={styles.rowText}>
-                    <strong title={latestRequestTitle}>
-                      {latestRequestTitle}
-                    </strong>
-                    <span>
-                      {formatRequestNumber(data.latestRequest.id)} · обновлена
-                    </span>
-                  </div>
-                  <DateTimeStack
-                    align="end"
-                    value={data.latestRequest.updatedAt}
-                  />
+                <div className={lists.rowText}>
+                  <strong className={lists.title} title={latestRequestTitle}>
+                    {latestRequestTitle}
+                  </strong>
+                  <span className={lists.metaLine}>
+                    {formatRequestNumber(data.latestRequest.id)} · обновлена{" "}
+                    <DateTimeStack
+                      value={data.latestRequest.updatedAt}
+                      variant="relative"
+                    />
+                  </span>
                 </div>
-                <Link
-                  className={styles.cardFooterLink}
-                  href={`/requests/${data.latestRequest.publicId}`}
-                >
-                  Отследить заявку →
-                </Link>
+                <div className={styles.requestFooter}>
+                  <span
+                    className={lists.chip}
+                    data-tone={
+                      requestStatusTones[
+                        getRequestStatusTone(data.latestRequest.status)
+                      ]
+                    }
+                  >
+                    {requestStatusLabels[data.latestRequest.status]}
+                  </span>
+                  <Link
+                    className={styles.cardFooterLink}
+                    href={`/requests/${data.latestRequest.publicId}`}
+                  >
+                    Отследить →
+                  </Link>
+                </div>
               </>
             ) : (
               <EmptyState
