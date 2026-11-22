@@ -1,4 +1,6 @@
+import type { DeadlineFormat } from "@/generated/prisma/enums";
 import {
+  formatMoscowTime,
   getUniversityDateTimeFormatter,
   UNIVERSITY_TIME_ZONE,
 } from "@/lib/campus-time";
@@ -115,6 +117,74 @@ export function getDeadlineCountdown(
     daysRemaining,
     label: `Через ${daysRemaining} ${dayWord(daysRemaining)}`,
   };
+}
+
+export type DeadlineUrgency = "calm" | "soon" | "urgent" | "overdue";
+
+export type DeadlineRemaining = {
+  label: string;
+  urgency: DeadlineUrgency;
+  urgencyLabel: string;
+};
+
+const HOUR_IN_MILLISECONDS = 60 * 60 * 1000;
+const URGENT_HOURS = 48;
+const SOON_DAYS = 7;
+
+const urgencyLabels: Record<DeadlineUrgency, string> = {
+  calm: "Время есть",
+  soon: "Скоро срок",
+  urgent: "Срочно",
+  overdue: "Просрочено",
+};
+
+function remainingLabel(
+  dueAt: Date,
+  now: Date,
+  format: DeadlineFormat,
+): string {
+  const { kind, daysRemaining, label } = getDeadlineCountdown(dueAt, now);
+  const time = formatMoscowTime(dueAt);
+  switch (kind) {
+    case "OVERDUE":
+      return label;
+    case "TODAY":
+      if (dueAt.getTime() < now.getTime()) return `Срок истёк сегодня в ${time}`;
+      return format === "ONLINE" ? `Сегодня до ${time}` : `Сегодня в ${time}`;
+    case "TOMORROW":
+      return label;
+    case "UPCOMING": {
+      const word = dayWord(daysRemaining);
+      return `${word === "день" ? "Остался" : "Осталось"} ${daysRemaining} ${word}`;
+    }
+  }
+}
+
+// Подпись считается по календарным дням Москвы, срочность — по точному времени срока.
+export function getDeadlineRemaining(
+  dueAt: Date,
+  now: Date,
+  format: DeadlineFormat = "ONLINE",
+): DeadlineRemaining {
+  const millisecondsLeft = dueAt.getTime() - now.getTime();
+  const daysRemaining = moscowDayNumber(dueAt) - moscowDayNumber(now);
+  const urgency: DeadlineUrgency =
+    millisecondsLeft < 0
+      ? "overdue"
+      : millisecondsLeft < URGENT_HOURS * HOUR_IN_MILLISECONDS
+        ? "urgent"
+        : daysRemaining <= SOON_DAYS
+          ? "soon"
+          : "calm";
+  return {
+    label: remainingLabel(dueAt, now, format),
+    urgency,
+    urgencyLabel: urgencyLabels[urgency],
+  };
+}
+
+export function canRemindOneDayBefore(dueAt: Date, now: Date): boolean {
+  return dueAt.getTime() - now.getTime() > DAY_IN_MILLISECONDS;
 }
 
 export function getUpcomingDeadlines<T extends DeadlineLike>(

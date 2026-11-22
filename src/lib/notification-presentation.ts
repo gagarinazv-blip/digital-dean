@@ -14,8 +14,13 @@ import {
   requestTypeLabels,
 } from "@/lib/campus-labels";
 import { getDemoNow } from "@/lib/demo-date";
-import { getDeadlineCountdown } from "@/lib/deadline-utils";
+import { getSafeExternalUrl } from "@/lib/deadline-action";
 import {
+  getDeadlineCountdown,
+  getDeadlineRemaining,
+} from "@/lib/deadline-utils";
+import {
+  formatMoscowDateTime,
   formatMoscowTime,
   formatMoscowWeekdayDate,
   getUniversityDateTimeFormatter,
@@ -102,7 +107,17 @@ export async function presentStudentNotifications(
     deadlineIds.length
       ? prisma.deadline.findMany({
           where: { id: { in: deadlineIds }, studentId },
-          select: { id: true, subject: true, title: true, dueAt: true, status: true },
+          select: {
+            id: true,
+            subject: true,
+            title: true,
+            topic: true,
+            format: true,
+            taskUrl: true,
+            location: true,
+            dueAt: true,
+            status: true,
+          },
         })
       : Promise.resolve([]),
     academicSessionIds.length
@@ -244,13 +259,24 @@ export async function presentStudentNotifications(
       if (deadline) {
         const countdown = getDeadlineCountdown(deadline.dueAt, now);
         details.deadline = {
+          id: deadline.id,
+          title: cleanStudentFacingText(deadline.title),
           subject: cleanStudentFacingText(deadline.subject),
+          topic: deadline.topic,
+          format: deadline.format,
+          taskUrl: getSafeExternalUrl(deadline.taskUrl),
+          location: deadline.location,
           dueAt: deadline.dueAt.toISOString(),
+          dueLabel: formatMoscowDateTime(deadline.dueAt),
           statusLabel: deadline.status === "SUBMITTED" ? "Сдано" : "Открыто",
           remainingLabel:
             deadline.status === "SUBMITTED"
               ? null
               : countdown.label,
+          remaining:
+            deadline.status === "SUBMITTED"
+              ? null
+              : getDeadlineRemaining(deadline.dueAt, now, deadline.format),
         };
         source = cleanStudentFacingText(deadline.subject);
         context = `${source} · ${dateTimeFormatter.format(deadline.dueAt)} · открыть задание`;

@@ -89,7 +89,7 @@ describe("open notification route", () => {
   });
 
   it.each([
-    ["DEADLINE", "DEADLINE", "deadline-1", "/deadlines#deadline-deadline-1"],
+    ["DEADLINE", "DEADLINE", "deadline-1", "/deadlines/deadline-1"],
     [
       "REQUEST_STATUS",
       "REQUEST",

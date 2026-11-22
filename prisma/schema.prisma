@@ -235,6 +235,29 @@ enum StudentDocumentType {
   CONTRACT
   REFERENCE
   OTHER
+enum DeadlineFormat {
+  ONLINE
+  OFFLINE
+  EXAM
+}
+
+enum DeadlineMaterialKind {
+  PDF
+  DOC
+  SLIDES
+  LINK
+  OTHER
+}
+
+enum DeadlineMaterialUploaderRole {
+  TEACHER
+  STAFF
+}
+
+enum DeadlineProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  DONE
 }
 
 model User {
@@ -315,6 +338,7 @@ model Student {
   requests                       Request[]
   notifications                  Notification[]
   deadlines                      Deadline[]
+  deadlineProgress               DeadlineProgress[]
   auditLogs                      StudentAuditLog[]
   portfolioFolders               PortfolioFolder[]
   portfolioItems                 PortfolioItem[]
@@ -338,6 +362,7 @@ model StaffProfile {
   assignedRequests      Request[]                  @relation("AssignedStaffRequests")
   assignmentHistoryFrom RequestAssignmentHistory[] @relation("RequestAssignmentHistoryFrom")
   assignmentHistoryTo   RequestAssignmentHistory[] @relation("RequestAssignmentHistoryTo")
+  deadlineMaterials DeadlineMaterial[]
 }
 
 model Event {
@@ -617,6 +642,7 @@ model AcademicPlanItem {
   semester    AcademicSemester      @relation(fields: [semesterId], references: [id], onDelete: Cascade)
   result      AcademicResult?
   sessions    AcademicSessionItem[]
+  deadlines   Deadline[]
 
   @@index([semesterId])
 }
@@ -808,15 +834,63 @@ model Notification {
 }
 
 model Deadline {
-  id          String         @id @default(cuid())
-  studentId   Int
-  subject     String
-  title       String
-  dueAt       DateTime       @db.Timestamptz(3)
-  status      DeadlineStatus @default(OPEN)
-  description String?        @db.Text
-  createdAt   DateTime       @default(now())
-  student     Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  id           String             @id @default(cuid())
+  studentId    Int
+  subject      String
+  title        String
+  dueAt        DateTime           @db.Timestamptz(3)
+  status       DeadlineStatus     @default(OPEN)
+  description  String?            @db.Text
+  createdAt    DateTime           @default(now())
+  // Дисциплина учебного плана этого же студента; subject остаётся подписью.
+  disciplineId String?
+  topic        String?
+  format       DeadlineFormat     @default(ONLINE)
+  taskUrl      String?
+  location     String?
+  criteria     String[]           @default([])
+  student      Student            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  discipline   AcademicPlanItem?  @relation(fields: [disciplineId], references: [id], onDelete: SetNull)
+  materials    DeadlineMaterial[]
+  progress     DeadlineProgress[]
 
   @@index([studentId, status, dueAt])
+  @@index([disciplineId])
+}
+
+// Внешний материал хранит ссылку в url, загруженный файл — содержимое в data.
+// Имя и роль сохраняются отдельно, чтобы авторство не терялось вместе с учётной записью.
+model DeadlineMaterial {
+  id             String                       @id @default(cuid())
+  deadlineId     String
+  title          String
+  kind           DeadlineMaterialKind
+  url            String?
+  fileName       String?
+  mediaType      String?
+  sizeBytes      Int?
+  data           Bytes?
+  uploadedById   Int?
+  uploadedByName String
+  uploadedByRole DeadlineMaterialUploaderRole
+  uploadedAt     DateTime                     @default(now())
+  deadline       Deadline                     @relation(fields: [deadlineId], references: [id], onDelete: Cascade)
+  uploadedBy     StaffProfile?                @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@index([deadlineId, uploadedAt])
+  @@index([uploadedById])
+}
+
+model DeadlineProgress {
+  id         Int                    @id @default(autoincrement())
+  deadlineId String
+  studentId  Int
+  status     DeadlineProgressStatus @default(NOT_STARTED)
+  checklist  Json                   @default("[]")
+  updatedAt  DateTime               @updatedAt
+  deadline   Deadline               @relation(fields: [deadlineId], references: [id], onDelete: Cascade)
+  student    Student                @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([deadlineId, studentId])
+  @@index([studentId])
 }
