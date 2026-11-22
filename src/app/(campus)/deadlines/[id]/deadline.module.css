@@ -331,6 +331,19 @@
   font-weight: 600;
 }
 
+.summary h3 {
+  color: var(--color-muted);
+  font-size: inherit;
+  font-weight: 500;
+}
+
+.weight {
+  font-size: var(--font-size-title);
+  font-weight: 600;
+  line-height: 32px;
+  font-variant-numeric: tabular-nums;
+}
+
 .sidebarActions {
   display: grid;
   gap: var(--space-2);

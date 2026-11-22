@@ -15,6 +15,7 @@
     "db:studio": "prisma studio",
     "db:seed:opportunities": "tsx prisma/seed-opportunities.ts",
     "db:seed:deadlines": "tsx prisma/seed-deadlines.ts",
+    "db:seed:content": "tsx prisma/seed-content.ts",
     "db:seed:certificates": "tsx prisma/seed-certificates.ts"
   },
   "dependencies": {

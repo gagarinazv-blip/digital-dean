@@ -13,7 +13,7 @@ import {
   eventTypeLabels,
   eventTypeValues,
 } from "@/lib/event-constants";
-import { formatMoscowTime, getMoscowDateKey } from "@/lib/campus-time";
+import { formatMoscowTime } from "@/lib/campus-time";
 import type { EventStatus } from "@/generated/prisma/enums";
 import type { EventRecord } from "@/lib/event-data";
 import { deleteEventAction } from "./actions";
@@ -135,7 +135,7 @@ export function EventForm({
             aria-describedby={describedBy("date")}
             aria-invalid={Boolean(state.fieldErrors?.date)}
             defaultValue={
-              event ? getMoscowDateKey(event.startsAt) : ""
+              event ? event.eventDate.toISOString().slice(0, 10) : ""
             }
             id={fieldId("date")}
             name="date"
@@ -149,7 +149,9 @@ export function EventForm({
           <input
             aria-describedby={describedBy("startsAt")}
             aria-invalid={Boolean(state.fieldErrors?.startsAt)}
-            defaultValue={event ? formatMoscowTime(event.startsAt) : ""}
+            defaultValue={
+              event?.startsAt ? formatMoscowTime(event.startsAt) : ""
+            }
             id={fieldId("startsAt")}
             name="startsAt"
             required
@@ -162,7 +164,7 @@ export function EventForm({
           <input
             aria-describedby={describedBy("endsAt")}
             aria-invalid={Boolean(state.fieldErrors?.endsAt)}
-            defaultValue={event ? formatMoscowTime(event.endsAt) : ""}
+            defaultValue={event?.endsAt ? formatMoscowTime(event.endsAt) : ""}
             id={fieldId("endsAt")}
             name="endsAt"
             required

@@ -84,7 +84,11 @@ Mobile 360 (проверять и 390), Tablet 768 (боковая рейка 72
 - `FormField` — подпись, подсказка и ошибка поля с `aria-describedby`.
 - `Drawer` — панель справа (`side`) или окно (`full`); закрытие крестиком, Esc и фоном, подтверждение несохранённых изменений. `ModalDialog` / `ConfirmDialog` — компактные подтверждения.
 - `DateTimeStack` — дата в две строки: день и «время · через сколько». Отсчёт от `getDemoNow` через `DemoNowProvider`.
-- `EmptyState` — пустые состояния.
+- `EmptyState` — пустые состояния; `art` ставит крупную иллюстрацию.
+- `SectionHeader` — шапка раздела: градиент по тону (blue, wine, sand, sage), действие и иллюстрация. Используется в `CampusSection` и на страницах сотрудника.
+- `WeekStrip` — неделя на главной; `MonthCalendar` — месяц с парами-событиями.
+- `section-tabs.module.css` — переключатель подразделов.
+- Иллюстрации: `public/illustrations`, Open Doodles, CC0 (см. README в папке).
 
 ## 4. Экраны и макеты
 

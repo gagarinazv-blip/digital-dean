@@ -5,39 +5,55 @@ import { usePathname } from "next/navigation";
 import {
   Bell,
   Calendar,
+  Journal,
   GraphUp,
   HomeSimple,
   Menu,
   Page,
+  SidebarCollapse,
+  SidebarExpand,
+  Suitcase,
   TaskList,
   User,
   Xmark,
 } from "iconoir-react";
 import { useEffect, useRef, useState } from "react";
 import { UnreadNotificationBadge } from "@/components/unread-notification-badge";
+import {
+  CAMPUS_SIDEBAR_COLLAPSED,
+  CAMPUS_SIDEBAR_COOKIE,
+} from "@/lib/campus-sidebar";
 import { useStudentNotificationStore } from "@/lib/notification-store";
 import styles from "./campus-navigation.module.css";
 
 const navigation = [
   { href: "/", label: "Сегодня", icon: HomeSimple },
   { href: "/schedule", label: "Расписание", icon: Calendar },
-  { href: "/digest", label: "Дайджест событий", icon: Calendar },
+  { href: "/deadlines", label: "Задания", icon: TaskList },
+  { href: "/digest", label: "Дайджест событий", icon: Journal },
   { href: "/grades", label: "Успеваемость", icon: GraphUp },
   { href: "/documents", label: "Документы и заявки", icon: Page },
-  { href: "/opportunities/catalog", label: "Возможности", icon: TaskList },
+  { href: "/opportunities/catalog", label: "Возможности", icon: Suitcase },
   { href: "/notifications", label: "Уведомления", icon: Bell },
   { href: "/profile", label: "Профиль", icon: User },
 ] as const;
 
+const YEAR_IN_SECONDS = 365 * 24 * 60 * 60;
+
 export function CampusNavigation({
+  initiallyCollapsed = false,
   studentId,
   unreadNotificationCount,
 }: {
+  initiallyCollapsed?: boolean;
   studentId: number;
   unreadNotificationCount: number;
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(initiallyCollapsed);
+  const toggleLabel = isCollapsed ? "Развернуть меню" : "Свернуть меню";
+  const ToggleIcon = isCollapsed ? SidebarExpand : SidebarCollapse;
   const { unreadCount } = useStudentNotificationStore(
     studentId,
     unreadNotificationCount,
@@ -55,6 +71,14 @@ export function CampusNavigation({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [mobileOpen]);
+
+  function toggleCollapsed() {
+    const next = !isCollapsed;
+    setIsCollapsed(next);
+    document.cookie = `${CAMPUS_SIDEBAR_COOKIE}=${
+      next ? CAMPUS_SIDEBAR_COLLAPSED : "expanded"
+    }; path=/; max-age=${YEAR_IN_SECONDS}; samesite=lax`;
+  }
 
   return (
     <>
@@ -85,9 +109,28 @@ export function CampusNavigation({
         className={`${styles.navigation} ${
           mobileOpen ? styles.mobileOpen : ""
         }`}
+        data-collapsed={isCollapsed}
         id="campus-mobile-navigation"
         aria-label="Разделы кабинета"
       >
+        <button
+          aria-controls="campus-mobile-navigation"
+          aria-expanded={!isCollapsed}
+          aria-label={toggleLabel}
+          className={styles.collapseButton}
+          onClick={toggleCollapsed}
+          title={toggleLabel}
+          type="button"
+        >
+          <span className={styles.icon}>
+            <ToggleIcon
+              aria-hidden="true"
+              className={styles.iconSvg}
+              strokeWidth={1.8}
+            />
+          </span>
+          <span className={styles.navigationLabel}>{toggleLabel}</span>
+        </button>
         {navigation.map((item) => {
           const isCurrent =
             pathname === item.href ||

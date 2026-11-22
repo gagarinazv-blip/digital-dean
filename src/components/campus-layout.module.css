@@ -23,7 +23,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-6);
-  padding-inline: max(var(--space-6), calc((100% - var(--size-content-max)) / 2));
+  padding-inline: var(--space-6);
 }
 
 .brand {
@@ -35,19 +35,17 @@
 }
 
 .brandMark {
-  width: 40px;
-  height: 40px;
+  --brand-halo: var(--color-ink);
+  width: 44px;
+  height: 44px;
   flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: var(--color-wine-900);
+  color: var(--color-surface);
 }
 
 .brandMark svg {
-  width: 23px;
-  height: 23px;
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .brandText {
@@ -57,9 +55,10 @@
 }
 
 .brandText strong {
-  font-size: var(--font-size-body-compact);
-  font-weight: 600;
-  line-height: 1.3;
+  font-size: var(--font-size-lead);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
 }
 
 .brandText > span {
@@ -275,18 +274,24 @@
 .shellBody {
   min-height: 0;
   display: grid;
-  grid-template-columns: var(--size-sidebar) minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
   overflow: hidden;
+}
+
+.brandText > span {
+  white-space: nowrap;
+}
+
+@media (max-width: 1199px) {
+  .headerDescriptor {
+    display: none;
+  }
 }
 
 @media (max-width: 1023px) {
   .headerDescriptor,
   .headerSearch {
     display: none;
-  }
-
-  .shellBody {
-    grid-template-columns: var(--size-rail) minmax(0, 1fr);
   }
 
   .content {
@@ -334,8 +339,8 @@
   }
 
   .brandMark {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
   }
 
   .brandText strong {

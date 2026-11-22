@@ -3,7 +3,6 @@ import { getDemoNow } from "@/lib/demo-date";
 import {
   formatMoscowWeekdayDate,
   getMoscowCalendarWeek,
-  getMoscowDateKey,
 } from "@/lib/campus-time";
 
 const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
@@ -15,6 +14,7 @@ export type DigestEvent = Pick<
   | "title"
   | "type"
   | "description"
+  | "eventDate"
   | "startsAt"
   | "endsAt"
   | "location"
@@ -110,7 +110,7 @@ export function groupEventsByStartDay<T extends DigestEvent>(
         new Date(`${dateKey}T12:00:00.000Z`),
       ),
       events: events.filter(
-        (event) => getMoscowDateKey(event.startsAt) === dateKey,
+        (event) => event.eventDate.toISOString().slice(0, 10) === dateKey,
       ),
     };
   });

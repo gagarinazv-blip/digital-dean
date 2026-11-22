@@ -1,0 +1,180 @@
+/*
+ * Анимация разделов. Контейнер помечается data-stagger: его элементы
+ * появляются по очереди, а движение задаёт раздел. Кадры описывают только
+ * начало, поэтому после анимации на элементах не остаётся transform.
+ * prefers-reduced-motion выключает всё в globals.css.
+ */
+[data-section] {
+  --motion-item: motion-rise;
+  --motion-item-duration: 520ms;
+  --motion-item-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-item-step: 55ms;
+}
+
+[data-section] [data-stagger] > * {
+  animation: var(--motion-item) var(--motion-item-duration) var(--motion-item-ease)
+    calc(80ms + var(--n, 12) * var(--motion-item-step)) backwards;
+  animation-timeline: auto;
+}
+
+[data-section] [data-stagger] > :nth-child(1) { --n: 0; }
+[data-section] [data-stagger] > :nth-child(2) { --n: 1; }
+[data-section] [data-stagger] > :nth-child(3) { --n: 2; }
+[data-section] [data-stagger] > :nth-child(4) { --n: 3; }
+[data-section] [data-stagger] > :nth-child(5) { --n: 4; }
+[data-section] [data-stagger] > :nth-child(6) { --n: 5; }
+[data-section] [data-stagger] > :nth-child(7) { --n: 6; }
+[data-section] [data-stagger] > :nth-child(8) { --n: 7; }
+[data-section] [data-stagger] > :nth-child(9) { --n: 8; }
+[data-section] [data-stagger] > :nth-child(10) { --n: 9; }
+[data-section] [data-stagger] > :nth-child(11) { --n: 10; }
+[data-section] [data-stagger] > :nth-child(12) { --n: 11; }
+
+/* Сетка из семи дней: волна идёт по столбцам. */
+[data-section] [data-stagger="week"] > :nth-child(7n + 1) { --n: 0; }
+[data-section] [data-stagger="week"] > :nth-child(7n + 2) { --n: 1; }
+[data-section] [data-stagger="week"] > :nth-child(7n + 3) { --n: 2; }
+[data-section] [data-stagger="week"] > :nth-child(7n + 4) { --n: 3; }
+[data-section] [data-stagger="week"] > :nth-child(7n + 5) { --n: 4; }
+[data-section] [data-stagger="week"] > :nth-child(7n + 6) { --n: 5; }
+[data-section] [data-stagger="week"] > :nth-child(7n) { --n: 6; }
+
+/* Полосы прогресса растут от нуля. */
+[data-section] [data-grow] > * {
+  transform-origin: left center;
+  animation: motion-grow 900ms cubic-bezier(0.22, 1, 0.36, 1) 260ms backwards;
+  animation-timeline: auto;
+}
+
+/* Сегодня: блоки мягко поднимаются друг за другом. */
+[data-section="today"] {
+  --motion-item-step: 80ms;
+}
+
+/* Расписание: дни разворачиваются сверху вниз, как штора. */
+[data-section="schedule"] {
+  --motion-item: motion-unroll;
+  --motion-item-duration: 620ms;
+}
+
+/* Задания: строки выезжают слева, как пункты списка. */
+[data-section="tasks"] {
+  --motion-item: motion-from-left;
+}
+
+/* Дайджест: карточки раскрываются, как газетный лист. */
+[data-section="digest"] {
+  --motion-item: motion-unfold;
+  --motion-item-duration: 640ms;
+}
+
+[data-section="digest"] [data-stagger] > * {
+  transform-origin: center top;
+}
+
+/* Успеваемость: строки поднимаются ступенями. */
+[data-section="grades"] {
+  --motion-item: motion-step-up;
+}
+
+/* Документы: листы ложатся на стол. */
+[data-section="documents"] {
+  --motion-item: motion-sheet;
+  --motion-item-duration: 600ms;
+}
+
+/* Возможности: карточки «открываются» из центра. */
+[data-section="opportunities"] {
+  --motion-item: motion-open;
+  --motion-item-duration: 560ms;
+  --motion-item-ease: cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+/* Уведомления: приходят справа, со стороны колокольчика. */
+[data-section="notifications"] {
+  --motion-item: motion-from-right;
+}
+
+/* Профиль: сведения проявляются, аватар вырастает. */
+[data-section="profile"] {
+  --motion-item: motion-focus;
+  --motion-item-duration: 600ms;
+}
+
+[data-section="profile"] [data-pop] {
+  animation: motion-open 620ms cubic-bezier(0.34, 1.56, 0.64, 1) 120ms backwards;
+}
+
+@keyframes motion-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+
+@keyframes motion-unroll {
+  from {
+    opacity: 0;
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(-8px);
+  }
+  to {
+    clip-path: inset(0);
+  }
+}
+
+@keyframes motion-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-28px);
+  }
+}
+
+@keyframes motion-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(36px);
+  }
+}
+
+@keyframes motion-unfold {
+  from {
+    opacity: 0;
+    transform: perspective(900px) rotateX(-42deg);
+  }
+}
+
+@keyframes motion-step-up {
+  from {
+    opacity: 0;
+    transform: translateY(22px) scaleY(0.9);
+  }
+}
+
+@keyframes motion-sheet {
+  from {
+    opacity: 0;
+    transform: translate(-14px, 26px) rotate(-2.5deg);
+  }
+}
+
+@keyframes motion-open {
+  from {
+    opacity: 0;
+    transform: scale(0.88);
+  }
+}
+
+@keyframes motion-focus {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+    transform: scale(0.97);
+  }
+}
+
+@keyframes motion-grow {
+  from {
+    transform: scaleX(0);
+  }
+}

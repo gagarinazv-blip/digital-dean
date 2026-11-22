@@ -1,3 +1,4 @@
+import { SectionHeader } from "@/components/section-header";
 import { DateTimeStack } from "@/components/date-time-stack";
 import { Suspense } from "react";
 import { connection } from "next/server";
@@ -46,19 +47,21 @@ async function StaffEventsContent({
   const now = getDemoNow();
   const week = getDigestWeek(getSingleParam(params.week), now);
   const currentWeek = getDigestWeek(undefined, now);
-  const events = await getStaffDigestEvents(week.startInstant, week.endInstant);
+  const weekEndDate = new Date(week.startDate);
+  weekEndDate.setUTCDate(weekEndDate.getUTCDate() + 7);
+  const events = await getStaffDigestEvents(week.startDate, weekEndDate);
   const days = groupEventsByStartDay(week, events);
   const weekKey = getDigestWeekKey(week);
 
   return (
     <main className={styles.page}>
-      <header className={styles.pageHeading}>
-        <div>
-          <p className={styles.eyebrow}>Рабочее место</p>
-          <h1>Дайджест событий</h1>
-          <p>{formatDigestWeekRange(week)} · события и черновики</p>
-        </div>
-      </header>
+      <SectionHeader
+        description={`${formatDigestWeekRange(week)} · события и черновики`}
+        eyebrow="Рабочее место"
+        illustration="events"
+        title="Дайджест событий"
+        tone="wine"
+      />
 
       <section className={styles.workspace}>
         <EventCreatePanel />
@@ -96,6 +99,14 @@ async function StaffEventsContent({
                   {day.events.map((event) => (
                     <li className={styles.eventCard} key={event.id}>
                       <div className={styles.eventTopline}>
+                        {event.startsAt && event.endsAt ? (
+                          <time dateTime={event.startsAt.toISOString()}>
+                            {formatMoscowTime(event.startsAt)}–
+                            {formatMoscowTime(event.endsAt)}
+                          </time>
+                        ) : (
+                          <span>Время уточняется</span>
+                        )}
                         <DateTimeStack
                           end={event.endsAt}
                           value={event.startsAt}

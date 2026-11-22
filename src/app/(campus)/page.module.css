@@ -2,33 +2,35 @@
   min-width: 0;
   width: 100%;
   min-height: 100%;
-  display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
-  gap: var(--space-3);
-  padding: var(--space-4) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-6) 0;
+}
+
+.page > * {
+  flex: 0 0 auto;
+}
+
+.top {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-8);
 }
 
 .welcome {
   min-width: 0;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-1) var(--space-4);
 }
 
 .welcome h1 {
   color: var(--color-ink);
-  font-size: var(--font-size-h1-mobile);
+  font-size: var(--font-size-title);
   font-weight: 600;
   line-height: 32px;
-}
-
-.eyebrow {
-  color: var(--color-blue-700);
-  font-size: var(--font-size-label);
-  font-weight: 600;
-  line-height: 18px;
+  letter-spacing: -0.015em;
 }
 
 .quickActionsSection {
@@ -38,221 +40,148 @@
 .quickActions {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-3);
+  gap: var(--space-5);
 }
 
 .actionTile {
+  --tile: var(--color-hero);
+  --tile-ink: var(--color-blue-700);
+  --notch: 56px;
+  position: relative;
   min-width: 0;
-  min-height: 64px;
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
+  height: 100%;
+  min-height: 104px;
+  display: grid;
+  align-content: space-between;
+  gap: var(--space-2);
+  overflow: hidden;
+  padding: var(--space-4);
+  border-radius: var(--radius-surface);
+  background: var(--tile);
   color: var(--color-ink);
 }
 
-.actionTile:hover {
-  border-color: var(--color-wine-900);
-  background: var(--color-wine-100);
+.actionTile[data-tone="help"] {
+  --tile: var(--color-warning-bg);
+  --tile-ink: var(--color-warning-text);
+}
+
+.actionTile[data-tone="schedule"] {
+  --tile: var(--color-wine-100);
+  --tile-ink: var(--color-wine-900);
+}
+
+.actionLabel {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-body);
+  font-weight: 600;
+  line-height: 22px;
+}
+
+.actionLabel svg {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  color: var(--tile-ink);
+}
+
+.actionMetric {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--space-2);
+  padding-right: var(--notch);
+}
+
+.actionMetric strong {
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 30px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.actionMetric span {
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+  line-height: 16px;
+}
+
+/* Вырез в углу: фон страницы со скруглением и двумя внутренними дугами. */
+.actionNotch {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: var(--notch);
+  height: var(--notch);
+  display: grid;
+  place-items: end;
+  border-top-left-radius: 24px;
+  background: var(--color-canvas);
+}
+
+.actionNotch::before,
+.actionNotch::after {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background: radial-gradient(
+    circle at 0 0,
+    transparent 17.5px,
+    var(--color-canvas) 18px
+  );
+  content: "";
+}
+
+.actionNotch::before {
+  right: 0;
+  bottom: 100%;
+}
+
+.actionNotch::after {
+  right: 100%;
+  bottom: 0;
+}
+
+.actionArrow {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--color-ink);
+  color: var(--color-surface);
+  transition:
+    background-color var(--motion-fast) var(--motion-ease),
+    transform var(--motion-fast) var(--motion-ease);
+}
+
+.actionArrow svg {
+  width: 20px;
+  height: 20px;
+}
+
+.actionTile:hover .actionArrow {
+  background: var(--color-wine-900);
+  transform: rotate(45deg);
 }
 
 .actionTile:focus-visible,
-.cardFooterLink:focus-visible,
-.overdueChip:focus-visible,
-.heroSession:focus-visible,
-.rowLink:focus-visible,
-.textLink:focus-visible {
+.headingLink:focus-visible,
+.overdueChip:focus-visible {
   outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }
 
-.actionIcon {
-  width: 40px;
-  height: 40px;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  border-radius: var(--radius-md);
-  background: var(--color-wine-100);
-  color: var(--color-wine-900);
-}
-
-.actionIcon svg {
-  width: 22px;
-  height: 22px;
-}
-
-.actionText {
+.lists {
   min-width: 0;
+  container: today-lists / inline-size;
   display: grid;
-  gap: 2px;
-}
-
-.actionLabel {
-  font-size: var(--font-size-body-compact);
-  font-weight: 600;
-  line-height: 20px;
-}
-
-.actionDescription {
-  overflow: hidden;
-  color: var(--color-muted);
-  font-size: var(--font-size-caption);
-  line-height: 16px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.dashboardColumns {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-3);
-}
-
-.primaryStack,
-.secondaryStack {
-  display: contents;
-}
-
-.heroCard {
-  order: 1;
-  position: relative;
-  min-width: 0;
-  display: grid;
-  overflow: hidden;
-  padding: var(--space-4);
-  border: 1px solid var(--color-blue-300);
-  border-radius: var(--radius-card);
-  background: linear-gradient(110deg, var(--color-hero) 0%, var(--color-hero) 52%, var(--color-hero-end) 100%);
-}
-
-.heroArt {
-  position: absolute;
-  inset: 0 0 0 auto;
-  width: 40%;
-  overflow: hidden;
-  opacity: 0.45;
-  pointer-events: none;
-}
-
-.heroContent {
-  position: relative;
-  z-index: 1;
-  min-width: 0;
-  display: grid;
-  align-content: space-between;
-  gap: var(--space-3);
-}
-
-.heroTopline {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: start;
-  gap: var(--space-2) var(--space-3);
-}
-
-.heroTopline [data-date-stack] span {
-  color: var(--color-ink);
-}
-
-.heroLabels {
-  min-width: 0;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-1) var(--space-3);
-}
-
-.heroBadge {
-  min-height: 26px;
-  display: inline-flex;
-  align-items: center;
-  padding: 3px var(--space-3);
-  border-radius: var(--radius-pill);
-  background: var(--color-surface);
-  color: var(--color-blue-700);
-  font-size: var(--font-size-caption);
-  font-weight: 600;
-  line-height: 18px;
-}
-
-.heroNote {
-  color: var(--color-blue-700);
-  font-size: var(--font-size-caption);
-  font-weight: 600;
-  line-height: 18px;
-}
-
-.lesson {
-  min-width: 0;
-  display: grid;
-  gap: 2px;
-}
-
-.lesson h2 {
-  display: -webkit-box;
-  overflow: hidden;
-  color: var(--color-ink);
-  font-size: var(--font-size-h2);
-  font-weight: 600;
-  line-height: 26px;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-}
-
-.lesson p {
-  overflow: hidden;
-  color: var(--color-ink);
-  font-size: var(--font-size-label);
-  line-height: 18px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.heroSession {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid rgb(54 87 115 / 18%);
-  border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--color-surface) 86%, transparent);
-  color: var(--color-ink);
-}
-
-.heroSessionDetails {
-  min-width: 0;
-  display: grid;
-  gap: 2px;
-}
-
-.heroSessionBadge {
-  color: var(--color-blue-700);
-  font-size: var(--font-size-caption);
-  font-weight: 600;
-  line-height: 16px;
-}
-
-.heroSessionDetails strong {
-  overflow: hidden;
-  font-size: var(--font-size-body-compact);
-  font-weight: 600;
-  line-height: 20px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.heroActions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--space-6);
 }
 
 .card {
@@ -260,208 +189,61 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  padding: var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
+  padding: var(--space-5) var(--space-6) var(--space-4);
+  border-radius: var(--radius-surface);
   background: var(--color-surface);
-}
-
-.deadlineCard {
-  order: 2;
-}
-
-.scheduleCard {
-  order: 3;
-}
-
-.notificationCard {
-  order: 4;
-}
-
-.requestCard {
-  order: 5;
+  box-shadow: var(--shadow-card);
+  container: today-card / inline-size;
 }
 
 .cardHeading {
   min-width: 0;
   min-height: 28px;
+  flex: 0 0 auto;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-2) var(--space-1);
 }
 
 .cardHeading h2 {
   min-width: 0;
   color: var(--color-ink);
-  font-size: 18px;
+  font-size: var(--font-size-lead);
   font-weight: 600;
   line-height: 24px;
+  letter-spacing: -0.02em;
 }
 
-.fit {
-  min-width: 0;
-}
-
-.rows {
-  display: grid;
-  grid-auto-rows: minmax(64px, auto);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-/* Вне режима «по высоте окна» список короткий, страница прокручивается. */
-.rows > li:nth-child(n + 6) {
-  display: none;
-}
-
-.rows > li:first-child {
-  border-top-color: transparent;
-}
-
-.row {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--space-3);
-  border-top: 1px solid var(--color-border);
-}
-
-.rowLink {
-  min-width: 0;
-  height: 100%;
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--space-3);
-  border-radius: var(--radius-sm);
-  color: var(--color-ink);
-}
-
-.rowLink:hover strong {
-  color: var(--color-wine-900);
-}
-
-.rowText {
-  min-width: 0;
-  display: grid;
-  gap: 2px;
-}
-
-.rowText > strong,
-.rowText > span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.rowText > strong {
-  color: var(--color-ink);
-  font-size: var(--font-size-body-compact);
-  font-weight: 600;
-  line-height: 20px;
-}
-
-.rowText > span {
-  color: var(--color-muted);
-  font-size: var(--font-size-caption);
-  line-height: 16px;
-}
-
-.rowText em {
-  margin-right: var(--space-2);
-  color: var(--color-wine-900);
-  font-style: normal;
-  font-weight: 600;
-}
-
-.rowText em[data-tone="danger"] {
-  color: var(--color-danger-text);
-}
-
-.rowText em[data-tone="warning"] {
-  color: var(--color-warning-text);
-}
-
-.row[data-state="current"] strong {
-  color: var(--color-wine-900);
-}
-
-.row[data-state="past"] strong {
-  color: var(--color-muted);
-  font-weight: 500;
-}
-
-.unreadDot {
-  width: 8px;
-  height: 8px;
-  display: inline-block;
-  margin-right: var(--space-2);
-  border-radius: var(--radius-pill);
-  background: var(--color-wine-900);
-  vertical-align: 1px;
-}
-
-.requestRow {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.cardFooterLink,
-.textLink {
-  min-height: var(--size-touch);
+.headingLink {
   flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  align-self: flex-start;
-  margin-block: auto calc(-1 * var(--space-2));
+  margin-left: auto;
   border-radius: var(--radius-sm);
   color: var(--color-wine-900);
-  font-size: var(--font-size-body-compact);
+  font-size: var(--font-size-label);
   font-weight: 600;
+  line-height: 24px;
   white-space: nowrap;
 }
 
-.cardFooterLink:hover,
-.textLink:hover {
+.headingLink:hover {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
-.deadlineFooter {
-  min-width: 0;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  margin-top: auto;
-}
-
 .overdueChip {
-  min-height: 28px;
+  flex: 0 0 auto;
+  margin-left: var(--space-1);
+  min-height: 26px;
   display: inline-flex;
   align-items: center;
-  order: 1;
-  padding: var(--space-1) var(--space-3);
+  padding: 3px var(--space-3);
   border-radius: var(--radius-pill);
   background: var(--color-danger-bg);
   color: var(--color-danger-text);
-  font-size: var(--font-size-caption);
+  font-size: var(--font-size-label);
   font-weight: 600;
   line-height: 18px;
-}
-
-.compactEmpty {
-  color: var(--color-muted);
-  font-size: var(--font-size-body-compact);
-  line-height: 20px;
 }
 
 .cardEmptyState {
@@ -473,9 +255,9 @@
 .skeletonHeading,
 .skeletonHero,
 .skeletonCard,
-.skeletonActions span {
+.skeletonActions {
   display: block;
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-surface);
   background: linear-gradient(
     100deg,
     var(--color-subtle) 25%,
@@ -492,22 +274,16 @@
 }
 
 .skeletonHero {
-  min-height: 150px;
+  min-height: 264px;
+}
+
+.skeletonActions {
+  min-height: 112px;
 }
 
 .skeletonCard {
   min-height: 200px;
   flex: 1 1 auto;
-}
-
-.skeletonActions {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-3);
-}
-
-.skeletonActions span {
-  min-height: 64px;
 }
 
 @keyframes student-shimmer {
@@ -516,241 +292,52 @@
   }
 }
 
-/* Планшет: два равных списка рядом, остальные блоки на всю ширину. */
-@media (min-width: 700px) and (max-width: 1099px) {
-  .dashboardColumns {
+@media (min-width: 900px) {
+  .lists {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-areas:
-      "hero hero"
-      "schedule deadlines"
-      "notifications notifications"
-      "request request";
-  }
-
-  .heroCard {
-    grid-area: hero;
-  }
-
-  .scheduleCard {
-    grid-area: schedule;
-  }
-
-  .deadlineCard {
-    grid-area: deadlines;
-  }
-
-  .requestCard {
-    grid-area: request;
-  }
-
-  .notificationCard {
-    grid-area: notifications;
   }
 }
 
-/* Широкий экран: страница занимает высоту окна, списки показывают целое число строк. */
-@media (min-width: 1100px) {
-  .dashboardColumns {
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 1.05fr);
-    grid-template-rows: minmax(0, 1fr);
-  }
-
-  .primaryStack,
-  .secondaryStack {
-    min-width: 0;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
-  }
-
-  .scheduleCard,
-  .deadlineCard {
-    flex: 1 1 0;
-  }
-
-  .heroCard,
-  .requestCard {
-    flex: 0 0 auto;
-  }
-
-  .fit {
-    min-height: 129px;
-    flex: 1 1 0;
-    overflow: hidden;
-    container: dashboard-list / size;
-  }
-
-  .rows {
-    height: 100%;
-    grid-auto-rows: minmax(64px, 88px);
-    align-content: start;
-  }
-
-  /* Три-четыре строки делят всю высоту карточки, не оставляя пустоты. */
-  .rows:has(> :nth-child(3)):not(:has(> :nth-child(5))) {
-    grid-auto-rows: minmax(64px, 1fr);
-  }
-
-  .rows > li:nth-child(n + 6) {
-    display: grid;
-  }
-
-  .rows > li:nth-child(n + 13) {
-    display: none;
-  }
-
-  @container dashboard-list (height < 768px) {
-    .rows > li:nth-child(n + 12) {
-      display: none;
-    }
-  }
-
-  @container dashboard-list (height < 704px) {
-    .rows > li:nth-child(n + 11) {
-      display: none;
-    }
-  }
-
-  @container dashboard-list (height < 640px) {
-    .rows > li:nth-child(n + 10) {
-      display: none;
-    }
-  }
-
-  @container dashboard-list (height < 576px) {
-    .rows > li:nth-child(n + 9) {
-      display: none;
-    }
-  }
-
-  @container dashboard-list (height < 512px) {
-    .rows > li:nth-child(n + 8) {
-      display: none;
-    }
-  }
-
-  @container dashboard-list (height < 448px) {
-    .rows > li:nth-child(n + 7) {
-      display: none;
-    }
-  }
-
-  @container dashboard-list (height < 384px) {
-    .rows > li:nth-child(n + 6) {
-      display: none;
-    }
-  }
-
-  @container dashboard-list (height < 320px) {
-    .rows > li:nth-child(n + 5) {
-      display: none;
-    }
-  }
-
-  @container dashboard-list (height < 256px) {
-    .rows > li:nth-child(n + 4) {
-      display: none;
-    }
-  }
-
-  @container dashboard-list (height < 192px) {
-    .rows > li:nth-child(n + 3) {
-      display: none;
-    }
-  }
-
-  @container dashboard-list (height < 128px) {
-    .rows > li:nth-child(n + 2) {
-      display: none;
-    }
-  }
-
-  /* Уведомлений нет: вместо третьей колонки — строка под двумя остальными. */
-  .dashboardColumns[data-notifications="empty"] {
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr) auto;
-  }
-
-  .dashboardColumns[data-notifications="empty"] .notificationCard {
-    grid-column: 1 / -1;
-    flex-direction: row;
-    align-items: center;
-    gap: var(--space-4);
-    padding-block: var(--space-2);
-  }
-
-  .dashboardColumns[data-notifications="empty"] .compactEmpty {
+/* Списки занимают остаток высоты окна; три строки видны всегда. */
+@media (min-width: 1200px) {
+  .page > .lists {
+    min-height: 246px;
     flex: 1 1 auto;
   }
-
-  .dashboardColumns[data-notifications="empty"] .notificationCard .cardFooterLink {
-    margin-block: 0;
-    align-self: center;
-  }
 }
 
-/* На невысоком экране экзамен уже есть в списке дедлайнов. */
-@media (min-width: 1100px) and (max-height: 859px) {
-  .heroSession {
-    display: none;
+/* Невысокий ноутбук: плотнее, чтобы три строки поместились без прокрутки. */
+@media (min-width: 1200px) and (max-height: 820px) {
+  .page {
+    gap: var(--space-5);
+    padding-block: var(--space-4) var(--space-3);
+  }
+
+  .actionTile {
+    min-height: 96px;
+  }
+
+  .card {
+    padding-block: var(--space-3) var(--space-2);
+  }
+
+  .page > .lists {
+    min-height: 190px;
   }
 }
 
 @media (max-width: 699px) {
-  .page {
-    gap: var(--space-4);
-    padding: var(--space-4) 0 var(--space-8);
-  }
-
-  .quickActions,
-  .skeletonActions {
+  .quickActions {
     grid-template-columns: minmax(0, 1fr);
-    gap: var(--space-2);
-  }
-
-  .dashboardColumns {
-    gap: var(--space-4);
+    gap: var(--space-3);
   }
 
   .actionTile {
-    min-height: 60px;
+    min-height: 104px;
   }
 
-  .heroArt {
-    display: none;
-  }
-
-  .heroActions > a {
-    flex: 1 1 auto;
-  }
-}
-
-@media (max-width: 480px) {
-  .heroTopline,
-  .heroSession,
-  .row,
-  .rowLink,
-  .requestRow {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .row,
-  .requestRow {
-    gap: var(--space-1);
-    padding-block: var(--space-3);
-  }
-
-  .rowLink {
-    gap: var(--space-1);
-  }
-
-  .heroTopline [data-date-stack],
-  .heroSession [data-date-stack],
-  .row [data-date-stack],
-  .requestRow [data-date-stack] {
-    justify-items: start;
-    text-align: left;
+  .card {
+    padding-inline: var(--space-4);
   }
 }
 
@@ -758,7 +345,11 @@
   .skeletonHeading,
   .skeletonHero,
   .skeletonCard,
-  .skeletonActions span {
+  .skeletonActions {
     animation: none;
+  }
+
+  .actionTile:hover .actionArrow {
+    transform: none;
   }
 }

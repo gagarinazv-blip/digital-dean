@@ -15,6 +15,8 @@ export default function SubjectError({
     <CampusSection
       eyebrow="Успеваемость"
       title="Успеваемость"
+      illustration="grades"
+      tone="sage"
       description="Страница дисциплины временно недоступна."
     >
       <EmptyState

@@ -1,89 +1,139 @@
 import type { RequestStatus, ScheduleStatus } from "@/generated/prisma/enums";
+import { getCalendarDayDifference } from "@/lib/date-stack";
 
-type TimedLesson = {
-  startTime: Date;
-  endTime: Date;
+const EXAM_WINDOW = 48 * 60 * 60 * 1000;
+
+export type TodayEvent = {
+  id: string;
+  kind: "lesson" | "session";
+  title: string;
+  typeLabel: string;
+  startsAt: Date;
+  endsAt: Date;
+  originalStartsAt: Date | null;
+  originalEndsAt: Date | null;
   status: ScheduleStatus;
+  room: string | null;
+  teacher: string | null;
+  onlineUrl: string | null;
+  scheduleHref: string;
+  detailsHref: string;
 };
 
-export type TodayHeroState<T extends TimedLesson> = {
-  kind: "current" | "next" | "upcoming" | "none";
-  lesson: T | null;
-  hasTodayLessons: boolean;
-  countdown: string | null;
+export type TodayFocusState =
+  | "current"
+  | "today"
+  | "upcoming"
+  | "cancelled"
+  | "none";
+
+export type TodayFocus = {
+  state: TodayFocusState;
+  main: TodayEvent | null;
+  /** Экзамен или зачёт для полосы «Далее»: ближайшие 48 часов или сразу следом. */
+  next: TodayEvent | null;
+  isNextUrgent: boolean;
+  isOverlapping: boolean;
 };
 
-function formatDuration(milliseconds: number): string | null {
-  if (milliseconds <= 0) return null;
-  const totalMinutes = Math.ceil(milliseconds / 60_000);
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  if (hours > 0 && minutes > 0) return `${hours} ч ${minutes} мин`;
-  if (hours > 0) return `${hours} ч`;
-  return `${totalMinutes} мин`;
+function byStart(first: TodayEvent, second: TodayEvent): number {
+  return (
+    first.startsAt.getTime() - second.startsAt.getTime() ||
+    // При одинаковом начале экзамен важнее пары.
+    Number(second.kind === "session") - Number(first.kind === "session") ||
+    first.id.localeCompare(second.id)
+  );
 }
 
-export function getTodayHeroState<T extends TimedLesson>(
-  todayLessons: readonly T[],
-  nearestLesson: T | null,
+export function doEventsOverlap(
+  first: Pick<TodayEvent, "startsAt" | "endsAt">,
+  second: Pick<TodayEvent, "startsAt" | "endsAt">,
+): boolean {
+  return (
+    first.startsAt.getTime() < second.endsAt.getTime() &&
+    second.startsAt.getTime() < first.endsAt.getTime()
+  );
+}
+
+/** Что показать главной карточкой «Ближайшее занятие». */
+export function getTodayFocus(
+  events: readonly TodayEvent[],
   now: Date,
-): TodayHeroState<T> {
-  const activeTodayLessons = todayLessons.filter(
-    (lesson) => lesson.status !== "CANCELLED",
+): TodayFocus {
+  const remaining = events
+    .filter((event) => event.endsAt.getTime() > now.getTime())
+    .sort(byStart);
+  const active = remaining.filter((event) => event.status !== "CANCELLED");
+  const running = active.filter(
+    (event) => event.startsAt.getTime() <= now.getTime(),
   );
-  const currentLesson = activeTodayLessons.find(
-    (lesson) =>
-      lesson.startTime.getTime() <= now.getTime() &&
-      lesson.endTime.getTime() > now.getTime(),
+  const isToday = (event: TodayEvent) =>
+    getCalendarDayDifference(event.startsAt, now) === 0;
+
+  let main =
+    running.find((event) => event.kind === "session") ??
+    running[0] ??
+    active[0] ??
+    null;
+  let state: TodayFocusState =
+    main === null
+      ? "none"
+      : running.length > 0
+        ? "current"
+        : isToday(main)
+          ? "today"
+          : "upcoming";
+
+  // На сегодня остались только отменённые пары — сообщаем об отмене.
+  const cancelledToday = remaining.find(
+    (event) => event.status === "CANCELLED" && isToday(event),
   );
-  if (currentLesson) {
-    const remaining = formatDuration(
-      currentLesson.endTime.getTime() - now.getTime(),
-    );
-    return {
-      kind: "current",
-      lesson: currentLesson,
-      hasTodayLessons: activeTodayLessons.length > 0,
-      countdown: remaining ? `осталось ${remaining}` : null,
-    };
+  if (cancelledToday && state !== "current" && state !== "today") {
+    main = cancelledToday;
+    state = "cancelled";
   }
 
-  const nextTodayLesson = activeTodayLessons
-    .filter((lesson) => lesson.startTime.getTime() > now.getTime())
-    .sort(
-      (first, second) =>
-        first.startTime.getTime() - second.startTime.getTime(),
-    )[0];
-  if (nextTodayLesson) {
-    const remaining = formatDuration(
-      nextTodayLesson.startTime.getTime() - now.getTime(),
-    );
-    return {
-      kind: "next",
-      lesson: nextTodayLesson,
-      hasTodayLessons: true,
-      countdown: remaining ? `через ${remaining}` : null,
-    };
-  }
-
-  if (nearestLesson) {
-    const remaining = formatDuration(
-      nearestLesson.startTime.getTime() - now.getTime(),
-    );
-    return {
-      kind: "upcoming",
-      lesson: nearestLesson,
-      hasTodayLessons: activeTodayLessons.length > 0,
-      countdown: remaining ? `через ${remaining}` : null,
-    };
-  }
+  const following = active.filter(
+    (event) =>
+      event.id !== main?.id &&
+      event.startsAt.getTime() >= (main?.startsAt.getTime() ?? 0),
+  );
+  const session = active.find(
+    (event) => event.kind === "session" && event.id !== main?.id,
+  );
+  const isNextUrgent = Boolean(
+    session && session.startsAt.getTime() - now.getTime() < EXAM_WINDOW,
+  );
+  const next =
+    main && session && (isNextUrgent || following[0]?.id === session.id)
+      ? session
+      : null;
 
   return {
-    kind: "none",
-    lesson: null,
-    hasTodayLessons: activeTodayLessons.length > 0,
-    countdown: null,
+    state,
+    main,
+    next,
+    isNextUrgent: next !== null && isNextUrgent,
+    isOverlapping: Boolean(
+      main && next && state !== "cancelled" && doEventsOverlap(main, next),
+    ),
   };
+}
+
+/** Список «Ближайшие занятия» без пары из главной карточки. */
+export function getLessonsAfterFocus(
+  events: readonly TodayEvent[],
+  focus: Pick<TodayFocus, "main">,
+  now: Date,
+): TodayEvent[] {
+  return events
+    .filter(
+      (event) =>
+        event.kind === "lesson" &&
+        event.id !== focus.main?.id &&
+        event.endsAt.getTime() > now.getTime(),
+    )
+    .sort(byStart);
 }
 
 export type RequestStatusTone =

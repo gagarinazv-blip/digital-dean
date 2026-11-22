@@ -1,22 +1,31 @@
 :root {
-  --color-canvas: #f7f4f0;
+  --color-canvas: #f6f5f1;
   --color-surface: #ffffff;
-  --color-subtle: #f6f0eb;
-  --color-border: #eae4de;
-  --color-ink: #262222;
-  --color-muted: #6b635f;
+  --color-subtle: #f1eeea;
+  --color-border: #e6e2dc;
+  --color-ink: #211c1b;
+  --color-muted: #655d59;
   --color-disabled: #9a938f;
-  --color-wine-900: #641c29;
-  --color-wine-700: #782b3b;
-  --color-wine-100: #f4eaeb;
-  --color-blue-700: #365773;
-  --color-blue-100: #eaf0f5;
-  --color-blue-300: #c4d0e0;
-  --color-hero: #dce5f0;
-  --color-hero-end: #e8edf4;
+  --color-wine-900: #4c050c;
+  --color-wine-700: #6b1a22;
+  --color-wine-100: #f3e7e7;
+  --color-blue-700: #38557f;
+  --color-blue-100: #eaf0f9;
+  --color-blue-300: #c3d1ea;
+  --color-hero: #dfe7f5;
+  --color-hero-end: #ebf0f8;
+  --color-on-wine-muted: #dfd0d1;
+  --color-hero-beige: #efe8de;
+  --color-hero-line: rgb(33 28 27 / 14%);
+  --color-hero-muted: #554c48;
+  --color-accent-blue: #a9bfe6;
+  --color-accent-yellow: #fbd99a;
+  --color-ring-blue: #8fabe0;
+  --color-ring-yellow: #f3c877;
+  --color-accent-mix: #dcd6cf;
   --color-success-bg: #e7f2e8;
   --color-success-text: #2a603b;
-  --color-warning-bg: #f7eddb;
+  --color-warning-bg: #fbf0d8;
   --color-warning-text: #76531d;
   --color-danger-bg: #fae5e5;
   --color-danger-text: #8b2828;
@@ -26,12 +35,12 @@
   --color-danger-hover: #f5d9d9;
   --color-warning-border: #e6cf9f;
   --color-success-border: #bfdcc4;
-  --color-blue-border: #c4d0e0;
-  --color-border-strong: #d5cbc3;
+  --color-blue-border: #c3d1ea;
+  --color-border-strong: #d3ccc4;
   --color-control-border: #948a84;
-  --color-backdrop: rgb(38 34 34 / 48%);
-  --color-focus: #365773;
-  --color-focus-on-dark: #c4d0e0;
+  --color-backdrop: rgb(33 28 27 / 48%);
+  --color-focus: #38557f;
+  --color-focus-on-dark: #c3d1ea;
 
   --font-body: var(--font-onest), Arial, sans-serif;
 
@@ -40,7 +49,11 @@
   --font-size-body-compact: 14px;
   --font-size-body: 16px;
   --font-size-h3: 16px;
+  --font-size-lead: 18px;
   --font-size-h2: 20px;
+  --font-size-title: 24px;
+  --font-size-headline: 28px;
+  --font-size-display: 32px;
   --font-size-h1: 30px;
   --font-size-h1-mobile: 24px;
   --font-size-hero: 36px;
@@ -59,7 +72,9 @@
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-card: 18px;
+  --radius-lg: 16px;
   --radius-panel: 22px;
+  --radius-surface: 24px;
   --radius-pill: 999px;
 
   --size-touch: 44px;
@@ -77,8 +92,9 @@
   --size-sidebar: 224px;
   --size-content-max: 1280px;
 
-  --shadow-soft: 0 4px 16px rgb(38 34 34 / 6%);
-  --shadow-overlay: 0 12px 32px rgb(38 34 34 / 14%);
+  --shadow-soft: 0 4px 16px rgb(33 28 27 / 6%);
+  --shadow-card: 0 1px 2px rgb(33 28 27 / 4%), 0 8px 24px rgb(33 28 27 / 5%);
+  --shadow-overlay: 0 12px 32px rgb(33 28 27 / 14%);
 
   --motion-fast: 160ms;
   --motion-page: 220ms;
@@ -290,6 +306,12 @@ details[open] > :not(summary) {
 
   button:disabled {
     cursor: not-allowed;
+  }
+}
+
+@media (min-width: 1700px) {
+  :root {
+    --size-content-max: 1520px;
   }
 }
 

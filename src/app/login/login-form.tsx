@@ -8,6 +8,7 @@ import {
   type KeyboardEvent,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { PasswordInput } from "@/components/password-input";
 import { PhoneInput } from "@/components/phone-input";
 import {
   loginAction,
@@ -87,14 +88,13 @@ function StaffCredentialsForm() {
       </div>
       <div className={styles.field}>
         <label htmlFor="login-staff-password">Пароль сотрудника</label>
-        <input
+        <PasswordInput
           aria-describedby={state.error ? "login-staff-error" : undefined}
           aria-invalid={state.error ? true : undefined}
           autoComplete="current-password"
           id="login-staff-password"
           name="password"
           required
-          type="password"
         />
       </div>
       <ActionError id="login-staff-error" message={state.error} />
@@ -154,14 +154,13 @@ function StudentPasswordLogin({
       </div>
       <div className={styles.field}>
         <label htmlFor="login-student-password">Пароль студента</label>
-        <input
+        <PasswordInput
           aria-describedby={state.error ? "login-student-password-error" : undefined}
           aria-invalid={state.error ? true : undefined}
           autoComplete="current-password"
           id="login-student-password"
           name="password"
           required
-          type="password"
         />
         <input name="phone" type="hidden" value={phone} />
       </div>
@@ -373,8 +372,6 @@ function PasswordResetForm() {
     initialState,
   );
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmation, setShowConfirmation] = useState(false);
 
   return (
     <form action={formAction} aria-busy={pending} className={styles.form}>
@@ -383,30 +380,18 @@ function PasswordResetForm() {
       </p>
       <div className={styles.field}>
         <label htmlFor="student-new-password">Новый пароль</label>
-        <div className={styles.passwordInput}>
-          <input
-            aria-describedby={state.error ? "student-password-error" : undefined}
-            aria-invalid={state.error ? true : undefined}
-            autoComplete="new-password"
-            id="student-new-password"
-            maxLength={72}
-            minLength={10}
-            name="password"
-            onChange={(event) => setPassword(event.currentTarget.value)}
-            required
-            type={showPassword ? "text" : "password"}
-            value={password}
-          />
-          <button
-            aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"}
-            aria-pressed={showPassword}
-            className={styles.passwordToggle}
-            onClick={() => setShowPassword((visible) => !visible)}
-            type="button"
-          >
-            {showPassword ? "Скрыть" : "Показать"}
-          </button>
-        </div>
+        <PasswordInput
+          aria-describedby={state.error ? "student-password-error" : undefined}
+          aria-invalid={state.error ? true : undefined}
+          autoComplete="new-password"
+          id="student-new-password"
+          maxLength={72}
+          minLength={10}
+          name="password"
+          onChange={(event) => setPassword(event.currentTarget.value)}
+          required
+          value={password}
+        />
         <PasswordStrength password={password} />
         <p className={styles.fieldHint}>
           Не менее 10 символов, не номер телефона и не простой пароль.
@@ -414,30 +399,17 @@ function PasswordResetForm() {
       </div>
       <div className={styles.field}>
         <label htmlFor="student-password-confirmation">Повторите пароль</label>
-        <div className={styles.passwordInput}>
-          <input
-            aria-describedby={state.error ? "student-password-error" : undefined}
-            aria-invalid={state.error ? true : undefined}
-            autoComplete="new-password"
-            id="student-password-confirmation"
-            maxLength={72}
-            minLength={10}
-            name="confirmation"
-            required
-            type={showConfirmation ? "text" : "password"}
-          />
-          <button
-            aria-label={
-              showConfirmation ? "Скрыть подтверждение" : "Показать подтверждение"
-            }
-            aria-pressed={showConfirmation}
-            className={styles.passwordToggle}
-            onClick={() => setShowConfirmation((visible) => !visible)}
-            type="button"
-          >
-            {showConfirmation ? "Скрыть" : "Показать"}
-          </button>
-        </div>
+        <PasswordInput
+          aria-describedby={state.error ? "student-password-error" : undefined}
+          aria-invalid={state.error ? true : undefined}
+          autoComplete="new-password"
+          id="student-password-confirmation"
+          maxLength={72}
+          minLength={10}
+          name="confirmation"
+          required
+          toggleLabel="Показать подтверждение пароля"
+        />
       </div>
       <ActionError id="student-password-error" message={state.error} />
       <button className={styles.submit} disabled={pending} type="submit">

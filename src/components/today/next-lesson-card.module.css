@@ -1,0 +1,312 @@
+/* Однотонная заливка, как у плиток, показывает состояние: бежевая — занятие
+   будет, серая — отменено, белая — занятий нет. Текст всегда тёмный.
+   Размеры текста: 32 (28, 24), 18 и 14. */
+.card {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-6) var(--space-5);
+  border-radius: var(--radius-surface);
+  background: var(--color-hero-beige);
+  box-shadow: var(--shadow-card);
+  color: var(--color-ink);
+  font-size: var(--font-size-body-compact);
+  line-height: 20px;
+  container: next-lesson / inline-size;
+}
+
+.card[data-state="cancelled"] {
+  background: var(--color-border);
+}
+
+.card[data-state="none"] {
+  background: var(--color-surface);
+}
+
+.card p {
+  margin: 0;
+}
+
+.topline {
+  min-width: 0;
+  min-height: 28px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+}
+
+.label,
+.previous,
+.details {
+  color: var(--color-hero-muted);
+}
+
+.chip {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.chip[data-strong] {
+  background: var(--color-wine-900);
+  color: var(--color-surface);
+  font-weight: 600;
+}
+
+.progress {
+  height: 4px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+}
+
+.progress > span {
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  background: var(--color-wine-900);
+  transition: width var(--motion-page) var(--motion-ease);
+}
+
+.body {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-3) var(--space-8);
+}
+
+.heading,
+.when {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: var(--space-1);
+}
+
+.title {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: var(--font-size-title);
+  font-weight: 600;
+  line-height: 32px;
+  letter-spacing: -0.015em;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.day {
+  font-size: var(--font-size-lead);
+  line-height: 28px;
+}
+
+.time {
+  color: var(--color-wine-900);
+  font-size: var(--font-size-title);
+  font-weight: 600;
+  line-height: 32px;
+  letter-spacing: -0.015em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.details li {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.details svg {
+  width: var(--size-icon-sm);
+  height: var(--size-icon-sm);
+  flex: 0 0 auto;
+}
+
+.actions {
+  margin-top: var(--space-1);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-4);
+}
+
+.button {
+  min-height: var(--size-touch);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--radius-md);
+  background: var(--color-wine-900);
+  color: var(--color-surface);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.button:hover {
+  background: var(--color-wine-700);
+}
+
+.link {
+  min-height: var(--size-touch);
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-sm);
+  color: var(--color-wine-900);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Жёлтая метка связывает строку с жёлтым блоком экзамена на ленте дня. */
+.next {
+  min-width: 0;
+  width: fit-content;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+}
+
+.next[data-overlap] {
+  color: var(--color-wine-900);
+}
+
+.next::before {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent-yellow);
+  box-shadow: 0 0 0 2px var(--color-warning-text);
+  content: "";
+}
+
+.next svg {
+  width: var(--size-icon-sm);
+  height: var(--size-icon-sm);
+  flex: 0 0 auto;
+}
+
+.next:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.nextMoment {
+  font-weight: 400;
+}
+
+.button:focus-visible,
+.link:focus-visible,
+.next:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* Название и время одного роста стоят на одной линии по краям карточки. */
+@container next-lesson (min-width: 640px) {
+  .body {
+    grid-template: "heading when" auto "next when" 1fr / minmax(0, 1fr) auto;
+    row-gap: var(--space-1);
+  }
+
+  .heading {
+    grid-area: heading;
+  }
+
+  .next {
+    grid-area: next;
+    align-self: start;
+  }
+
+  .when {
+    grid-area: when;
+    justify-items: end;
+    text-align: right;
+  }
+
+  .emptyAction {
+    grid-area: when;
+    align-self: center;
+  }
+
+  /* Прошедшее время видно на ленте дня. */
+  .progress[data-on-timeline] {
+    display: none;
+  }
+
+  .actions {
+    flex-direction: row-reverse;
+    margin-top: var(--space-1);
+  }
+
+  /* Экзамен уже стоит на ленте: повторять название и время незачем. */
+  .card[data-timeline] .type,
+  .next[data-on-timeline] .nextName,
+  .next[data-on-timeline] .nextMoment,
+  .next[data-on-timeline]:not([data-overlap]) {
+    display: none;
+  }
+}
+
+@container next-lesson (min-width: 800px) {
+  .title,
+  .time {
+    font-size: var(--font-size-headline);
+    line-height: 40px;
+  }
+}
+
+@container next-lesson (min-width: 1000px) {
+  .title,
+  .time {
+    font-size: var(--font-size-display);
+  }
+}
+
+@container next-lesson (max-width: 519px) {
+  .actions,
+  .button {
+    width: 100%;
+  }
+
+  .link {
+    width: 100%;
+    justify-content: center;
+  }
+
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: var(--space-4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress > span {
+    transition: none;
+  }
+}
+
+.card[data-state="cancelled"] .time {
+  color: var(--color-hero-muted);
+}

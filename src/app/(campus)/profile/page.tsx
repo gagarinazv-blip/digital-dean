@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import type { StudyForm } from "@/generated/prisma/enums";
 import { getPrisma } from "@/lib/prisma";
+import { SectionArt } from "@/components/section-art";
 import { requireStudentContext } from "@/lib/student";
 import { CorporateMailCard } from "./corporate-mail-card";
 import { getStudentFacingGroupName } from "@/lib/campus-labels";
@@ -48,6 +49,7 @@ async function ProfileContent() {
         <section className={styles.profileHero} aria-label="Профиль студента">
           <div
             className={styles.avatar}
+            data-pop
             data-tone={getAvatarTone(student.fullName)}
             aria-hidden="true"
           >
@@ -61,7 +63,7 @@ async function ProfileContent() {
               {getStudentFacingGroupName(student.group.name)}
             </p>
           </div>
-          <span className={styles.heroAccent} aria-hidden="true" />
+          <SectionArt className={styles.heroIllustration} name="profile" />
         </section>
 
         <section
@@ -76,7 +78,7 @@ async function ProfileContent() {
             <span className={styles.readOnly}>Только для просмотра</span>
           </div>
 
-          <dl className={styles.details}>
+          <dl className={styles.details} data-stagger>
             <div className={styles.detailCard}>
               <dt>Факультет</dt>
               <dd>{student.faculty}</dd>

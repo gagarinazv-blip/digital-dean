@@ -110,7 +110,7 @@
   border-radius: var(--radius-card);
   background-color: var(--color-hero);
   background-image:
-    linear-gradient(90deg, var(--color-hero) 0%, rgb(220 229 240 / 94%) 44%, rgb(220 229 240 / 18%) 100%),
+    linear-gradient(90deg, var(--color-hero) 0%, color-mix(in srgb, var(--color-hero) 94%, transparent) 44%, color-mix(in srgb, var(--color-hero) 18%, transparent) 100%),
     url("/images/University%20architecture%20%C2%B7%20hero%20%C2%B7%20%D1%84%D1%80%D0%B0%D0%B3%D0%BC%D0%B5%D0%BD%D1%82%20%D1%80%D0%B5%D1%84%D0%B5%D1%80%D0%B5%D0%BD%D1%81%D0%B0.png");
   background-position: center, right 44%;
   background-size: cover;
@@ -692,7 +692,7 @@
     min-height: 208px;
     padding: var(--space-4);
     background-image:
-      linear-gradient(90deg, var(--color-hero) 0%, rgb(220 229 240 / 90%) 48%, rgb(220 229 240 / 34%) 100%),
+      linear-gradient(90deg, var(--color-hero) 0%, color-mix(in srgb, var(--color-hero) 90%, transparent) 48%, color-mix(in srgb, var(--color-hero) 34%, transparent) 100%),
       url("/images/University%20architecture%20%C2%B7%20hero%20%C2%B7%20%D1%84%D1%80%D0%B0%D0%B3%D0%BC%D0%B5%D0%BD%D1%82%20%D1%80%D0%B5%D1%84%D0%B5%D1%80%D0%B5%D0%BD%D1%81%D0%B0.png");
     background-position: center, right center;
   }

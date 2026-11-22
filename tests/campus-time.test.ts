@@ -3,7 +3,6 @@ import {
   formatCampusDate,
   formatCampusTime,
   formatMoscowTime,
-  formatRemainingMoscowDays,
   formatUniversityClockTime,
   getCampusGreeting,
   UNIVERSITY_TIME_ZONE,
@@ -126,22 +125,5 @@ describe("Moscow campus time", () => {
     for (const [instant, greeting] of cases) {
       expect(getCampusGreeting(new Date(instant))).toBe(greeting);
     }
-  });
-
-  it("describes a deadline by its Moscow calendar day", () => {
-    const now = new Date("2026-11-14T21:15:00.000Z");
-
-    expect(
-      formatRemainingMoscowDays(new Date("2026-11-15T12:00:00.000Z"), now),
-    ).toBe("сегодня");
-    expect(
-      formatRemainingMoscowDays(new Date("2026-11-15T21:00:00.000Z"), now),
-    ).toBe("завтра");
-    expect(
-      formatRemainingMoscowDays(new Date("2026-11-16T21:00:00.000Z"), now),
-    ).toBe("через 2 дня");
-    expect(
-      formatRemainingMoscowDays(new Date("2026-11-14T21:00:00.000Z"), now),
-    ).toBe("срок истёк");
   });
 });

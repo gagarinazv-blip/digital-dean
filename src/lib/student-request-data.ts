@@ -135,3 +135,15 @@ export async function getStudentRequest(requestId: string) {
 
   return request;
 }
+
+/** Заявки, по которым ещё нет решения. */
+export async function countActiveStudentRequests(
+  studentId: number,
+): Promise<number> {
+  return getPrisma().request.count({
+    where: {
+      studentId,
+      status: { in: ["NEW", "IN_PROGRESS", "NEEDS_INFO"] },
+    },
+  });
+}

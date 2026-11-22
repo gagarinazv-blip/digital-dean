@@ -52,9 +52,11 @@ async function DigestContent({
   const currentWeek = getDigestWeek(undefined, now);
   const rawType = getSingleParam(params.type);
   const eventType = isEventType(rawType) ? rawType : undefined;
+  const weekEndDate = new Date(week.startDate);
+  weekEndDate.setUTCDate(weekEndDate.getUTCDate() + 7);
   const events = await getPublishedDigestEvents(
-    week.startInstant,
-    week.endInstant,
+    week.startDate,
+    weekEndDate,
     eventType,
   );
   const days = groupEventsByStartDay(week, events);
@@ -65,6 +67,8 @@ async function DigestContent({
     <CampusSection
       eyebrow="Внеучебная жизнь"
       title="Дайджест событий"
+      illustration="digest"
+      tone="wine"
       description={`Неделя · ${formatDigestWeekRange(week)}`}
     >
       <div className={styles.workspace}>
@@ -109,7 +113,7 @@ async function DigestContent({
             На этой неделе мероприятий пока нет
           </div>
         ) : (
-          <div className={styles.weekGrid}>
+          <div className={styles.weekGrid} data-stagger>
             {days.map((day) => {
               const isToday = day.dateKey === todayKey;
               return (
@@ -131,7 +135,8 @@ async function DigestContent({
                   ) : (
                     <ul className={styles.eventList}>
                       {day.events.map((event) => {
-                        const isPast = event.endsAt <= now;
+                        const isPast =
+                          event.endsAt !== null && event.endsAt <= now;
                         const canRegister =
                           event.registrationUrl !== null &&
                           isSafeRegistrationUrl(event.registrationUrl);
@@ -139,9 +144,18 @@ async function DigestContent({
                           <li
                             className={styles.eventCard}
                             data-past={isPast}
+                            data-type={event.type}
                             key={event.id}
                           >
                             <div className={styles.eventTopline}>
+                              {event.startsAt && event.endsAt ? (
+                                <time dateTime={event.startsAt.toISOString()}>
+                                  {formatMoscowTime(event.startsAt)}–
+                                  {formatMoscowTime(event.endsAt)}
+                                </time>
+                              ) : (
+                                <span>Время уточняется</span>
+                              )}
                               <DateTimeStack
                                 end={event.endsAt}
                                 value={event.startsAt}
@@ -167,7 +181,9 @@ async function DigestContent({
                                 <p>{event.description}</p>
                               </details>
                             ) : null}
-                            {canRegister ? (
+                            {isPast ? (
+                              <p className={styles.entryNote}>Событие прошло</p>
+                            ) : canRegister ? (
                               <a
                                 className={styles.registerButton}
                                 href={event.registrationUrl ?? undefined}
@@ -178,13 +194,9 @@ async function DigestContent({
                                 <span aria-hidden="true">↗</span>
                               </a>
                             ) : (
-                              <button
-                                className={styles.registerButton}
-                                disabled
-                                type="button"
-                              >
-                                Регистрация пока недоступна
-                              </button>
+                              <p className={styles.entryNote}>
+                                Вход свободный, запись не нужна
+                              </p>
                             )}
                           </li>
                         );
@@ -206,6 +218,8 @@ function DigestFallback() {
     <CampusSection
       eyebrow="Внеучебная жизнь"
       title="Дайджест событий"
+      illustration="digest"
+      tone="wine"
       description="Загружаем мероприятия недели."
     >
       <div aria-busy="true" className={styles.loading}>

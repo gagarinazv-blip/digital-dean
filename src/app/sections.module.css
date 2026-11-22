@@ -1,48 +1,9 @@
 .page {
-  padding: var(--space-8) 0 var(--space-8);
+  padding: var(--space-5) 0 var(--space-8);
 }
 
 .heading {
-  margin-bottom: var(--space-6);
-}
-
-.headingWithAction {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-4);
-}
-
-.headingCopy {
-  min-width: 0;
-}
-
-.headingAction {
-  flex: 0 0 auto;
-}
-
-.eyebrow {
-  margin-bottom: var(--space-2);
-  color: var(--color-blue-700);
-  font-size: var(--font-size-caption);
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.heading h1 {
-  font-size: var(--font-size-h1);
-  font-weight: 600;
-  line-height: 38px;
-  letter-spacing: -0.03em;
-  overflow-wrap: break-word;
-}
-
-.description {
-  margin-top: var(--space-2);
-  color: var(--color-muted);
-  font-size: var(--font-size-body);
-  line-height: 24px;
+  margin-bottom: var(--space-5);
 }
 
 .card {
@@ -280,4 +241,8 @@
   .skeletonCard {
     animation: none;
   }
+}
+
+nav + .page {
+  padding-top: var(--space-4);
 }

@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import type { SectionIllustration } from "@/components/section-art";
+import { SectionHeader, type SectionTone } from "@/components/section-header";
 import styles from "@/app/sections.module.css";
 
 export function CampusSection({
@@ -6,29 +8,29 @@ export function CampusSection({
   title,
   description,
   headerAction,
+  illustration,
+  tone,
   children,
 }: {
   eyebrow: string;
   title: string;
   description: string;
   headerAction?: ReactNode;
+  illustration?: SectionIllustration;
+  tone?: SectionTone;
   children: ReactNode;
 }) {
   return (
     <main className={styles.page}>
-      <div
-        className={`${styles.heading} ${
-          headerAction ? styles.headingWithAction : ""
-        }`}
-      >
-        <div className={styles.headingCopy}>
-          <p className={styles.eyebrow}>{eyebrow}</p>
-          <h1>{title}</h1>
-          <p className={styles.description}>{description}</p>
-        </div>
-        {headerAction ? (
-          <div className={styles.headingAction}>{headerAction}</div>
-        ) : null}
+      <div className={styles.heading}>
+        <SectionHeader
+          action={headerAction}
+          description={description}
+          eyebrow={eyebrow}
+          illustration={illustration}
+          title={title}
+          tone={tone}
+        />
       </div>
       {children}
     </main>

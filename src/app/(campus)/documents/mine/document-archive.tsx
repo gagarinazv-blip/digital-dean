@@ -418,7 +418,7 @@ export function StudentDocumentArchive({
           title="Документы не найдены"
         />
       ) : (
-        <ul className={styles.list}>
+        <ul className={styles.list} data-stagger>
           {filteredDocuments.map((document) => (
             <li className={styles.card} key={document.id}>
               <span aria-hidden="true" className={styles.fileIcon}>

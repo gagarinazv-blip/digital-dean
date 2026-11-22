@@ -24,8 +24,8 @@
   background: linear-gradient(
     90deg,
     var(--color-hero) 0%,
-    rgb(220 229 240 / 88%) 8%,
-    rgb(220 229 240 / 32%) 44%,
+    color-mix(in srgb, var(--color-hero) 88%, transparent) 8%,
+    color-mix(in srgb, var(--color-hero) 32%, transparent) 44%,
     transparent 100%
   );
 }

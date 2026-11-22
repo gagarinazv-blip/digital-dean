@@ -11,6 +11,8 @@ export function DateTimeStack({
   kind = "event",
   done = false,
   align = "start",
+  variant = "stack",
+  hideDay = false,
   now,
   className,
 }: {
@@ -20,6 +22,12 @@ export function DateTimeStack({
   kind?: "event" | "deadline";
   done?: boolean;
   align?: "start" | "end";
+  /**
+   * stack — день и под ним время с отсчётом; moment — день и время в строку.
+   */
+  variant?: "stack" | "moment";
+  /** День уже назван рядом, например в чипе срочности. */
+  hideDay?: boolean;
   now?: Date | string;
   className?: string;
 }) {
@@ -31,6 +39,22 @@ export function DateTimeStack({
     kind,
     done,
   });
+
+  if (variant === "moment") {
+    const text = [hideDay ? null : labels.day, labels.time]
+      .filter(Boolean)
+      .join(", ");
+    return (
+      <time
+        className={[styles.inline, className].filter(Boolean).join(" ")}
+        data-date-inline=""
+        dateTime={labels.dateTime}
+        title={labels.title}
+      >
+        {text}
+      </time>
+    );
+  }
 
   return (
     <time

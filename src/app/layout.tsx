@@ -3,8 +3,8 @@ import { onest } from "./fonts";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Цифровой деканат",
-  description: "Личный кабинет студента",
+  title: "АКСИУМ",
+  description: "Единая система университетских процессов",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

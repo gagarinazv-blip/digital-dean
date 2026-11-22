@@ -19,7 +19,9 @@ async function PortfolioContent({
   const student = await requireStudent();
   const portfolio = await getStudentPortfolio(student.id);
   return (
-    <CampusSection eyebrow="Возможности" title="Портфолио" description="Ваши дипломы, сертификаты и достижения.">
+    <CampusSection eyebrow="Возможности" title="Портфолио"
+      illustration="achievements"
+      tone="sand" description="Ваши дипломы, сертификаты и достижения.">
       <PortfolioView folders={portfolio.folders} items={portfolio.items} searchParams={await searchParams} />
     </CampusSection>
   );

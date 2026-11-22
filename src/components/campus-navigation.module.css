@@ -6,10 +6,62 @@
   display: grid;
   align-content: start;
   gap: var(--space-1);
-  padding: var(--space-6) var(--space-3);
+  padding: var(--space-4) var(--space-3);
+  overflow-x: hidden;
   overflow-y: auto;
+  scrollbar-width: none;
   border-right: 1px solid var(--color-border);
   background: var(--color-surface);
+  transition: width var(--motion-drawer) var(--motion-ease);
+}
+
+.collapseButton {
+  min-width: 0;
+  min-height: var(--size-touch);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-muted);
+  font: inherit;
+  font-size: var(--font-size-label);
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+}
+
+.collapseButton:hover {
+  background: var(--color-subtle);
+  color: var(--color-ink);
+}
+
+/* Свёрнутое меню: ширина меняется, значки остаются на тех же местах. */
+@media (min-width: 1024px) {
+  .navigation[data-collapsed="true"] {
+    width: var(--size-rail);
+  }
+
+  .navigation[data-collapsed="true"] .navigationLabel {
+    opacity: 0;
+  }
+
+  .navigation[data-collapsed="true"] .unreadBadge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 var(--space-1);
+    box-shadow: 0 0 0 2px var(--color-surface);
+  }
+
+  .navigation[data-collapsed="true"] .active .unreadBadge {
+    box-shadow: none;
+  }
 }
 
 .mobileMenuButton,
@@ -49,9 +101,10 @@
   color: var(--color-surface);
 }
 
-.navigationLink:focus-visible {
+.navigationLink:focus-visible,
+.collapseButton:focus-visible {
   outline: 3px solid var(--color-focus);
-  outline-offset: 2px;
+  outline-offset: -3px;
 }
 
 .icon {
@@ -79,6 +132,10 @@
 
 .navigationLabel {
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: opacity var(--motion-fast) var(--motion-ease);
 }
 
 .unreadBadge {
@@ -102,7 +159,12 @@
   color: var(--color-wine-900);
 }
 
+/* На планшете меню и так узкое, на телефоне открывается шторкой. */
 @media (max-width: 1023px) {
+  .collapseButton {
+    display: none;
+  }
+
   .navigation {
     width: var(--size-rail);
     padding: var(--space-4) var(--space-2);
@@ -157,7 +219,7 @@
     inset: var(--size-header-mobile) 0 0;
     display: block;
     border: 0;
-    background: rgb(38 34 34 / 32%);
+    background: color-mix(in srgb, var(--color-ink) 32%, transparent);
   }
 
   .navigation {

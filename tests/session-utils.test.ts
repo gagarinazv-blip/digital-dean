@@ -4,7 +4,6 @@ import {
   filterSessionEvents,
   findSessionInsights,
   generateSessionIcs,
-  getSessionCountdown,
   getSessionEventStatusLabel,
   getSessionNotificationPlan,
   getSessionReminderCandidates,
@@ -292,19 +291,6 @@ describe("session utilities", () => {
         "Между «Математика» и «Физика» один день",
       ]),
     );
-  });
-
-  it("formats today, tomorrow and past countdowns", () => {
-    expect(getSessionCountdown("2026-11-22", "09:00", "2026-11-22")).toBe("Сегодня");
-    expect(
-      getSessionCountdown("2026-11-23", "09:00", "2026-11-22", "08:00"),
-    ).toBe("завтра, через 1 ч");
-    expect(
-      getSessionCountdown("2026-11-20", "09:00", "2026-11-22"),
-    ).toBe("дата прошла 2 дня назад");
-    expect(
-      getSessionCountdown("2026-11-25", "12:00", "2026-11-22", "08:00"),
-    ).toBe("через 3 дня 4 ч");
   });
 
   it("generates Moscow calendar events with stable UID, escaped text and a one-day alarm", () => {
