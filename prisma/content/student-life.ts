@@ -100,8 +100,8 @@ export type DocumentContent = {
 
 export const documentContent: readonly DocumentContent[] = [
   { login: "student.alpha", title: "Договор об обучении", documentType: "CONTRACT", file: "contract.pdf", fileTitle: "Договор об обучении" },
-  { login: "student.alpha", title: "Характеристика для стажировки", documentType: "REFERENCE", file: "reference.pdf", fileTitle: "Характеристика" },
-  { login: "student.alpha", title: "Программа спортивного страхования", documentType: "INSURANCE", file: "insurance.pdf", fileTitle: "Условия страхования" },
+  { login: "student.alpha", title: "Справка для стажировки", documentType: "REFERENCE", file: "reference.pdf", fileTitle: "Справка для стажировки" },
+  { login: "student.alpha", title: "Правила тренировок в «Вертикали»", documentType: "OTHER", file: "training-rules.pdf", fileTitle: "Правила тренировок" },
   { login: "student.alpha", title: "Индивидуальный учебный план", documentType: "OTHER", file: "study-plan.pdf", fileTitle: "Индивидуальный план" },
 ];
 

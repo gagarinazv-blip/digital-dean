@@ -170,7 +170,9 @@ async function DigestContent({
                                 <p>{event.description}</p>
                               </details>
                             ) : null}
-                            {canRegister ? (
+                            {isPast ? (
+                              <p className={styles.entryNote}>Событие прошло</p>
+                            ) : canRegister ? (
                               <a
                                 className={styles.registerButton}
                                 href={event.registrationUrl ?? undefined}
@@ -181,13 +183,9 @@ async function DigestContent({
                                 <span aria-hidden="true">↗</span>
                               </a>
                             ) : (
-                              <button
-                                className={styles.registerButton}
-                                disabled
-                                type="button"
-                              >
-                                Регистрация пока недоступна
-                              </button>
+                              <p className={styles.entryNote}>
+                                Вход свободный, запись не нужна
+                              </p>
                             )}
                           </li>
                         );

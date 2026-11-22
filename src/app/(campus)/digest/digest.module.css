@@ -252,6 +252,12 @@
 }
 
 .emptyState,
+.entryNote {
+  color: var(--color-muted);
+  font-size: var(--font-size-label);
+  line-height: 20px;
+}
+
 .noDayEvents {
   color: var(--color-muted);
   font-size: var(--font-size-body-compact);
