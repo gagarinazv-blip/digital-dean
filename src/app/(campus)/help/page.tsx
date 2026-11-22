@@ -11,6 +11,7 @@ import {
   getStudentRequest,
   getStudentRequests,
 } from "@/lib/student-request-data";
+import { formatRequestNumber } from "@/lib/request-number";
 import { RequestSearchForm } from "./request-search-form";
 import styles from "./help.module.css";
 
@@ -139,9 +140,7 @@ function RecentRequests({
                       requestTypeLabels[request.type],
                     )}
                   </strong>
-                  <span>
-                    № {request.publicId.slice(0, 8).toUpperCase()}
-                  </span>
+                  <span>{formatRequestNumber(request.id)}</span>
                 </span>
                 <time
                   className={styles.recentRequestDate}
@@ -173,7 +172,7 @@ function SelectedRequestPanel({
     request.catalogCode,
     requestTypeLabels[request.type],
   );
-  const requestNumber = `№ ${request.publicId.slice(0, 8).toUpperCase()}`;
+  const requestNumber = formatRequestNumber(request.id);
   const latestStaffMessage = request.comments
     .filter((comment) => comment.author.role === "STAFF")
     .at(-1);
@@ -575,7 +574,7 @@ export async function HelpWorkspace({
                           )}
                         </h3>
                         <p>
-                          Заявка № {document.publicId.slice(0, 8).toUpperCase()} ·{" "}
+                          Заявка {formatRequestNumber(document.requestId)} ·{" "}
                           {requestDateFormatter.format(document.updatedAt)}
                         </p>
                       </div>
@@ -646,7 +645,7 @@ export async function HelpWorkspace({
                           <span className={styles.requestListMain}>
                             <strong>{serviceTitle}</strong>
                             <span>
-                              № {request.publicId.slice(0, 8).toUpperCase()}
+                              {formatRequestNumber(request.id)}
                             </span>
                           </span>
                           <time className={styles.requestListDate}>

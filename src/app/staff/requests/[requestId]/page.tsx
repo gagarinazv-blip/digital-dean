@@ -13,6 +13,7 @@ import {
   getPreviousRequestStatus,
 } from "@/lib/request-workflow";
 import { getStaffRequestDetails } from "@/lib/staff-data";
+import { formatRequestNumber } from "@/lib/request-number";
 import {
   RequestAssignmentForm,
   RequestRollbackForm,
@@ -122,7 +123,7 @@ export default async function StaffRequestPage({
   const transitions = getAllowedStaffRequestTransitions(request.status);
   const stageIndex = getStageIndex(request.status);
   const assignedToMe = request.assignedToId === staff.id;
-  const requestNumber = `№ ${request.publicId.slice(0, 8).toUpperCase()}`;
+  const requestNumber = formatRequestNumber(request.id);
   const attachmentCount = request.comments.reduce(
     (count, comment) => count + comment.attachments.length,
     0,

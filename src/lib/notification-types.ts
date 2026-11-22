@@ -14,6 +14,7 @@ export type NotificationDetails = {
     changeNote: string | null;
   };
   request?: {
+    requestNumber: string;
     statusLabel: string;
     serviceLabel: string;
   };

@@ -1,5 +1,8 @@
 import { CampusSection } from "@/components/campus-section";
-import { getDeadlineCountdown } from "@/lib/deadline-utils";
+import {
+  getDeadlineCountdown,
+  getDeadlineCountdownTone,
+} from "@/lib/deadline-utils";
 import { getStudentDeadlines } from "@/lib/deadline-data";
 import { getDemoNow } from "@/lib/demo-date";
 import { requireStudent } from "@/lib/student";
@@ -35,6 +38,12 @@ export default async function DeadlinesPage() {
               deadline.status === "OPEN"
                 ? getDeadlineCountdown(deadline.dueAt, now)
                 : null;
+            const tone =
+              deadline.status === "SUBMITTED"
+                ? styles.submitted
+                : countdown
+                  ? styles[getDeadlineCountdownTone(countdown)]
+                  : "";
             return (
               <li
                 className={`${styles.item} ${
@@ -46,13 +55,7 @@ export default async function DeadlinesPage() {
                 <div className={styles.heading}>
                   <p>{deadline.subject}</p>
                   <span
-                    className={`${styles.status} ${
-                      deadline.status === "SUBMITTED"
-                        ? styles.submitted
-                        : countdown?.kind === "OVERDUE"
-                          ? styles.statusOverdue
-                          : ""
-                    }`}
+                    className={`${styles.status} ${tone}`}
                   >
                     {deadline.status === "SUBMITTED"
                       ? "Сдано"

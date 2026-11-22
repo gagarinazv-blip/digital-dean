@@ -13,7 +13,7 @@ export type DeadlineLike = {
 };
 
 export type DeadlineCountdown = {
-  kind: "OVERDUE" | "TODAY" | "UPCOMING";
+  kind: "OVERDUE" | "TODAY" | "TOMORROW" | "UPCOMING";
   daysRemaining: number;
   label: string;
 };
@@ -42,20 +42,66 @@ export function getDeadlineCountdown(
   dueAt: Date,
   now: Date,
 ): DeadlineCountdown {
-  if (dueAt.getTime() < now.getTime()) {
-    return { kind: "OVERDUE", daysRemaining: 0, label: "Просрочено" };
-  }
-
   const daysRemaining = moscowDayNumber(dueAt) - moscowDayNumber(now);
+  if (daysRemaining < 0) {
+    const daysOverdue = Math.abs(daysRemaining);
+    return {
+      kind: "OVERDUE",
+      daysRemaining,
+      label: `Просрочено на ${daysOverdue} ${dayWord(daysOverdue)}`,
+    };
+  }
   if (daysRemaining === 0) {
     return { kind: "TODAY", daysRemaining: 0, label: "Сегодня" };
+  }
+  if (daysRemaining === 1) {
+    return { kind: "TOMORROW", daysRemaining, label: "Завтра" };
   }
 
   return {
     kind: "UPCOMING",
     daysRemaining,
-    label: `Осталось ${daysRemaining} ${dayWord(daysRemaining)}`,
+    label: `Через ${daysRemaining} ${dayWord(daysRemaining)}`,
   };
+}
+
+export function getUpcomingDeadlines<T extends DeadlineLike>(
+  deadlines: readonly T[],
+  now: Date,
+  limit = 5,
+): T[] {
+  if (!Number.isInteger(limit) || limit < 0) {
+    throw new RangeError("Лимит дедлайнов должен быть неотрицательным.");
+  }
+
+  const today = moscowDayNumber(now);
+  return deadlines
+    .filter(
+      (deadline) =>
+        deadline.status === "OPEN" &&
+        moscowDayNumber(deadline.dueAt) >= today,
+    )
+    .slice()
+    .sort(
+      (first, second) =>
+        first.dueAt.getTime() - second.dueAt.getTime() ||
+        first.id.localeCompare(second.id),
+    )
+    .slice(0, limit);
+}
+
+export function getDeadlineCountdownTone(
+  countdown: DeadlineCountdown,
+): "warning" | "danger" | "neutral" {
+  if (countdown.kind === "TODAY") return "warning";
+  if (
+    countdown.kind === "OVERDUE" ||
+    countdown.kind === "TOMORROW" ||
+    countdown.daysRemaining <= 3
+  ) {
+    return "danger";
+  }
+  return "neutral";
 }
 
 export function getNearestDeadlines<T extends DeadlineLike>(

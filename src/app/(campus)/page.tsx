@@ -19,6 +19,9 @@ import { requestStatusLabels, requestTypeLabels } from "@/lib/campus-labels";
 import { getRequestCatalogTitle } from "@/lib/request-catalog";
 import { getAcademicRecords } from "@/lib/academic-records";
 import { getSessionCountdown } from "@/lib/session-utils";
+import { getDeadlineCountdownTone } from "@/lib/deadline-utils";
+import { formatRequestNumber } from "@/lib/request-number";
+import { DeadlineListItem } from "@/components/deadline-list-item";
 import {
   getRequestStatusTone,
   getTodayHeroState,
@@ -92,10 +95,27 @@ function CampusFallback() {
       className={styles.page}
     >
       <span className={styles.skeletonHeading} />
-      <div className={styles.skeletonGrid} aria-hidden="true">
+      <div
+        className={`${styles.skeletonGrid} ${styles.skeletonHeroGrid}`}
+        aria-hidden="true"
+      >
         <span className={styles.skeletonHero} />
+        <div className={styles.skeletonSideStack}>
+          <span className={styles.skeletonCard} />
+          <span className={styles.skeletonCard} />
+        </div>
+      </div>
+      <div
+        className={`${styles.skeletonGrid} ${styles.skeletonActivityGrid}`}
+        aria-hidden="true"
+      >
         <span className={styles.skeletonCard} />
         <span className={styles.skeletonCard} />
+      </div>
+      <div aria-hidden="true" className={styles.skeletonActions}>
+        <span />
+        <span />
+        <span />
       </div>
     </main>
   );
@@ -146,15 +166,9 @@ async function CampusToday() {
       subject: deadline.subject,
       sortDate: getMoscowDateKey(deadline.dueAt),
       dateLabel: formatMoscowDate(deadline.dueAt),
-      countdown:
-        deadline.countdown.kind === "UPCOMING" &&
-        deadline.countdown.daysRemaining <= 3
-          ? deadline.countdown.label.replace(/^Осталось /, "Через ")
-          : deadline.countdown.label,
-      urgent:
-        deadline.countdown.kind === "OVERDUE" ||
-        deadline.countdown.daysRemaining <= 3,
-      href: null as string | null,
+      countdown: deadline.countdown.label,
+      tone: getDeadlineCountdownTone(deadline.countdown),
+      href: `/deadlines#deadline-${deadline.id}`,
     })),
     ...sessionDeadlines.map((deadline) => ({
       id: deadline.id,
@@ -163,8 +177,11 @@ async function CampusToday() {
       sortDate: deadline.date,
       dateLabel: formatMoscowDate(new Date(`${deadline.date}T12:00:00.000Z`)),
       countdown: deadline.countdown,
-      urgent: deadline.countdown === "Сегодня" ||
-        deadline.countdown.startsWith("завтра"),
+      tone: deadline.countdown === "Сегодня"
+        ? "warning" as const
+        : deadline.countdown.startsWith("завтра")
+          ? "danger" as const
+          : "neutral" as const,
       href: deadline.href,
     })),
   ]
@@ -186,6 +203,9 @@ async function CampusToday() {
     <main className={styles.page}>
       <section className={styles.welcome} aria-labelledby="welcome-title">
         <div className={styles.welcomeContent}>
+          <h1 id="welcome-title">
+            {getCampusGreeting(data.now)}, {firstName}
+          </h1>
           <div className={styles.welcomeMeta}>
             <p className={styles.eyebrow}>
               {welcomeDateFormatter.format(todayDate)} · группа{" "}
@@ -200,13 +220,10 @@ async function CampusToday() {
                 : "Уведомления"}
             </Link>
           </div>
-          <h1 id="welcome-title">
-            {getCampusGreeting(data.now)}, {firstName}
-          </h1>
         </div>
       </section>
 
-      <div className={styles.dashboardGrid}>
+      <div className={`${styles.dashboardGrid} ${styles.heroGrid}`}>
         <section
           className={styles.nextLesson}
           aria-labelledby="next-lesson-title"
@@ -223,7 +240,16 @@ async function CampusToday() {
               </span>
               {hero.lesson ? (
                 <div className={styles.lesson}>
-                  <h2 id="next-lesson-title">
+                  <h2
+                    id="next-lesson-title"
+                    title={
+                      hero.kind === "upcoming"
+                        ? hero.hasTodayLessons
+                          ? "На сегодня пары закончились"
+                          : "Сегодня занятий нет"
+                        : hero.lesson.subject.name
+                    }
+                  >
                     {hero.kind === "upcoming"
                       ? hero.hasTodayLessons
                         ? "На сегодня пары закончились"
@@ -237,8 +263,12 @@ async function CampusToday() {
                         {" · "}
                         {formatCampusTime(hero.lesson.startTime)}
                       </p>
-                      <strong>{hero.lesson.subject.name}</strong>
-                      <span>
+                      <strong title={hero.lesson.subject.name}>
+                        {hero.lesson.subject.name}
+                      </strong>
+                      <span
+                        title={`${scheduleKindLabels[hero.lesson.kind]} · ауд. ${hero.lesson.room} · ${hero.lesson.teacher}`}
+                      >
                         {scheduleKindLabels[hero.lesson.kind]} · ауд.{" "}
                         {hero.lesson.room} · {hero.lesson.teacher}
                       </span>
@@ -250,7 +280,9 @@ async function CampusToday() {
                         {formatCampusTime(hero.lesson.endTime)} ·{" "}
                         {scheduleKindLabels[hero.lesson.kind]}
                       </p>
-                      <p>
+                      <p
+                        title={`Ауд. ${hero.lesson.room} · ${hero.lesson.teacher}`}
+                      >
                         Ауд. {hero.lesson.room} · {hero.lesson.teacher}
                       </p>
                     </>
@@ -274,10 +306,47 @@ async function CampusToday() {
                 </div>
               )}
             </div>
+            {sessionDeadlines[0] && (
+              <div
+                aria-label="Ближайшее событие сессии"
+                className={styles.heroSession}
+              >
+                <span className={styles.heroSessionBadge}>
+                  {sessionDeadlines[0].subject.split(" · ", 1)[0]}
+                </span>
+                <div className={styles.heroSessionDetails}>
+                  <strong title={sessionDeadlines[0].title}>
+                    {sessionDeadlines[0].title}
+                  </strong>
+                  <span>
+                    {formatMoscowDate(
+                      new Date(`${sessionDeadlines[0].date}T12:00:00.000Z`),
+                    )}{" "}
+                    · {sessionDeadlines[0].subject} ·{" "}
+                    {sessionDeadlines[0].countdown}
+                  </span>
+                </div>
+                <Link
+                  aria-label={`Открыть событие сессии: ${sessionDeadlines[0].title}`}
+                  className={styles.heroSessionLink}
+                  href={sessionDeadlines[0].href}
+                >
+                  Подробнее
+                </Link>
+              </div>
+            )}
             <div className={styles.heroActions}>
               <Link className={styles.heroButton} href="/schedule">
                 Открыть расписание
               </Link>
+              {hero.lesson && (
+                <Link
+                  className={`${styles.heroButton} ${styles.heroButtonSecondary}`}
+                  href={`/schedule?view=week&date=${hero.lesson.occurrenceDate.toISOString().slice(0, 10)}`}
+                >
+                  Подробнее
+                </Link>
+              )}
             </div>
           </div>
         </section>
@@ -291,36 +360,42 @@ async function CampusToday() {
             {deadlineRows.length ? (
               <ul className={styles.compactList}>
                 {deadlineRows.map((deadline) => (
-                  <li className={styles.deadlineItem} key={deadline.id}>
-                    <span className={styles.deadlineIcon} aria-hidden="true">
-                      <QuickActionIcon name="grades" />
-                    </span>
-                    <span className={styles.deadlineDetails}>
-                      {deadline.href ? (
-                        <Link href={deadline.href}><strong>{deadline.title}</strong></Link>
-                      ) : (
-                        <strong>{deadline.title}</strong>
-                      )}
-                      <small>{deadline.subject} · {deadline.dateLabel}</small>
-                    </span>
-                    <span
-                      className={`${styles.deadlineTime} ${
-                        deadline.urgent ? styles.deadlineOverdue : ""
-                      }`}
-                    >
-                      {deadline.countdown}
-                    </span>
-                  </li>
+                  <DeadlineListItem
+                    countdown={deadline.countdown}
+                    dateLabel={deadline.dateLabel}
+                    href={deadline.href}
+                    key={deadline.id}
+                    subject={deadline.subject}
+                    title={deadline.title}
+                    tone={deadline.tone}
+                  />
                 ))}
               </ul>
             ) : (
               <div className={styles.emptyState}>
-                <strong>Дедлайнов и экзаменов пока нет</strong>
-                <p>Открытых заданий и предстоящих событий сессии нет.</p>
+                <span aria-hidden="true" className={styles.emptyStateIcon}>
+                  <QuickActionIcon name="schedule" />
+                </span>
+                <strong>Ближайших сроков нет</strong>
               </div>
             )}
+            {data.overdueDeadlineCount > 0 && (
+              <p className={styles.overdueSummary}>
+                Просрочено: {data.overdueDeadlineCount} ·{" "}
+                <Link
+                  aria-label="Показать просроченные задания"
+                  href={
+                    data.firstOverdueDeadlineId
+                      ? `/deadlines#deadline-${data.firstOverdueDeadlineId}`
+                      : "/deadlines"
+                  }
+                >
+                  показать
+                </Link>
+              </p>
+            )}
             <Link className={styles.textLink} href="/deadlines">
-              Все задания и сроки
+              Все сроки →
             </Link>
           </section>
 
@@ -331,7 +406,12 @@ async function CampusToday() {
             </div>
             {data.latestRequest ? (
               <div className={styles.request}>
-                <strong>
+                <strong
+                  title={getRequestCatalogTitle(
+                    data.latestRequest.catalogCode,
+                    requestTypeLabels[data.latestRequest.type],
+                  )}
+                >
                   {getRequestCatalogTitle(
                     data.latestRequest.catalogCode,
                     requestTypeLabels[data.latestRequest.type],
@@ -347,8 +427,8 @@ async function CampusToday() {
                   {requestStatusLabels[data.latestRequest.status]}
                 </span>
                 <p className={styles.requestMeta}>
-                  № {data.latestRequest.publicId.slice(0, 8).toUpperCase()} ·
-                  {" "}обновлена {formatMoscowDate(data.latestRequest.updatedAt)}
+                  {formatRequestNumber(data.latestRequest.id)} · обновлена{" "}
+                  {formatMoscowDate(data.latestRequest.updatedAt)}
                 </p>
                 <Link
                   className={styles.textLink}
@@ -360,7 +440,7 @@ async function CampusToday() {
             ) : (
               <div className={styles.emptyState}>
                 <strong>Заявок пока нет</strong>
-                <Link className={styles.textLink} href="/requests/new">
+                <Link className={styles.newRequestButton} href="/requests/new">
                   Новая заявка
                 </Link>
               </div>
@@ -369,16 +449,11 @@ async function CampusToday() {
         </div>
       </div>
 
-      <div className={styles.dashboardGrid}>
+      <div className={`${styles.dashboardGrid} ${styles.activityGrid}`}>
         <section className={styles.card} aria-labelledby="today-schedule-title">
           <div className={styles.cardHeading}>
             <p className={styles.eyebrow}>Пары и занятия</p>
-            <div className={styles.cardTitleRow}>
-              <h2 id="today-schedule-title">Расписание на сегодня</h2>
-              <Link className={styles.cardHeaderLink} href="/schedule">
-                Все занятия →
-              </Link>
-            </div>
+            <h2 id="today-schedule-title">Расписание на сегодня</h2>
           </div>
           {data.todaySchedule.length ? (
             <ol className={styles.timeline}>
@@ -405,8 +480,12 @@ async function CampusToday() {
                   </time>
                   <span className={styles.timelineDot} aria-hidden="true" />
                   <div className={styles.timelineDetails}>
-                    <strong>{lesson.subject.name}</strong>
-                    <span>
+                    <strong title={lesson.subject.name}>
+                      {lesson.subject.name}
+                    </strong>
+                    <span
+                      title={`${scheduleKindLabels[lesson.kind]} · ауд. ${lesson.room}${lesson.status === "RESCHEDULED" ? " · перенесено" : ""}${lesson.status === "CANCELLED" ? " · отменено" : ""}`}
+                    >
                       {scheduleKindLabels[lesson.kind]} · ауд. {lesson.room}
                       {lesson.status === "RESCHEDULED" && " · перенесено"}
                       {lesson.status === "CANCELLED" && " · отменено"}
@@ -452,17 +531,28 @@ async function CampusToday() {
               </div>
             </div>
           )}
+          {!data.todaySchedule.length && data.nextLesson && (
+            <div className={styles.nextDayLesson}>
+              <span className={styles.eyebrow}>Ближайшее занятие</span>
+              <strong title={data.nextLesson.subject.name}>
+                {data.nextLesson.subject.name}
+              </strong>
+              <span>
+                {formatCampusDate(data.nextLesson.occurrenceDate)} ·{" "}
+                {formatCampusTime(data.nextLesson.startTime)} · ауд.{" "}
+                {data.nextLesson.room}
+              </span>
+            </div>
+          )}
+          <Link className={styles.cardFooterLink} href="/schedule">
+            Все занятия →
+          </Link>
         </section>
 
         <section className={styles.card} aria-labelledby="announcements-title">
           <div className={styles.cardHeading}>
             <p className={styles.eyebrow}>Важное</p>
-            <div className={styles.cardTitleRow}>
-              <h2 id="announcements-title">Объявления</h2>
-              <Link className={styles.cardHeaderLink} href="/notifications">
-                Все объявления →
-              </Link>
-            </div>
+            <h2 id="announcements-title">Объявления</h2>
           </div>
           {data.changes.length ? (
             <ul className={styles.changeList}>
@@ -474,8 +564,8 @@ async function CampusToday() {
                   key={change.id}
                 >
                   <span className={styles.changeKind}>{change.kind}</span>
-                  <strong>{change.title}</strong>
-                  <p>{change.text}</p>
+                  <strong title={change.title}>{change.title}</strong>
+                  <p title={change.text}>{change.text}</p>
                   <time>{formatMoscowDate(change.date)}</time>
                 </li>
               ))}
@@ -483,6 +573,9 @@ async function CampusToday() {
           ) : (
             <p className={styles.emptyState}>Объявлений пока нет.</p>
           )}
+          <Link className={styles.cardFooterLink} href="/notifications">
+            Все объявления →
+          </Link>
         </section>
       </div>
 
@@ -497,9 +590,24 @@ async function CampusToday() {
         <nav className={styles.quickActions} aria-label="Быстрые действия">
           {(
             [
-              { href: "/requests/new", label: "Заказать справку", name: "help" },
-              { href: "/grades", label: "Рассчитать оценку", name: "grades" },
-              { href: "/schedule", label: "Моё расписание", name: "schedule" },
+              {
+                href: "/requests/new",
+                label: "Заказать справку",
+                description: "Подать новую заявку",
+                name: "help",
+              },
+              {
+                href: "/grades",
+                label: "Рассчитать оценку",
+                description: "Проверить итоговый балл",
+                name: "grades",
+              },
+              {
+                href: "/schedule",
+                label: "Моё расписание",
+                description: "Пары и сессия на неделе",
+                name: "schedule",
+              },
             ] as const
           ).map((action) => (
             <Link
@@ -510,7 +618,12 @@ async function CampusToday() {
               <span className={styles.actionIcon}>
                 <QuickActionIcon name={action.name} />
               </span>
-              <span className={styles.actionLabel}>{action.label}</span>
+              <span className={styles.actionText}>
+                <span className={styles.actionLabel}>{action.label}</span>
+                <span className={styles.actionDescription}>
+                  {action.description}
+                </span>
+              </span>
             </Link>
           ))}
         </nav>

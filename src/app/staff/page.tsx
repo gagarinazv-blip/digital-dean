@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requestStatusLabels, requestTypeLabels } from "@/lib/campus-labels";
 import { getRequestCatalogTitle } from "@/lib/request-catalog";
+import { formatRequestNumber } from "@/lib/request-number";
 import { getStaffRequestList } from "@/lib/staff-data";
 import styles from "./staff.module.css";
 import workflowStyles from "@/app/request-workflow.module.css";
@@ -178,7 +179,7 @@ export default async function StaffHomePage({
                           {request.type === "CERTIFICATE" ? "▤" : "▧"}
                         </span>
                         <span>
-                          № {request.publicId.slice(0, 8).toUpperCase()} ·{" "}
+                          {formatRequestNumber(request.id)} ·{" "}
                           {getRequestCatalogTitle(
                             request.catalogCode,
                             requestTypeLabels[request.type],

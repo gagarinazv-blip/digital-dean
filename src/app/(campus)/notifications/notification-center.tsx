@@ -213,7 +213,7 @@ function NotificationDetails({
 
       {request && (
         <div className={styles.statusDetails}>
-          <span>Статус заявки</span>
+          <span>Заявка {request.requestNumber}</span>
           <strong>{request.statusLabel}</strong>
         </div>
       )}

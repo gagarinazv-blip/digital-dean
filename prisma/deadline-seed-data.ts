@@ -26,7 +26,7 @@ const deadlineFixtures = [
     login: "student.alpha",
     subject: "Проектирование интерфейсов",
     title: "Макет интерфейса",
-    daysFromDemoDate: 8,
+    daysFromDemoDate: -1,
     description: "Подготовить прототип интерфейса учебного проекта.",
   },
   {
@@ -64,4 +64,16 @@ export function buildDeadlineSeedData(now = getDemoNow()) {
     ...fixture,
     dueAt: addDemoDays(fixture.daysFromDemoDate, now),
   }));
+}
+
+export function getDeadlineSeedSyncPlan(
+  existing: readonly { id: string; status: "OPEN" | "SUBMITTED" }[],
+) {
+  const firstOpen = existing.find(({ status }) => status === "OPEN");
+  return {
+    deadlineId: firstOpen?.id ?? existing[0]?.id ?? null,
+    openDeadlineIds: existing
+      .filter(({ status }) => status === "OPEN")
+      .map(({ id }) => id),
+  };
 }

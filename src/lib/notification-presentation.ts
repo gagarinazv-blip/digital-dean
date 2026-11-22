@@ -14,6 +14,7 @@ import {
   requestTypeLabels,
 } from "@/lib/campus-labels";
 import { getDemoNow } from "@/lib/demo-date";
+import { getDeadlineCountdown } from "@/lib/deadline-utils";
 import {
   formatMoscowTime,
   formatMoscowWeekdayDate,
@@ -21,6 +22,7 @@ import {
   getMoscowDateKey,
 } from "@/lib/campus-time";
 import { getPrisma } from "@/lib/prisma";
+import { formatRequestNumber } from "@/lib/request-number";
 import {
   buildNotificationTargetHref,
   notificationTypeLabels,
@@ -94,7 +96,7 @@ export async function presentStudentNotifications(
     requestIds.length
       ? prisma.request.findMany({
           where: { publicId: { in: requestIds }, studentId },
-          select: { publicId: true, status: true, type: true },
+          select: { id: true, publicId: true, status: true, type: true },
         })
       : Promise.resolve([]),
     deadlineIds.length
@@ -229,19 +231,18 @@ export async function presentStudentNotifications(
       targetAvailable = Boolean(request);
       if (request) {
         details.request = {
+          requestNumber: formatRequestNumber(request.id),
           statusLabel: requestStatusLabels[request.status],
           serviceLabel: requestTypeLabels[request.type],
         };
         source = `Заявка · ${details.request.serviceLabel}`;
-        context = `${details.request.serviceLabel} · ${details.request.statusLabel} · открыть обращение`;
+        context = `${details.request.requestNumber} · ${details.request.serviceLabel} · ${details.request.statusLabel} · открыть обращение`;
       }
     } else if (row.type === "DEADLINE" && row.targetId) {
       const deadline = deadlineById.get(row.targetId);
       targetAvailable = Boolean(deadline);
       if (deadline) {
-        const remainingDays = Math.ceil(
-          (deadline.dueAt.getTime() - now.getTime()) / 86_400_000,
-        );
+        const countdown = getDeadlineCountdown(deadline.dueAt, now);
         details.deadline = {
           subject: cleanStudentFacingText(deadline.subject),
           dueAt: deadline.dueAt.toISOString(),
@@ -249,9 +250,7 @@ export async function presentStudentNotifications(
           remainingLabel:
             deadline.status === "SUBMITTED"
               ? null
-              : remainingDays < 0
-                ? `Просрочено на ${Math.abs(remainingDays)} дн.`
-                : `Осталось ${remainingDays} дн.`,
+              : countdown.label,
         };
         source = cleanStudentFacingText(deadline.subject);
         context = `${source} · ${dateTimeFormatter.format(deadline.dueAt)} · открыть задание`;

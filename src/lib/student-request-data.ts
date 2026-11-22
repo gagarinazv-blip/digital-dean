@@ -78,6 +78,7 @@ export async function getStudentDocuments() {
     where: { studentId: student.id, status: "READY" },
     orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
     select: {
+      id: true,
       publicId: true,
       type: true,
       catalogCode: true,
@@ -103,6 +104,7 @@ export async function getStudentDocuments() {
     request.comments.flatMap((comment) =>
       comment.attachments.map((attachment) => ({
         ...attachment,
+        requestId: request.id,
         publicId: request.publicId,
         type: request.type,
         catalogCode: request.catalogCode,

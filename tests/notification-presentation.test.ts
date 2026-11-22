@@ -37,7 +37,7 @@ beforeEach(() => {
     },
   ]);
   requestFindManyMock.mockResolvedValue([
-    { publicId: requestId, status: "IN_PROGRESS", type: "CERTIFICATE" },
+    { id: 104, publicId: requestId, status: "IN_PROGRESS", type: "CERTIFICATE" },
   ]);
   deadlineFindManyMock.mockResolvedValue([]);
 });
@@ -114,7 +114,9 @@ describe("notification presentation", () => {
     expect(JSON.stringify(result)).not.toContain("[TEST SEED]");
     expect(result[0]?.details.schedule?.previousRoom).toBe("МО-101");
     expect(result[0]?.targetAvailable).toBe(true);
+    expect(result[1]?.details.request?.requestNumber).toBe("№ 104");
     expect(result[1]?.details.request?.statusLabel).toBe("В работе");
+    expect(result[1]?.context).toContain("№ 104");
     expect(result[2]?.targetAvailable).toBe(false);
     expect(result[2]?.href).toBeNull();
     expect(result[3]?.href).toBeNull();

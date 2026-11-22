@@ -18,6 +18,7 @@ import {
   getRequestProfileEntries,
 } from "@/lib/request-catalog";
 import { getStudentRequest } from "@/lib/student-request-data";
+import { formatRequestNumber } from "@/lib/request-number";
 import type { RequestStatus, RequestType } from "@/generated/prisma/enums";
 import workflowStyles from "@/app/request-workflow.module.css";
 import styles from "./request-detail.module.css";
@@ -154,7 +155,7 @@ export default async function StudentRequestPage({
     requestTypeLabels[request.type],
   );
   const service = getRequestCatalogEntry(request.catalogCode);
-  const requestNumber = `№ ${request.publicId.slice(0, 8).toUpperCase()}`;
+  const requestNumber = formatRequestNumber(request.id);
   const resultAttachments = request.comments.flatMap((comment) =>
     comment.attachments.filter((attachment) => attachment.kind === "RESULT"),
   );

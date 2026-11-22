@@ -9,7 +9,10 @@ import {
   shiftAcademicRecordDate,
 } from "./academic-records-seed-data";
 import { buildTargetScheduleSeed } from "./schedule-seed-data";
-import { buildDeadlineSeedData } from "./deadline-seed-data";
+import {
+  buildDeadlineSeedData,
+  getDeadlineSeedSyncPlan,
+} from "./deadline-seed-data";
 import { getDemoNotificationState } from "./notification-seed-data";
 import { getDemoNow } from "../src/lib/demo-date";
 import { getMoscowDateKey } from "../src/lib/campus-time";
@@ -986,18 +989,36 @@ async function main() {
         if (studentId === undefined) {
           throw new Error(`Deadline student "${deadline.login}" is missing.`);
         }
-        const createdDeadline = await tx.deadline.create({
-          data: {
+        const existingDeadlines = await tx.deadline.findMany({
+          where: {
             studentId,
             subject: deadline.subject,
             title: deadline.title,
-            dueAt: deadline.dueAt,
-            status: "OPEN",
-            description: deadline.description,
-            createdAt: seedNow,
           },
-          select: { id: true },
+          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+          select: { id: true, status: true },
         });
+        const syncPlan = getDeadlineSeedSyncPlan(existingDeadlines);
+        if (syncPlan.openDeadlineIds.length > 0) {
+          await tx.deadline.updateMany({
+            where: { id: { in: syncPlan.openDeadlineIds } },
+            data: { dueAt: deadline.dueAt },
+          });
+        }
+        const seededDeadline = syncPlan.deadlineId
+          ? { id: syncPlan.deadlineId }
+          : await tx.deadline.create({
+              data: {
+                studentId,
+                subject: deadline.subject,
+                title: deadline.title,
+                dueAt: deadline.dueAt,
+                status: "OPEN",
+                description: deadline.description,
+                createdAt: seedNow,
+              },
+              select: { id: true },
+            });
         const index = deadlineNotificationIndex.get(deadline.login) ?? 0;
         deadlineNotificationIndex.set(deadline.login, index + 1);
         await tx.notification.create({
@@ -1007,7 +1028,7 @@ async function main() {
             title: `Срок сдачи: ${deadline.title}`,
             text: `${deadline.subject}. Срок: ${deadline.dueAt.toLocaleDateString("ru-RU", { timeZone: "Europe/Moscow" })}.`,
             targetType: "DEADLINE",
-            targetId: createdDeadline.id,
+            targetId: seededDeadline.id,
             ...getDemoNotificationState(
               deadline.login,
               "deadline",

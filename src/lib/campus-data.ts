@@ -1,6 +1,9 @@
 import "server-only";
 
-import { getDeadlineCountdown, getNearestDeadlines } from "@/lib/deadline-utils";
+import {
+  getDeadlineCountdown,
+  getUpcomingDeadlines,
+} from "@/lib/deadline-utils";
 import { getDemoNow } from "@/lib/demo-date";
 import { countUnreadStudentNotifications } from "@/lib/notification-data";
 import { getPrisma } from "@/lib/prisma";
@@ -75,7 +78,17 @@ export async function getCampusTodayData(now = getDemoNow()) {
     countUnreadStudentNotifications(student.id),
   ]);
 
-  const deadlines = getNearestDeadlines(deadlineRecords, 5).map((deadline) => ({
+  const overdueDeadlines = deadlineRecords
+    .filter(
+      (deadline) =>
+        getDeadlineCountdown(deadline.dueAt, now).kind === "OVERDUE",
+    )
+    .sort(
+      (first, second) =>
+        first.dueAt.getTime() - second.dueAt.getTime() ||
+        first.id.localeCompare(second.id),
+    );
+  const deadlines = getUpcomingDeadlines(deadlineRecords, now, 5).map((deadline) => ({
     ...deadline,
     subject: cleanStudentFacingText(deadline.subject),
     title: cleanStudentFacingText(deadline.title),
@@ -173,6 +186,8 @@ export async function getCampusTodayData(now = getDemoNow()) {
     todaySchedule,
     nextLesson,
     deadlines,
+    overdueDeadlineCount: overdueDeadlines.length,
+    firstOverdueDeadlineId: overdueDeadlines[0]?.id ?? null,
     changes,
     latestRequest: requests[0] ?? null,
     unreadNotificationCount,
