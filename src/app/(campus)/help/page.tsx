@@ -456,18 +456,23 @@ export async function HelpWorkspace({
             Мои документы
           </Link>
           <Link
-            aria-current={activeTab === "portfolio" ? "page" : undefined}
-            className={activeTab === "portfolio" ? styles.activeTab : ""}
-            href="/documents?tab=portfolio"
-          >
-            Портфолио
-          </Link>
-          <Link
             aria-current={activeTab === "catalog" ? "page" : undefined}
             className={activeTab === "catalog" ? styles.activeTab : ""}
             href="/documents?tab=catalog"
           >
-            Каталог услуг
+            Запросить справку
+          </Link>
+          <Link
+            className={styles.tabLink}
+            href="/documents/ready"
+          >
+            Готовые документы
+          </Link>
+          <Link
+            className={styles.tabLink}
+            href="/documents/mine"
+          >
+            Мои документы
           </Link>
           <Link
             aria-current={activeTab === "requests" ? "page" : undefined}
