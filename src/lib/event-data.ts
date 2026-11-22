@@ -10,6 +10,7 @@ const eventSelect = {
   title: true,
   type: true,
   description: true,
+  eventDate: true,
   startsAt: true,
   endsAt: true,
   location: true,
@@ -30,7 +31,9 @@ export async function getPublishedDigestEvents(
   return getPrisma().event.findMany({
     where: {
       status: "PUBLISHED",
-      startsAt: { gte: startsAt, lt: endsAt },
+      eventDate: { gte: startsAt, lt: endsAt },
+      startsAt: { not: null },
+      endsAt: { not: null },
       ...(type ? { type } : {}),
     },
     orderBy: [{ startsAt: "asc" }, { id: "asc" }],
@@ -39,12 +42,12 @@ export async function getPublishedDigestEvents(
 }
 
 export async function getStaffDigestEvents(
-  startsAt: Date,
-  endsAt: Date,
+  eventDateStart: Date,
+  eventDateEnd: Date,
 ): Promise<EventRecord[]> {
   return getPrisma().event.findMany({
-    where: { startsAt: { gte: startsAt, lt: endsAt } },
-    orderBy: [{ startsAt: "asc" }, { id: "asc" }],
+    where: { eventDate: { gte: eventDateStart, lt: eventDateEnd } },
+    orderBy: [{ eventDate: "asc" }, { startsAt: "asc" }, { id: "asc" }],
     select: { ...eventSelect, createdById: true },
   });
 }
