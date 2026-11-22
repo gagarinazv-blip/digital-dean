@@ -26,6 +26,7 @@ import {
   getDeadlineCountdownTone,
   getDeadlineDateTile,
 } from "@/lib/deadline-utils";
+import { getDeadlineHref } from "@/lib/deadline-action";
 import { formatRequestNumber } from "@/lib/request-number";
 import { DeadlineListItem } from "@/components/deadline-list-item";
 import { EmptyState } from "@/components/empty-state";
@@ -152,7 +153,7 @@ async function CampusToday() {
       dateTile: getDeadlineDateTile(deadline.dueAt, data.now),
       countdown: deadline.countdown.label,
       tone: getDeadlineCountdownTone(deadline.countdown),
-      href: `/deadlines#deadline-${deadline.id}`,
+      href: getDeadlineHref(deadline.id),
     })),
     ...sessionDeadlines.map((deadline) => ({
       id: deadline.id,

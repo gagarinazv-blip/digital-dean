@@ -16,9 +16,22 @@ export type CalendarScheduleLesson = {
   changeNote: string | null;
 };
 
+export const universityTimeZoneLines = [
+  "BEGIN:VTIMEZONE",
+  `TZID:${UNIVERSITY_TIME_ZONE}`,
+  `X-LIC-LOCATION:${UNIVERSITY_TIME_ZONE}`,
+  "BEGIN:STANDARD",
+  "TZOFFSETFROM:+0300",
+  "TZOFFSETTO:+0300",
+  "TZNAME:MSK",
+  "DTSTART:19700101T000000",
+  "END:STANDARD",
+  "END:VTIMEZONE",
+] as const;
+
 const utf8Encoder = new TextEncoder();
 
-function escapeText(value: string): string {
+export function escapeText(value: string): string {
   return value
     .replace(/\\/g, "\\\\")
     .replace(/\r\n|\r|\n/g, "\\n")
@@ -34,14 +47,14 @@ function parseDate(value: string): Date {
   return date;
 }
 
-function formatUtcDate(value: string): string {
+export function formatUtcDate(value: string): string {
   return parseDate(value)
     .toISOString()
     .replace(/[-:]/g, "")
     .replace(/\.\d{3}/, "");
 }
 
-function formatUniversityLocalDateTime(value: string): string {
+export function formatUniversityLocalDateTime(value: string): string {
   const date = parseDate(value);
   const dateKey = getMoscowDateKey(date).replaceAll("-", "");
   const time = formatUniversityDateTime(date, {
@@ -52,7 +65,7 @@ function formatUniversityLocalDateTime(value: string): string {
   return `${dateKey}T${time}00`;
 }
 
-function foldLine(line: string): string {
+export function foldLine(line: string): string {
   const chunks: string[] = [];
   let chunk = "";
   let bytes = 0;
@@ -84,16 +97,7 @@ export function generateScheduleIcs(
     "METHOD:PUBLISH",
     `X-WR-TIMEZONE:${UNIVERSITY_TIME_ZONE}`,
     "X-WR-CALNAME:Campus OS — расписание",
-    "BEGIN:VTIMEZONE",
-    `TZID:${UNIVERSITY_TIME_ZONE}`,
-    `X-LIC-LOCATION:${UNIVERSITY_TIME_ZONE}`,
-    "BEGIN:STANDARD",
-    "TZOFFSETFROM:+0300",
-    "TZOFFSETTO:+0300",
-    "TZNAME:MSK",
-    "DTSTART:19700101T000000",
-    "END:STANDARD",
-    "END:VTIMEZONE",
+    ...universityTimeZoneLines,
   ];
 
   for (const lesson of lessons) {

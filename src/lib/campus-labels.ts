@@ -1,5 +1,9 @@
 import type {
   ControlType,
+  DeadlineFormat,
+  DeadlineMaterialKind,
+  DeadlineMaterialUploaderRole,
+  DeadlineProgressStatus,
   RequestStatus,
   RequestType,
   ScheduleKind,
@@ -39,6 +43,34 @@ export const controlTypeLabels: Record<ControlType, string> = {
   DIFFERENTIATED_CREDIT: "Дифференцированный зачёт",
   COURSEWORK: "Курсовая работа",
   OTHER: "Другое",
+};
+
+export const deadlineFormatLabels: Record<DeadlineFormat, string> = {
+  ONLINE: "Онлайн",
+  OFFLINE: "Очно",
+  EXAM: "Экзамен",
+};
+
+export const deadlineProgressLabels: Record<DeadlineProgressStatus, string> = {
+  NOT_STARTED: "Не начато",
+  IN_PROGRESS: "В работе",
+  DONE: "Сдано",
+};
+
+export const deadlineMaterialKindLabels: Record<DeadlineMaterialKind, string> = {
+  PDF: "PDF",
+  DOC: "Документ",
+  SLIDES: "Презентация",
+  LINK: "Ссылка",
+  OTHER: "Файл",
+};
+
+export const deadlineUploaderRoleLabels: Record<
+  DeadlineMaterialUploaderRole,
+  string
+> = {
+  TEACHER: "Преподаватель",
+  STAFF: "Сотрудник деканата",
 };
 
 const studentFacingGroupNames: Record<string, string> = {

@@ -1,7 +1,24 @@
+import type { DeadlineRemaining } from "@/lib/deadline-utils";
 import type {
+  DeadlineFormat,
   NotificationTargetType,
   NotificationType,
 } from "@/generated/prisma/enums";
+
+export type NotificationDeadlineDetails = {
+  id: string;
+  title: string;
+  subject: string;
+  topic: string | null;
+  format: DeadlineFormat;
+  taskUrl: string | null;
+  location: string | null;
+  dueAt: string;
+  dueLabel: string;
+  statusLabel: string;
+  remainingLabel: string | null;
+  remaining: DeadlineRemaining | null;
+};
 
 export type NotificationDetails = {
   schedule?: {
@@ -18,12 +35,7 @@ export type NotificationDetails = {
     statusLabel: string;
     serviceLabel: string;
   };
-  deadline?: {
-    subject: string;
-    dueAt: string;
-    statusLabel: string;
-    remainingLabel: string | null;
-  };
+  deadline?: NotificationDeadlineDetails;
 };
 
 export type StudentNotificationItem = {
