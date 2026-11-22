@@ -243,38 +243,6 @@ export function getCampusGreeting(now = new Date()): string {
   return "Добрый вечер";
 }
 
-export function formatRemainingMoscowDays(
-  deadline: Date,
-  now = new Date(),
-): string {
-  if (deadline.getTime() <= now.getTime()) {
-    return "срок истёк";
-  }
-
-  const today = getNumericParts(moscowDateFormatter, now);
-  const due = getNumericParts(moscowDateFormatter, deadline);
-  const dayDifference =
-    (Date.UTC(due.year, due.month - 1, due.day) -
-      Date.UTC(today.year, today.month - 1, today.day)) /
-    (24 * 60 * 60 * 1000);
-
-  if (dayDifference === 0) return "сегодня";
-  if (dayDifference === 1) return "завтра";
-
-  const lastTwoDigits = dayDifference % 100;
-  const lastDigit = dayDifference % 10;
-  const word =
-    lastTwoDigits >= 11 && lastTwoDigits <= 14
-      ? "дней"
-      : lastDigit === 1
-        ? "день"
-        : lastDigit >= 2 && lastDigit <= 4
-          ? "дня"
-          : "дней";
-
-  return `через ${dayDifference} ${word}`;
-}
-
 export function formatCampusDate(date: Date): string {
   return formatUniversityDateTime(date, {
     weekday: "long",

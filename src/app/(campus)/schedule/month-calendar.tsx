@@ -2,6 +2,7 @@
 
 import type { KeyboardEvent, MouseEvent } from "react";
 import { formatMoscowTime } from "@/lib/campus-time";
+import { formatRoom } from "@/lib/room-format";
 import { pluralize } from "@/lib/plural";
 import type { ScheduleDayView, ScheduleLessonView } from "./schedule-view";
 import styles from "./month-calendar.module.css";
@@ -123,7 +124,7 @@ export function MonthCalendar({
                 <ul className={styles.events}>
                   {visible.map((lesson) => {
                     const time = formatMoscowTime(new Date(lesson.startsAtIso));
-                    const label = `${lesson.timeLabel}, ${lesson.subject}, ${lesson.kindLabel}, ауд. ${lesson.room}${statusSuffix[lesson.status]}`;
+                    const label = `${[lesson.timeLabel, lesson.subject, lesson.kindLabel, formatRoom(lesson.room)].filter(Boolean).join(", ")}${statusSuffix[lesson.status]}`;
                     return (
                       <li key={lesson.id}>
                         <button

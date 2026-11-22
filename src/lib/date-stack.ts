@@ -24,6 +24,10 @@ export type DateStackLabels = {
   day: string;
   /** Вторая строка: время и отсчёт; null, если добавить нечего. */
   detail: string | null;
+  /** Время или промежуток: «14:30», «08:30–10:00»; null для целого дня. */
+  time: string | null;
+  /** «через 3 ч», «41 мин назад», «просрочено на 2 дня». */
+  relative: string | null;
   urgency: DateStackUrgency;
   /** Текстовая пометка срочности для первой строки. */
   urgencyLabel: string | null;
@@ -161,12 +165,28 @@ export function getDateStackLabels(
   return {
     day: formatStackDay(value, now),
     detail: [time, relative].filter(Boolean).join(" · ") || null,
+    time,
+    relative,
     urgency,
     // «просрочено на …» уже есть во второй строке, повторять не нужно.
     urgencyLabel: urgency === "urgent" ? urgencyLabels.urgent : null,
     dateTime: allDay ? dateKey : value.toISOString(),
     title: time ? `${fullDay}, ${time}` : fullDay,
   };
+}
+
+/** Сколько осталось до момента: «35 мин», «1 ч 5 мин». */
+export function formatRemaining(until: Date, now: Date): string {
+  const minutes = Math.max(
+    1,
+    Math.ceil((until.getTime() - now.getTime()) / MINUTE),
+  );
+  return [
+    minutes >= 60 ? `${Math.floor(minutes / 60)} ч` : "",
+    minutes % 60 ? `${minutes % 60} мин` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 export function parseStackDate(value: Date | string): Date {

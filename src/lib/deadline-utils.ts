@@ -2,7 +2,6 @@ import type { DeadlineFormat } from "@/generated/prisma/enums";
 import {
   formatMoscowTime,
   getUniversityDateTimeFormatter,
-  UNIVERSITY_TIME_ZONE,
 } from "@/lib/campus-time";
 
 const UNIVERSITY_DATE_FORMATTER = getUniversityDateTimeFormatter({
@@ -11,20 +10,6 @@ const UNIVERSITY_DATE_FORMATTER = getUniversityDateTimeFormatter({
   day: "2-digit",
 }, "en-US");
 const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
-const MONTH_LABELS = [
-  "ЯНВ",
-  "ФЕВ",
-  "МАР",
-  "АПР",
-  "МАЙ",
-  "ИЮН",
-  "ИЮЛ",
-  "АВГ",
-  "СЕН",
-  "ОКТ",
-  "НОЯ",
-  "ДЕК",
-];
 
 function getUniversityDateParts(date: Date): Record<string, number> {
   return Object.fromEntries(
@@ -40,11 +25,6 @@ export type DeadlineLike = {
   status: "OPEN" | "SUBMITTED";
 };
 
-export type DeadlineDateTile = {
-  caption: string;
-  day: string;
-};
-
 export type DeadlineCountdown = {
   kind: "OVERDUE" | "TODAY" | "TOMORROW" | "UPCOMING";
   daysRemaining: number;
@@ -56,31 +36,6 @@ function moscowDayNumber(date: Date): number {
   return (
     Date.UTC(parts.year, parts.month - 1, parts.day) / DAY_IN_MILLISECONDS
   );
-}
-
-export function getDeadlineDateTile(
-  dueAt: Date,
-  now: Date,
-): DeadlineDateTile {
-  const dayDifference = moscowDayNumber(dueAt) - moscowDayNumber(now);
-  const dateParts = getUniversityDateParts(dueAt);
-  const month = dateParts.month;
-  const monthLabel = MONTH_LABELS[month - 1];
-  if (!monthLabel) {
-    throw new RangeError(
-      `Некорректный месяц даты дедлайна в ${UNIVERSITY_TIME_ZONE}.`,
-    );
-  }
-
-  return {
-    caption:
-      dayDifference === 0
-        ? "Сегодня"
-        : dayDifference === 1
-          ? "Завтра"
-          : monthLabel,
-    day: String(dateParts.day).padStart(2, "0"),
-  };
 }
 
 function dayWord(days: number): string {
@@ -210,20 +165,6 @@ export function getUpcomingDeadlines<T extends DeadlineLike>(
         first.id.localeCompare(second.id),
     )
     .slice(0, limit);
-}
-
-export function getDeadlineCountdownTone(
-  countdown: DeadlineCountdown,
-): "warning" | "danger" | "neutral" {
-  if (countdown.kind === "TODAY") return "warning";
-  if (
-    countdown.kind === "OVERDUE" ||
-    countdown.kind === "TOMORROW" ||
-    countdown.daysRemaining <= 3
-  ) {
-    return "danger";
-  }
-  return "neutral";
 }
 
 export function getNearestDeadlines<T extends DeadlineLike>(
