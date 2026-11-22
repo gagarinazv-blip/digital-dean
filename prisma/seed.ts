@@ -1,5 +1,8 @@
 import "dotenv/config";
 import bcrypt from "bcryptjs";
+import { randomUUID } from "node:crypto";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 import type { Prisma } from "../src/generated/prisma/client";
@@ -201,6 +204,136 @@ function getGroupId(groupIds: Map<string, number>, name: string): number {
     throw new Error(`Test group "${name}" was not created.`);
   }
   return id;
+}
+
+async function seedPortfolioDemo(prisma: PrismaClient): Promise<void> {
+  const demoStaff = await prisma.user.findUnique({
+    where: { login: "staff.demo" },
+    select: { id: true },
+  });
+  if (!demoStaff) {
+    throw new Error("Portfolio seed staff account is missing.");
+  }
+
+  const students = await prisma.student.findMany({
+    where: { user: { login: { in: ["student.alpha", "student.beta"] } } },
+    select: { id: true, userId: true, user: { select: { login: true } } },
+  });
+  const studentByLogin = new Map(
+    students.map((student) => [student.user.login, student]),
+  );
+  const fixtures = [
+    { login: "student.alpha", folder: "Научные проекты", title: "Сертификат участника научной конференции", category: "SCIENCE", eventName: "Вымышленная конференция по дипломатии", eventDate: "2026-03-15", role: "Участник", source: "STUDENT", kind: "pdf" },
+    { login: "student.alpha", folder: "Научные проекты", title: "Диплом олимпиады по международным отношениям", category: "COMPETITION", eventName: "Вымышленная студенческая олимпиада", eventDate: "2026-04-20", role: "Призёр", source: "STAFF", kind: "png" },
+    { login: "student.alpha", folder: "Волонтёрство", title: "Сертификат волонтёра проекта «Тёплый город»", category: "VOLUNTEERING", eventName: "Вымышленная городская акция", eventDate: "2025-11-02", role: "Организатор", source: "STUDENT", kind: "pdf" },
+    { login: "student.alpha", folder: null, title: "Подтверждение участия в студенческом форуме", category: "OTHER", eventName: "Вымышленный студенческий форум", eventDate: "2025-10-10", role: "Организатор", source: "STAFF", kind: "png" },
+    { login: "student.alpha", folder: null, title: "Диплом факультетского шахматного турнира", category: "SPORT", eventName: "Вымышленный шахматный турнир", eventDate: "2025-05-18", role: "Победитель", source: "STUDENT", kind: "pdf" },
+    { login: "student.beta", folder: "Творческие работы", title: "Сертификат участника творческого конкурса", category: "CREATIVITY", eventName: "Вымышленный конкурс плаката", eventDate: "2026-02-12", role: "Участник", source: "STUDENT", kind: "png" },
+    { login: "student.beta", folder: null, title: "Диплом конкурса студенческих проектов", category: "COMPETITION", eventName: "Вымышленный конкурс проектов", eventDate: "2025-12-05", role: "Призёр", source: "STAFF", kind: "pdf" },
+  ] as const;
+  const uploadDirectory = resolve(
+    process.env.UPLOAD_DIR ?? "./storage/uploads",
+  );
+  const pdfPlaceholder = Buffer.from(
+    "%PDF-1.4\n1 0 obj<<>>\nendobj\ntrailer<<>>\n%%EOF\n",
+    "utf8",
+  );
+  const pngPlaceholder = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+    "base64",
+  );
+
+  for (const login of ["student.alpha", "student.beta"] as const) {
+    const student = studentByLogin.get(login);
+    if (!student) {
+      throw new Error("Portfolio seed student account is missing.");
+    }
+    const folderNames = [
+      ...new Set(
+        fixtures
+          .filter((fixture) => fixture.login === login && fixture.folder)
+          .map((fixture) => fixture.folder as string),
+      ),
+    ];
+    for (const name of folderNames) {
+      const normalizedName = name.normalize("NFKC").toLocaleLowerCase("ru-RU");
+      await prisma.portfolioFolder.upsert({
+        where: {
+          studentId_normalizedName: {
+            studentId: student.id,
+            normalizedName,
+          },
+        },
+        create: { studentId: student.id, name, normalizedName },
+        update: {},
+      });
+    }
+  }
+
+  for (const fixture of fixtures) {
+    const student = studentByLogin.get(fixture.login);
+    if (!student) {
+      throw new Error("Portfolio seed student account is missing.");
+    }
+    const existing = await prisma.portfolioItem.findFirst({
+      where: { studentId: student.id, title: fixture.title },
+      select: { id: true },
+    });
+    if (existing) continue;
+
+    const folder = fixture.folder
+      ? await prisma.portfolioFolder.findUnique({
+          where: {
+            studentId_normalizedName: {
+              studentId: student.id,
+              normalizedName: fixture.folder
+                .normalize("NFKC")
+                .toLocaleLowerCase("ru-RU"),
+            },
+          },
+          select: { id: true },
+        })
+      : null;
+    const extension = fixture.kind;
+    const mimeType =
+      extension === "pdf"
+        ? "application/pdf"
+        : "image/png";
+    const storedName = `${randomUUID()}.${extension}`;
+    const data = extension === "pdf" ? pdfPlaceholder : pngPlaceholder;
+    await mkdir(uploadDirectory, { recursive: true, mode: 0o700 });
+    await writeFile(resolve(uploadDirectory, storedName), data, {
+      flag: "wx",
+      mode: 0o600,
+    });
+    try {
+      await prisma.portfolioItem.create({
+        data: {
+          studentId: student.id,
+          folderId: folder?.id ?? null,
+          title: fixture.title,
+          category: fixture.category,
+          eventName: fixture.eventName,
+          eventDate: new Date(`${fixture.eventDate}T00:00:00.000Z`),
+          role: fixture.role,
+          storedName,
+          originalName: `demo-${storedName}`,
+          mimeType,
+          size: data.length,
+          source: fixture.source,
+          uploadedById:
+            fixture.source === "STAFF" ? demoStaff.id : student.userId,
+        },
+      });
+    } catch (error) {
+      try {
+        await unlink(resolve(uploadDirectory, storedName));
+      } catch {
+        console.error("Portfolio seed file cleanup failed.");
+      }
+      throw error;
+    }
+  }
 }
 
 async function main() {
@@ -1064,6 +1197,7 @@ async function main() {
       }
     });
 
+    await seedPortfolioDemo(prisma);
     console.log("Тестовые данные созданы.");
   } finally {
     await prisma.$disconnect();

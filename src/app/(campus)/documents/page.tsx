@@ -10,6 +10,9 @@ export default function DocumentsPage({
     q?: string | string[];
     status?: string | string[];
     selected?: string | string[];
+    category?: string | string[];
+    year?: string | string[];
+    folder?: string | string[];
   }>;
 }) {
   return HelpWorkspace({

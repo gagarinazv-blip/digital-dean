@@ -33,6 +33,10 @@ enum StudentAuditAction {
   STUDENT_PASSWORD_SET
   STUDENT_PASSWORD_REPLACED
   ACCESS_RESET
+  PORTFOLIO_ITEM_CREATED
+  PORTFOLIO_ITEM_UPDATED
+  PORTFOLIO_ITEM_DELETED
+  PORTFOLIO_FILE_DOWNLOADED
 }
 
 enum Weekday {
@@ -127,6 +131,27 @@ enum DeadlineStatus {
   SUBMITTED
 }
 
+enum PortfolioCategory {
+  VOLUNTEERING
+  SCIENCE
+  COMPETITION
+  SPORT
+  CREATIVITY
+  OTHER
+}
+
+enum PortfolioSource {
+  STUDENT
+  STAFF
+}
+
+enum StaffNotificationType {
+  NEW_REQUEST
+  DOCUMENT_ADDED
+  REQUEST_ASSIGNED
+  REQUEST_REASSIGNED
+}
+
 model User {
   id                       Int                        @id @default(autoincrement())
   login                    String                     @unique
@@ -139,6 +164,8 @@ model User {
   requestStatusHistory     RequestStatusHistory[]     @relation("RequestStatusHistoryAuthor")
   requestAssignmentHistory RequestAssignmentHistory[] @relation("RequestAssignmentHistoryAuthor")
   studentAuditLogs         StudentAuditLog[]
+  uploadedPortfolioItems   PortfolioItem[]             @relation("PortfolioItemUploader")
+  staffNotifications       StaffNotification[]         @relation("StaffNotificationRecipient")
   createdAt                DateTime                   @default(now())
 }
 
@@ -201,6 +228,9 @@ model Student {
   notifications                  Notification[]
   deadlines                      Deadline[]
   auditLogs                      StudentAuditLog[]
+  portfolioFolders               PortfolioFolder[]
+  portfolioItems                 PortfolioItem[]
+  staffNotifications             StaffNotification[]
 
   @@index([groupId])
 }
@@ -239,6 +269,51 @@ model StudentAuditLog {
 
   @@index([studentId, createdAt])
   @@index([actorUserId, createdAt])
+}
+
+model PortfolioFolder {
+  id        Int               @id @default(autoincrement())
+  studentId Int
+  parentId  Int?
+  name      String            @db.VarChar(60)
+  normalizedName String       @db.VarChar(60)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  student   Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  parent    PortfolioFolder?  @relation("PortfolioFolderTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children  PortfolioFolder[] @relation("PortfolioFolderTree")
+  items     PortfolioItem[]
+
+  @@unique([studentId, normalizedName])
+  @@index([parentId])
+}
+
+model PortfolioItem {
+  id           Int               @id @default(autoincrement())
+  studentId    Int
+  folderId     Int?
+  title        String            @db.VarChar(120)
+  category     PortfolioCategory @default(OTHER)
+  eventName    String?           @db.VarChar(180)
+  eventDate    DateTime?         @db.Date
+  role         String?           @db.VarChar(100)
+  description  String?           @db.VarChar(500)
+  storedName   String            @unique @db.VarChar(100)
+  originalName String            @db.VarChar(255)
+  mimeType     String            @db.VarChar(100)
+  size         Int
+  source       PortfolioSource
+  uploadedById Int
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  student      Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  folder       PortfolioFolder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  uploadedBy   User              @relation("PortfolioItemUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
+
+  @@index([studentId, createdAt])
+  @@index([studentId, category, eventDate])
+  @@index([folderId])
+  @@index([source])
 }
 
 model Subject {
@@ -384,12 +459,35 @@ model Request {
   comments        RequestComment[]
   statusHistory   RequestStatusHistory[]
   assignmentHistory RequestAssignmentHistory[]
+  staffNotifications StaffNotification[]
   createdAt       DateTime               @default(now())
   updatedAt       DateTime               @updatedAt
 
   @@index([studentId])
   @@index([status])
   @@index([assignedToId])
+}
+
+model StaffNotification {
+  id               Int                  @id @default(autoincrement())
+  publicId         String               @unique @default(uuid())
+  recipientId      Int
+  eventKey         String
+  type             StaffNotificationType
+  title            String
+  body             String               @db.Text
+  link             String
+  relatedRequestId Int?
+  relatedStudentId Int?
+  readAt           DateTime?
+  createdAt        DateTime             @default(now())
+  recipient        User                 @relation("StaffNotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  relatedRequest   Request?             @relation(fields: [relatedRequestId], references: [id], onDelete: SetNull)
+  relatedStudent   Student?             @relation(fields: [relatedStudentId], references: [id], onDelete: SetNull)
+
+  @@unique([recipientId, eventKey])
+  @@index([recipientId, createdAt])
+  @@index([recipientId, readAt, createdAt])
 }
 
 model RequestStatusHistory {
