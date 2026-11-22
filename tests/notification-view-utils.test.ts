@@ -38,6 +38,7 @@ describe("notification view utilities", () => {
     expect(parseNotificationFilter("unread")).toBe("unread");
     expect(parseNotificationFilter("invalid")).toBe("all");
     expect(parseNotificationTypeFilter("request")).toBe("request");
+    expect(parseNotificationTypeFilter("opportunity")).toBe("opportunity");
     expect(parseNotificationTypeFilter("invalid")).toBeNull();
     expect(
       createNotificationUrl(
@@ -50,6 +51,11 @@ describe("notification view utilities", () => {
   it("filters unread items by type and free-text context", () => {
     const items = [
       notification("request-1", "2026-11-20T09:00:00.000Z"),
+      notification("opportunity-1", "2026-11-20T08:00:00.000Z", {
+        type: "OPPORTUNITY_STATUS",
+        title: "Заявка на возможность обновлена",
+        readAt: "2026-11-20T08:30:00.000Z",
+      }),
       notification("schedule-1", "2026-11-19T09:00:00.000Z", {
         type: "SCHEDULE_CHANGE",
         title: "Изменение аудитории",
@@ -60,6 +66,9 @@ describe("notification view utilities", () => {
 
     expect(filterNotifications(items, "unread", null, "")).toEqual([items[0]]);
     expect(filterNotifications(items, "all", "schedule", "101")).toEqual([
+      items[2],
+    ]);
+    expect(filterNotifications(items, "all", "opportunity", "")).toEqual([
       items[1],
     ]);
   });

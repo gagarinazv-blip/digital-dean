@@ -89,6 +89,28 @@ beforeEach(() => {
 });
 
 describe("student notifications API", () => {
+  it("returns all notification type counts, including opportunity updates", async () => {
+    getStudentNotificationPageMock.mockResolvedValue({
+      notifications: [],
+      unreadCount: 2,
+      typeCounts: { OPPORTUNITY_STATUS: 2 },
+      hasMore: false,
+      nextCursor: null,
+    });
+
+    const response = await GET();
+
+    expect(await response.json()).toMatchObject({
+      typeCounts: {
+        SCHEDULE_CHANGE: 0,
+        DEADLINE: 0,
+        REQUEST_STATUS: 0,
+        ANNOUNCEMENT: 0,
+        OPPORTUNITY_STATUS: 2,
+      },
+    });
+  });
+
   it("returns 401 only when there is no session", async () => {
     getCurrentUserMock.mockResolvedValue(null);
 
