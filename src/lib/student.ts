@@ -1,6 +1,6 @@
 import "server-only";
 
-import { forbidden, notFound, redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 
@@ -13,7 +13,7 @@ export async function requireStudentContext() {
     redirect("/login?role=student&step=password");
   }
   if (user.role !== "STUDENT") {
-    forbidden();
+    redirect("/login?role=student&switch=1");
   }
 
   const student = await getPrisma().student.findUnique({

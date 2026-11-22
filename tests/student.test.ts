@@ -1,13 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
-  forbiddenMock,
   notFoundMock,
   redirectMock,
   getCurrentUserMock,
   findStudentMock,
 } = vi.hoisted(() => ({
-  forbiddenMock: vi.fn(),
   notFoundMock: vi.fn(),
   redirectMock: vi.fn(),
   getCurrentUserMock: vi.fn(),
@@ -15,7 +13,6 @@ const {
 }));
 
 vi.mock("next/navigation", () => ({
-  forbidden: forbiddenMock,
   notFound: notFoundMock,
   redirect: redirectMock,
 }));
@@ -56,9 +53,6 @@ beforeEach(() => {
   findStudentMock.mockResolvedValue(student);
   redirectMock.mockImplementation((path: string) => {
     throw new Error(`Redirected to ${path}`);
-  });
-  forbiddenMock.mockImplementation(() => {
-    throw new Error("Forbidden");
   });
   notFoundMock.mockImplementation(() => {
     throw new Error("Not found");
@@ -115,7 +109,7 @@ describe("requireStudent", () => {
     expect(findStudentMock).not.toHaveBeenCalled();
   });
 
-  it("forbids staff without querying student data", async () => {
+  it("offers the student login when the current session belongs to staff", async () => {
     getCurrentUserMock.mockResolvedValue({
       id: 10,
       login: "staff.demo",
@@ -124,9 +118,13 @@ describe("requireStudent", () => {
       student: null,
     });
 
-    await expect(requireStudent()).rejects.toThrow("Forbidden");
+    await expect(requireStudent()).rejects.toThrow(
+      "Redirected to /login?role=student&switch=1",
+    );
 
-    expect(forbiddenMock).toHaveBeenCalledOnce();
+    expect(redirectMock).toHaveBeenCalledWith(
+      "/login?role=student&switch=1",
+    );
     expect(findStudentMock).not.toHaveBeenCalled();
   });
 

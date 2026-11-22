@@ -95,13 +95,15 @@ describe("role and request access proxy", () => {
     expect(getSessionPrincipalForTokenMock).not.toHaveBeenCalled();
   });
 
-  it("returns 403 when a student opens the staff area", async () => {
+  it("offers a staff sign-in when a student opens the staff area", async () => {
     getSessionPrincipalForTokenMock.mockResolvedValue(studentPrincipal);
 
     const response = await proxy(makeRequest("/staff", "opaque-session-token"));
 
-    expect(response.status).toBe(403);
-    expect(await response.text()).toBe("403 — Доступ запрещён");
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "https://digital-dean.test/login?role=staff&switch=1",
+    );
     expect(getSessionPrincipalForTokenMock).toHaveBeenCalledWith(
       "opaque-session-token",
     );
@@ -137,14 +139,17 @@ describe("role and request access proxy", () => {
     );
   });
 
-  it("returns 403 when staff opens a student-only section", async () => {
+  it("offers a student sign-in when staff opens a student-only section", async () => {
     getSessionPrincipalForTokenMock.mockResolvedValue(staffPrincipal);
 
     const response = await proxy(
       makeRequest("/schedule", "opaque-session-token"),
     );
 
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "https://digital-dean.test/login?role=student&switch=1",
+    );
   });
 
   it("allows a signed-in student request route to reach its owner-scoped loader", async () => {

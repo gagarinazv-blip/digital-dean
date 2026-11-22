@@ -17,13 +17,17 @@ function LoginFallback() {
 async function LoginContent({
   searchParams,
 }: {
-  searchParams: Promise<{ role?: string | string[] }>;
+  searchParams: Promise<{
+    role?: string | string[];
+    switch?: string | string[];
+  }>;
 }) {
   const user = await getCurrentUser();
-  if (user && !user.requiresPasswordSetup) {
+  const { role, switch: switchParam } = await searchParams;
+  const isSwitchingAccount = switchParam === "1";
+  if (user && !user.requiresPasswordSetup && !isSwitchingAccount) {
     redirect(user.role === "STAFF" ? "/staff" : "/");
   }
-  const { role } = await searchParams;
   const roleValue = typeof role === "string" ? role : null;
   const initialRole = roleValue === "staff" ? "staff" : "student";
 
@@ -60,6 +64,8 @@ async function LoginContent({
           <p className={styles.description}>
             {user?.requiresPasswordSetup
               ? "После сохранения войдите по телефону и новому паролю."
+              : isSwitchingAccount
+                ? "Текущая сессия не подходит для этого раздела. Войдите в аккаунт с нужной ролью."
               : "Единый кабинет университета"}
           </p>
           {user?.requiresPasswordSetup ? (
@@ -79,7 +85,10 @@ async function LoginContent({
 export default function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ role?: string | string[] }>;
+  searchParams: Promise<{
+    role?: string | string[];
+    switch?: string | string[];
+  }>;
 }) {
   return (
     <Suspense fallback={<LoginFallback />}>

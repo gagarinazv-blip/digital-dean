@@ -457,6 +457,7 @@ export function LoginForm({ initialRole }: { initialRole: LoginRole }) {
   const studentTabRef = useRef<HTMLButtonElement>(null);
   const staffTabRef = useRef<HTMLButtonElement>(null);
   const roleValues = searchParams.getAll("role");
+  const isSwitchingAccount = searchParams.get("switch") === "1";
   const roleParam = roleValues.length === 1 ? roleValues[0] : null;
   const role: LoginRole =
     roleParam === "staff"
@@ -470,13 +471,19 @@ export function LoginForm({ initialRole }: { initialRole: LoginRole }) {
 
   useEffect(() => {
     if (!hasCanonicalRole) {
-      router.replace(`/login?role=${role}`, { scroll: false });
+      router.replace(
+        `/login?role=${role}${isSwitchingAccount ? "&switch=1" : ""}`,
+        { scroll: false },
+      );
     }
-  }, [hasCanonicalRole, role, router]);
+  }, [hasCanonicalRole, isSwitchingAccount, role, router]);
 
   function selectRole(nextRole: LoginRole) {
     if (role !== nextRole || !hasCanonicalRole) {
-      router.replace(`/login?role=${nextRole}`, { scroll: false });
+      router.replace(
+        `/login?role=${nextRole}${isSwitchingAccount ? "&switch=1" : ""}`,
+        { scroll: false },
+      );
     }
   }
 

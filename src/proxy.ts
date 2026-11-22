@@ -21,6 +21,9 @@ export async function proxy(request: NextRequest) {
   const loginUrl = isStaffArea
     ? "/login?role=staff"
     : "/login?role=student";
+  const accountSwitchUrl = isStaffArea
+    ? "/login?role=staff&switch=1"
+    : "/login?role=student&switch=1";
   if (pathname === "/staff/login") {
     return NextResponse.redirect(new URL("/login?role=staff", request.url));
   }
@@ -43,13 +46,7 @@ export async function proxy(request: NextRequest) {
 
   const requiredRole = isStaffArea ? "STAFF" : "STUDENT";
   if (principal.role !== requiredRole) {
-    return new Response("403 — Доступ запрещён", {
-      status: 403,
-      headers: {
-        "Cache-Control": "no-store",
-        "Content-Type": "text/plain; charset=utf-8",
-      },
-    });
+    return NextResponse.redirect(new URL(accountSwitchUrl, request.url));
   }
 
   const staffRequestPath = pathname.match(/^\/staff\/requests\/([^/]+)$/);
