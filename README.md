@@ -107,6 +107,20 @@ npm run dev
 терминала открытым, пока пользуетесь сайтом. Чтобы остановить сервер, нажмите
 `Ctrl+C`.
 
+## Подключение Neon
+
+Для Neon приложение использует pooled `DATABASE_URL`, а Prisma CLI —
+`DATABASE_URL_UNPOOLED` (direct connection). `prisma.config.ts` предпочитает
+direct URL для миграций и автоматически использует `DATABASE_URL` для локальной
+Docker-базы, если `DATABASE_URL_UNPOOLED` не задан.
+
+После входа в Neon CLI выполните `neon deploy`: он применит `neon.ts` и обновит
+только Neon-переменные в локальном `.env`, сохранив остальные настройки.
+Перед запуском миграций проверьте связанную ветку командой `neon config plan`, затем
+примените версионированные миграции командой `npx prisma migrate deploy`.
+**Не запускайте `npx prisma db seed` на production**: seed пересоздаёт управляемые
+демо-данные.
+
 ## Проверка подключения к базе
 
 Откройте [http://localhost:3000/api/health](http://localhost:3000/api/health).
